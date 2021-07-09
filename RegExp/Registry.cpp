@@ -121,6 +121,7 @@ bool Registry::IsHiveKey(const CString& path) const {
 
 PCWSTR Registry::GetRegTypeAsString(DWORD type) {
 	switch (type) {
+		case REG_KEY: return L"Key";
 		case REG_SZ: return L"REG_SZ";
 		case REG_DWORD: return L"REG_DWORD";
 		case REG_MULTI_SZ: return L"REG_MULTI_SZ";
@@ -133,7 +134,7 @@ PCWSTR Registry::GetRegTypeAsString(DWORD type) {
 		case REG_RESOURCE_LIST: return L"REG_RESOURCE_LIST";
 		case REG_FULL_RESOURCE_DESCRIPTOR: return L"REG_FULL_RESOURCE_DESCRIPTOR";
 	}
-	return L"Unknown";
+	return L"";
 }
 
 CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
@@ -203,3 +204,20 @@ CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
 
 	return text.GetLength() < 1024 ? text : text.Mid(0, 1024);
 }
+
+bool Registry::IsKeyLink(HKEY hKey, PCWSTR path) {
+	CRegKey hLinkKey;
+	auto error = ::RegOpenKeyExW(hKey, path, REG_OPTION_OPEN_LINK, KEY_READ, &hLinkKey.m_hKey);
+	if (ERROR_SUCCESS == error) {
+		DWORD type = 0;
+		WCHAR linkPath[512];
+		DWORD size = sizeof(linkPath) - sizeof(WCHAR);
+		auto error = ::RegQueryValueEx(hLinkKey, L"SymbolicLinkValue", nullptr, &type, (BYTE*)linkPath, &size);
+		if (type == REG_LINK) {
+			// link
+			return true;
+		}
+	}
+	return false;
+}
+

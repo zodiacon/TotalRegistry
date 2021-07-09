@@ -21,13 +21,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -171,6 +171,7 @@
     <Image Include="Icons\folderup.ico" />
     <Image Include="Icons\folder_accessdenied.ico" />
     <Image Include="Icons\folder_closed.ico" />
+    <Image Include="Icons\folder_new.ico" />
     <Image Include="Icons\forward.ico" />
     <Image Include="Icons\hive-accessdenied.ico" />
     <Image Include="Icons\hive.ico" />
@@ -183,6 +184,7 @@
     <Image Include="Icons\refresh.ico" />
     <Image Include="Icons\RegExp.ico" />
     <Image Include="Icons\registry.ico" />
+    <Image Include="Icons\rename.ico" />
     <Image Include="Icons\text.ico" />
     <Image Include="Icons\undo.ico" />
     <Image Include="RegExp.ico" />

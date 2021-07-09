@@ -38,7 +38,9 @@ public:
 
 	int GetRowImage(HWND, int row) const;
 	void DoSort(const SortInfo* si);
+	bool IsSortable(HWND, int col) const;
 	BOOL OnRightClickList(HWND, int row, int col, const POINT&);
+	BOOL OnDoubleClickList(HWND, int row, int col, const POINT& pt);
 
 	BEGIN_MSG_MAP(CMainFrame)
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
@@ -51,7 +53,8 @@ public:
 		NOTIFY_CODE_HANDLER(TVN_BEGINLABELEDIT, OnTreeBeginEdit)
 		NOTIFY_CODE_HANDLER(TVN_ENDLABELEDIT, OnTreeEndEdit)
 		NOTIFY_HANDLER(TreeId, NM_RCLICK, OnTreeContextMenu)
-		NOTIFY_HANDLER(TreeId, TVN_KEYDOWN, OnTreeKeyDown)
+		NOTIFY_CODE_HANDLER(TVN_KEYDOWN, OnTreeKeyDown)
+		NOTIFY_CODE_HANDLER(LVN_KEYDOWN, OnListKeyDown)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		MESSAGE_HANDLER(WM_BUILD_TREE, OnBuildTree)
@@ -61,6 +64,7 @@ public:
 		COMMAND_ID_HANDLER(ID_OPTIONS_SHOWEXTRAHIVES, OnShowExtraHives)
 		COMMAND_ID_HANDLER(ID_EDIT_READONLY, OnEditReadOnly)
 		COMMAND_ID_HANDLER(ID_OPTIONS_ALWAYSONTOP, OnAlwaysOnTop)
+		COMMAND_ID_HANDLER(ID_VIEW_SHOWKEYSINLIST, OnShowKeysInList)
 		COMMAND_ID_HANDLER(ID_NEW_KEY, OnNewKey)
 		COMMAND_ID_HANDLER(ID_EDIT_UNDO, OnEditUndo)
 		COMMAND_ID_HANDLER(ID_EDIT_REDO, OnEditRedo)
@@ -98,6 +102,7 @@ private:
 	LRESULT OnViewRefresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnTreeItemExpanding(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnShowExtraHives(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnShowKeysInList(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnAlwaysOnTop(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnFocusChanged(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnNewKey(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
@@ -108,6 +113,7 @@ private:
 	LRESULT OnEditRedo(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnTreeContextMenu(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnTreeKeyDown(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
+	LRESULT OnListKeyDown(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -122,6 +128,8 @@ private:
 	CTreeItem InsertKeyItem(HTREEITEM hParent, PCWSTR name, NodeType type = NodeType::Key);
 	HTREEITEM FindItemByPath(PCWSTR path) const;
 	void InvokeTreeContextMenu(const CPoint& pt);
+	CString GetKeyDetails(const RegistryItem& item) const;
+	int GetKeyImage(const RegistryItem& item) const;
 
 	void UpdateUI();
 	void UpdateList(bool force = false);
@@ -129,6 +137,7 @@ private:
 	Registry m_Registry;
 	CommandManager m_CmdMgr;
 	mutable CRegKey m_CurrentKey;
+	CString m_CurrentPath;
 	CCommandBarCtrl m_CmdBar;
 	CSplitterWindow m_MainSplitter;
 	CMultiPaneStatusBarCtrl m_StatusBar;
@@ -142,4 +151,5 @@ private:
 	AppSettings m_Settings;
 	Operation m_CurrentOperation{ Operation::None };
 	bool m_ReadOnly{ true };
+	bool m_UpdateNoDelay{ false };
 };

@@ -201,5 +201,11 @@
     <Image Include="Icons\text.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
+    <Image Include="Icons\rename.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\folder_new.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
   </ItemGroup>
 </Project>

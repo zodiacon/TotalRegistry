@@ -7,10 +7,14 @@ struct Hive {
 
 struct RegistryItem {
 	CString Name;
-	CString Path;
 	DWORD Type;
-	DWORD Size;
+	DWORD Size{ 0 };
+	FILETIME TimeStamp{};
+	bool Key : 1 { false };
 };
+
+const DWORD REG_KEY = 0x1111;
+const DWORD REG_KEY_UP = 0x1112;
 
 struct Registry {
 	static DWORD EnumSubKeys(CRegKey& key, std::function<bool(PCWSTR, const FILETIME&)> handler);
@@ -23,6 +27,7 @@ struct Registry {
 	static bool RenameKey(HKEY hKey, PCWSTR name, PCWSTR newName);
 	static bool RenameValue(HKEY hKey, PCWSTR oldName, PCWSTR newName);
 	static CRegKey OpenKey(const CString& path, DWORD access);
+	static bool IsKeyLink(HKEY hKey, PCWSTR path);
 
 	const std::vector<Hive>& GetHiveList(bool refresh = false) const;
 	bool IsHiveKey(const CString& path) const;

@@ -34,7 +34,6 @@
 #define IDI_TEXT                        143
 #define IDI_FOLDER_NEW                  144
 #define IDI_RENAME                      145
-
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -72,7 +71,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        160
-#define _APS_NEXT_COMMAND_VALUE         32808
+#define _APS_NEXT_COMMAND_VALUE         32811
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           115
 #endif

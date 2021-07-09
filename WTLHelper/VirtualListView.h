@@ -77,7 +77,7 @@ struct CVirtualListView {
 		info.pt = pt;
 		lv.SubItemHitTest(&info);
 		auto pT = static_cast<T*>(this);
-		handled = pT->OnDoubleClickList(info.iItem, info.iSubItem, pt2);
+		handled = pT->OnDoubleClickList(lv, info.iItem, info.iSubItem, pt2);
 		return 0;
 	}
 
@@ -122,7 +122,7 @@ struct CVirtualListView {
 		return false;
 	}
 
-	bool OnDoubleClickList(int row, int col, POINT& pt) {
+	bool OnDoubleClickList(HWND, int row, int col, POINT& pt) {
 		return false;
 	}
 
@@ -212,7 +212,7 @@ protected:
 		auto col = GetRealColumn(hdr->hwndFrom, lv->iSubItem);
 
 		auto p = static_cast<T*>(this);
-		if (!p->IsSortable(col))
+		if (!p->IsSortable(hdr->hwndFrom, col))
 			return 0;
 
 		auto si = FindById(hdr->idFrom);
@@ -272,7 +272,7 @@ protected:
 			list.RedrawItems(list.GetTopIndex(), list.GetTopIndex() + list.GetCountPerPage());
 	}
 
-	bool IsSortable(int) const {
+	bool IsSortable(HWND, int) const {
 		return true;
 	}
 

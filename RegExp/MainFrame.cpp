@@ -26,9 +26,18 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 	switch (static_cast<ColumnType>(GetColumnManager(h)->GetColumnTag(col))) {
 		case ColumnType::Name: return item.Name.IsEmpty() ? CString(L"(Default)") : item.Name;
 		case ColumnType::Type: return Registry::GetRegTypeAsString(item.Type);
-		case ColumnType::Value: return Registry::GetDataAsString(m_CurrentKey, item);
+		case ColumnType::Value: return item.Key ? CString(L"") : Registry::GetDataAsString(m_CurrentKey, item);
 		case ColumnType::Size: 
-			text.Format(L"%u", item.Size);
+			if(!item.Key)
+				text.Format(L"%u", item.Size);
+			break;
+		case ColumnType::TimeStamp:
+			if (item.TimeStamp.dwHighDateTime + item.TimeStamp.dwHighDateTime)
+				return CTime(item.TimeStamp).Format(L"%x %X");
+		case ColumnType::Details:
+			if (item.Key)
+				return GetKeyDetails(item);
+			break;
 	}
 	return text;
 }
@@ -36,6 +45,10 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 
 int CMainFrame::GetRowImage(HWND h, int row) const {
 	switch (m_Items[row].Type) {
+		case REG_KEY:
+			return GetKeyImage(m_Items[row]);
+		case REG_KEY_UP:
+			return 8;
 		case REG_SZ:
 		case REG_EXPAND_SZ:
 		case REG_NONE:
@@ -45,16 +58,59 @@ int CMainFrame::GetRowImage(HWND h, int row) const {
 }
 
 void CMainFrame::DoSort(const SortInfo* si) {
-	if (si == nullptr || si->SortColumn < 0)
+	if (si == nullptr || si->SortColumn < 0 || m_Items.empty())
 		return;
 
+	auto col = GetColumnManager(m_List)->GetColumnTag<ColumnType>(si->SortColumn);
+	auto asc = si->SortAscending;
+	auto compare = [&](auto& d1, auto& d2) {
+		switch (col) {
+			case ColumnType::Name: return SortHelper::Sort(d1.Name, d2.Name, asc);
+			case ColumnType::Size: return SortHelper::Sort(d1.Size, d2.Size, asc);
+			case ColumnType::Type: return SortHelper::Sort(d1.Type, d2.Type, asc);
+			case ColumnType::TimeStamp: return SortHelper::Sort(*(ULONGLONG*)&d1.TimeStamp, *(ULONGLONG*)&d2.TimeStamp, asc);
+		}
+		return false;
+	};
+
+	std::sort(m_Items.begin() + (m_Settings.ShowKeysInList() ? 1 : 0), m_Items.end(), compare);
+}
+
+bool CMainFrame::IsSortable(HWND h, int col) const {
+	auto tag = GetColumnManager(h)->GetColumnTag<ColumnType>(col);
+	return tag == ColumnType::Name || tag == ColumnType::Size || tag == ColumnType::Type || tag == ColumnType::TimeStamp;
 }
 
 BOOL CMainFrame::OnRightClickList(HWND h, int row, int col, const POINT& pt) {
 	CMenu menu;
 	menu.LoadMenu(IDR_CONTEXT);
 
-	return m_CmdBar.TrackPopupMenu(menu.GetSubMenu(h == m_List ? 0 : 2), 0, pt.x, pt.y);
+	return m_CmdBar.TrackPopupMenu(menu.GetSubMenu(1), 0, pt.x, pt.y);
+}
+
+BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
+	if (row < 0)
+		return FALSE;
+
+	auto& item = m_Items[row];
+	if (item.Key) {
+		if (item.Type == REG_KEY_UP) {
+			m_UpdateNoDelay = true;
+			m_Tree.SelectItem(m_Tree.GetParentItem(m_Tree.GetSelectedItem()));
+			m_Tree.EnsureVisible(m_Tree.GetSelectedItem());
+			return TRUE;
+		}
+		ATLASSERT(item.Type == REG_KEY);
+		m_Tree.Expand(m_Tree.GetSelectedItem(), TVE_EXPAND);
+		TreeHelper th(m_Tree);
+		auto hItem = th.FindChild(m_Tree.GetSelectedItem(), item.Name);
+		ATLASSERT(hItem);
+		m_UpdateNoDelay = true;
+		m_Tree.SelectItem(hItem);
+		m_Tree.EnsureVisible(hItem);
+		return TRUE;
+	}
+	return FALSE;
 }
 
 LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
@@ -103,9 +159,9 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	CImageList images;
 	images.Create(16, 16, ILC_COLOR32, 8, 4);
 	UINT icons[] = {
-		IDR_MAINFRAME, IDI_COMPUTER, IDI_FOLDER, IDI_FOLDER_CLOSED, IDI_FOLDER_LINK, IDI_FOLDER_ACCESSDENIED,
-		IDI_HIVE, IDI_HIVE_ACCESSDENIED, 
-		IDI_FOLDER_UP, IDI_BINARY, IDI_TEXT, IDI_REAL_REG
+		IDR_MAINFRAME, IDI_COMPUTER, IDI_FOLDER, IDI_FOLDER_CLOSED, IDI_FOLDER_LINK, 
+		IDI_FOLDER_ACCESSDENIED, IDI_HIVE, IDI_HIVE_ACCESSDENIED, IDI_FOLDER_UP, IDI_BINARY, 
+		IDI_TEXT, IDI_REAL_REG
 	};
 	for (auto icon : icons)
 		images.AddIcon(AtlLoadIconImage(icon, 0, 16, 16));
@@ -116,12 +172,14 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 		| LVS_OWNERDATA | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS, 0);
 	m_List.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_INFOTIP);
 	m_List.SetImageList(images, LVSIL_SMALL);
+	::SetWindowTheme(m_List, L"Explorer", nullptr);
 
 	auto cm = GetColumnManager(m_List);
 	cm->AddColumn(L"Name", LVCFMT_LEFT, 220, ColumnType::Name);
 	cm->AddColumn(L"Type", LVCFMT_LEFT, 110, ColumnType::Type);
 	cm->AddColumn(L"Size", LVCFMT_RIGHT, 70, ColumnType::Size);
 	cm->AddColumn(L"Value", LVCFMT_LEFT, 250, ColumnType::Value);
+	cm->AddColumn(L"Last Write", LVCFMT_LEFT, 120, ColumnType::TimeStamp);
 	cm->AddColumn(L"Details", LVCFMT_LEFT, 250, ColumnType::Details);
 	cm->UpdateColumns();
 
@@ -138,6 +196,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	// update UI based on settings
 	//
 	UISetCheck(ID_OPTIONS_SHOWEXTRAHIVES, m_Settings.ShowExtraHives());
+	UISetCheck(ID_VIEW_SHOWKEYSINLIST, m_Settings.ShowKeysInList());
 	UISetCheck(ID_OPTIONS_ALWAYSONTOP, m_Settings.AlwaysOnTop());
 	if (m_Settings.AlwaysOnTop())
 		SetWindowPos(HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
@@ -206,8 +265,16 @@ LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 }
 
 LRESULT CMainFrame::OnTreeSelChanged(int, LPNMHDR, BOOL&) {
-	// short delay in case the user is scrolling fast
-	SetTimer(2, 200, nullptr);
+	if (m_UpdateNoDelay) {
+		m_UpdateNoDelay = false;
+		UpdateList();
+	}
+	else {
+		//
+		// short delay in case the user is scrolling fast
+		//
+		SetTimer(2, 200, nullptr);
+	}
 	return 0;
 }
 
@@ -249,6 +316,14 @@ LRESULT CMainFrame::OnShowExtraHives(WORD, WORD id, HWND, BOOL&) {
 	auto show = m_Settings.ShowExtraHives();
 	m_Settings.ShowExtraHives(!show);
 	UISetCheck(id, !show);
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnShowKeysInList(WORD, WORD id, HWND, BOOL&) {
+	m_Settings.ShowKeysInList(!m_Settings.ShowKeysInList());
+	UISetCheck(id, m_Settings.ShowKeysInList());
+	UpdateList();
 
 	return 0;
 }
@@ -389,6 +464,16 @@ LRESULT CMainFrame::OnTreeKeyDown(int, LPNMHDR hdr, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnListKeyDown(int, LPNMHDR hdr, BOOL&) {
+	auto lv = (NMLVKEYDOWN*)hdr;
+	switch (lv->wVKey) {
+		case VK_TAB:
+			m_Tree.SetFocus();
+			break;
+	}
+	return 0;
+}
+
 void CMainFrame::InitCommandBar() {
 	struct {
 		UINT id, icon;
@@ -468,9 +553,6 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 		ATLASSERT(error == 0);
 		if (subkeys) {
 			m_Tree.InsertItem(L"\\\\", hRoot, TVI_LAST);
-			//CString text;
-			//text.Format(L"%s (K: %u V: %u)", name, subkeys, values);
-			//m_Tree.SetItemText(hRoot, text);
 		}
 	}
 	else {
@@ -487,17 +569,8 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 					m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
 				}
 				subKey.Close();
-				CRegKey hLinkKey;
-				error = ::RegOpenKeyExW(key, name, REG_OPTION_OPEN_LINK, KEY_READ, &hLinkKey.m_hKey);
-				if (ERROR_SUCCESS == error) {
-					DWORD type = 0;
-					WCHAR linkPath[512];
-					DWORD size = sizeof(linkPath) - sizeof(WCHAR);
-					auto error = ::RegQueryValueEx(hLinkKey, L"SymbolicLinkValue", nullptr, &type, (BYTE*)linkPath, &size);
-					if (type == REG_LINK) {
-						// link
-						m_Tree.SetItemImage(hItem, 4, 4);
-					}
+				if (Registry::IsKeyLink(key, name)) {
+					m_Tree.SetItemImage(hItem, 4, 4);
 				}
 			}
 			else if (error == ERROR_ACCESS_DENIED) {
@@ -631,6 +704,34 @@ void CMainFrame::InvokeTreeContextMenu(const CPoint& pt) {
 	m_CmdBar.TrackPopupMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
 }
 
+CString CMainFrame::GetKeyDetails(const RegistryItem& item) const {
+	CRegKey key;
+	key.Open(m_CurrentKey, item.Name, KEY_QUERY_VALUE);
+	CString text;
+	if (key) {
+		DWORD subkeys = 0, values = 0;
+		auto error = ::RegQueryInfoKey(key, nullptr, 0, nullptr, &subkeys, nullptr, nullptr, &values, nullptr, nullptr, nullptr, nullptr);
+		if (ERROR_SUCCESS == error)
+			text.Format(L"Subkeys: %u, Values: %u", subkeys, values);
+	}
+	return text;
+}
+
+int CMainFrame::GetKeyImage(const RegistryItem& item) const {
+	int image = 3;
+	if (Registry::IsKeyLink(m_CurrentKey, item.Name))
+		return 4;
+
+	CRegKey key;
+	auto error = key.Open(m_CurrentKey, item.Name, KEY_READ);
+	if (m_Registry.IsHiveKey(GetFullNodePath(m_Tree.GetSelectedItem()) + L"\\" + item.Name))
+		image = error == ERROR_ACCESS_DENIED ? 7 : 6;
+	else if (error == ERROR_ACCESS_DENIED)
+		image = 5;
+
+	return image;
+}
+
 void CMainFrame::UpdateUI() {
 	UIEnable(ID_EDIT_UNDO, !m_ReadOnly && m_CmdMgr.CanUndo());
 	if (m_CmdMgr.CanUndo())
@@ -659,12 +760,37 @@ void CMainFrame::UpdateList(bool force) {
 	m_List.SetItemCount(0);
 
 	HKEY hKey;
-	auto path = GetNodePath(m_Tree.GetSelectedItem(), &hKey);
+	m_CurrentPath = GetNodePath(m_Tree.GetSelectedItem(), &hKey);
 	if (!hKey)
 		return;
 
+	if (m_Settings.ShowKeysInList()) {
+		//
+		// insert up directory
+		//
+		RegistryItem up;
+		up.Name = L"..";
+		up.Type = REG_KEY_UP;
+		up.Key = true;
+		m_Items.push_back(up);
+
+		CRegKey subKey;
+		subKey.Open(hKey, m_CurrentPath, KEY_ENUMERATE_SUB_KEYS);
+		if (subKey) {
+			Registry::EnumSubKeys(subKey, [&](auto name, const auto& ft) {
+				RegistryItem item;
+				item.Name = name;
+				item.TimeStamp = ft;
+				item.Key = true;
+				item.Type = REG_KEY;
+				m_Items.push_back(std::move(item));
+				return true;
+				});
+		}
+	}
+
 	m_CurrentKey.Close();
-	m_CurrentKey.Open(hKey, path, KEY_QUERY_VALUE);
+	m_CurrentKey.Open(hKey, m_CurrentPath, KEY_QUERY_VALUE);
 	if (!m_CurrentKey)
 		return;
 
@@ -677,4 +803,5 @@ void CMainFrame::UpdateList(bool force) {
 		return true;
 		});
 	m_List.SetItemCount(static_cast<int>(m_Items.size()));
+	DoSort(GetSortInfo(m_List));
 }
