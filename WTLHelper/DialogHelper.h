@@ -3,6 +3,7 @@
 template<typename T>
 class DialogHelper {
 public:
+#ifdef IDI_OK
 	void AdjustOKCancelButtons() {
 		auto dlg = static_cast<T*>(this);
 		CButton ok(dlg->GetDlgItem(IDOK));
@@ -19,6 +20,7 @@ public:
 			cancel.SetIcon(AtlLoadIconImage(IDI_DELETE, 0, 16, 16));
 		}
 	}
+#endif
 
 	bool AddIconToButton(WORD id, WORD icon, int size = 16) {
 		auto dlg = static_cast<T*>(this);
@@ -39,8 +41,8 @@ public:
 	}
 	void SetDialogIcon(HICON icon) {
 		auto dlg = static_cast<T*>(this);
-		dlg->SetIcon(hIcon, FALSE);
-		dlg->SetIcon(hIcon, TRUE);
+		dlg->SetIcon(icon, FALSE);
+		dlg->SetIcon(icon, TRUE);
 	}
 };
 

@@ -75,6 +75,18 @@
     <ClInclude Include="RenameKeyCommand.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="FindDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="FindOptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RegistrySearcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IMainFrame.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -112,6 +124,12 @@
     </ClCompile>
     <ClCompile Include="RenameKeyCommand.cpp">
       <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="FindDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="RegistrySearcher.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -205,6 +223,12 @@
       <Filter>Resource Files\Icons</Filter>
     </Image>
     <Image Include="Icons\folder_new.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\folder_view.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\find_next.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
   </ItemGroup>

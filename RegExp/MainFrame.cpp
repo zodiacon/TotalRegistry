@@ -9,6 +9,9 @@
 #include "TreeHelper.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
+	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
+		return TRUE;
+
 	if (CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg))
 		return TRUE;
 
@@ -18,6 +21,52 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 BOOL CMainFrame::OnIdle() {
 	UIUpdateToolBar();
 	return 0;
+}
+
+void CMainFrame::RunOnUiThread(std::function<void()> f) {
+	SendMessage(WM_RUN, 0, reinterpret_cast<LPARAM>(&f));
+}
+
+AppSettings& CMainFrame::GetSettings() {
+	return m_Settings;
+}
+
+LRESULT CMainFrame::OnFindUpdate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/) {
+	TreeHelper th(m_Tree);
+	HTREEITEM hItem;
+	auto fd = reinterpret_cast<FindData*>(lParam);
+	if (fd->Path[0] != L'\\') {
+		hItem = th.FindItem(m_hStdReg, fd->Path);
+	}
+	else {
+		hItem = th.FindItem(m_hRealReg, fd->Path);
+	}
+	ATLASSERT(hItem);
+	m_Tree.SelectItem(hItem);
+	m_Tree.EnsureVisible(hItem);
+	if (fd->Name == nullptr)
+		m_Tree.SetFocus();
+	else
+		m_List.SetFocus();
+	return 0;
+}
+
+void CMainFrame::OnFindNext(PCWSTR path, PCWSTR name, void* data) {
+	ATLTRACE(L"Found: %s, %s\n", path, name);
+	FindData fd{ path, name, data };
+	SendMessage(WM_FIND_UPDATE, 0, reinterpret_cast<LPARAM>(&fd));
+}
+
+void CMainFrame::OnFindStart() {
+	::SetCursor(AtlLoadSysCursor(IDC_APPSTARTING));
+}
+
+void CMainFrame::OnFindEnd(bool cancelled) {
+	if (!cancelled) {
+		RunOnUiThread([this]() {
+			AtlMessageBox(m_hWnd, L"Finished searching the Registry.", IDS_APP_TITLE, MB_ICONINFORMATION);
+			});
+	}
 }
 
 CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
@@ -187,6 +236,8 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	m_MainSplitter.SetSplitterPosPct(25);
 	m_MainSplitter.UpdateSplitterLayout();
 
+	m_FindDlg.Create(m_hWnd);
+
 	auto pLoop = _Module.GetMessageLoop();
 	ATLASSERT(pLoop != NULL);
 	pLoop->AddMessageFilter(this);
@@ -212,8 +263,9 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled) {
 	m_Settings.Save();
+	m_FindDlg.Cancel();
+	m_FindDlg.DestroyWindow();
 
-	// unregister message filtering and idle updates
 	CMessageLoop* pLoop = _Module.GetMessageLoop();
 	ATLASSERT(pLoop != NULL);
 	pLoop->RemoveMessageFilter(this);
@@ -470,7 +522,32 @@ LRESULT CMainFrame::OnListKeyDown(int, LPNMHDR hdr, BOOL&) {
 		case VK_TAB:
 			m_Tree.SetFocus();
 			break;
+
+		case VK_RETURN:
+			OnDoubleClickList(m_List, m_List.GetSelectedIndex(), 0, POINT());
+			break;
 	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnEditFind(WORD, WORD, HWND, BOOL&) {
+	m_FindDlg.UpdateUI();
+	m_FindDlg.ShowWindow(SW_SHOW);
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnRunOnUIThread(UINT, WPARAM, LPARAM lp, BOOL&) {
+	auto f = reinterpret_cast<std::function<void()>*>(lp);
+	(*f)();
+	return 0;
+}
+
+LRESULT CMainFrame::OnSearchFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+	m_FindDlg.ShowWindow(SW_SHOW);
+	m_FindDlg.SetFocus();
+	m_FindDlg.Continue();
+
 	return 0;
 }
 
@@ -490,9 +567,11 @@ void CMainFrame::InitCommandBar() {
 		{ ID_VIEW_GOBACK, IDI_BACK },
 		{ ID_VIEW_GOFORWARD, IDI_FORWARD },
 		{ ID_EDIT_FIND, IDI_FIND },
+		{ ID_SEARCH_FINDNEXT, IDI_FIND_NEXT },
 		{ ID_EDIT_READONLY, IDI_LOCK },
 		{ ID_EDIT_RENAME, IDI_RENAME },
 		{ ID_NEW_KEY, IDI_FOLDER_NEW },
+		{ ID_VIEW_SHOWKEYSINLIST, IDI_FOLDER_VIEW },
 	};
 	for (auto& cmd : cmds) {
 		HICON hIcon = cmd.hIcon;
@@ -520,6 +599,7 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 		{ 0 },
 		{ ID_EDIT_READONLY, IDI_LOCK },
 		{ ID_VIEW_REFRESH, IDI_REFRESH },
+		{ ID_VIEW_SHOWKEYSINLIST, IDI_FOLDER_VIEW },
 		{ 0 },
 		{ ID_EDIT_COPY, IDI_COPY },
 		{ ID_EDIT_CUT, IDI_CUT },
@@ -527,6 +607,7 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 		{ ID_EDIT_DELETE, IDI_DELETE },
 		{ 0 },
 		{ ID_EDIT_FIND, IDI_FIND },
+		{ ID_SEARCH_FINDNEXT, IDI_FIND_NEXT },
 	};
 	for (auto& b : buttons) {
 		if (b.id == 0)
@@ -753,6 +834,7 @@ void CMainFrame::UpdateUI() {
 	else if (treeFocus) {
 		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && (node & (NodeType::Key | NodeType::Predefined)) == NodeType::Key);
 	}
+	UIEnable(ID_SEARCH_FINDNEXT, m_FindDlg.IsFindNextAvailable());
 }
 
 void CMainFrame::UpdateList(bool force) {
@@ -804,4 +886,8 @@ void CMainFrame::UpdateList(bool force) {
 		});
 	m_List.SetItemCount(static_cast<int>(m_Items.size()));
 	DoSort(GetSortInfo(m_List));
+	if (!m_Items.empty())
+		m_List.SetItemState(0, LVIS_SELECTED, LVIS_SELECTED);
+	else
+		m_Tree.SetFocus();
 }

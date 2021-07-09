@@ -68,6 +68,10 @@ struct CVirtualListView {
 	}
 
 	LRESULT OnDoubleClick(int, LPNMHDR hdr, BOOL& handled) {
+		WCHAR className[16];
+		if (::GetClassName(hdr->hwndFrom, className, _countof(className)) && _wcsicmp(className, WC_LISTVIEW))
+			return 0;
+
 		CListViewCtrl lv(hdr->hwndFrom);
 		POINT pt;
 		::GetCursorPos(&pt);

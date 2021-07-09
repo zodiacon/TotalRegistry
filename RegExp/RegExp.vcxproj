@@ -127,11 +127,15 @@
     <ClInclude Include="AppSettings.h" />
     <ClInclude Include="CommandManager.h" />
     <ClInclude Include="CreateKeyCommand.h" />
+    <ClInclude Include="FindDlg.h" />
+    <ClInclude Include="FindOptions.h" />
+    <ClInclude Include="IMainFrame.h" />
     <ClInclude Include="MainFrame.h" />
     <ClInclude Include="NavigationManager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RegExp.h" />
     <ClInclude Include="Registry.h" />
+    <ClInclude Include="RegistrySearcher.h" />
     <ClInclude Include="RenameKeyCommand.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SecurityHelper.h" />
@@ -144,6 +148,7 @@
     <ClCompile Include="AppCommandBase.cpp" />
     <ClCompile Include="CommandManager.cpp" />
     <ClCompile Include="CreateKeyCommand.cpp" />
+    <ClCompile Include="FindDlg.cpp" />
     <ClCompile Include="MainFrame.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -151,6 +156,7 @@
     </ClCompile>
     <ClCompile Include="RegExp.cpp" />
     <ClCompile Include="Registry.cpp" />
+    <ClCompile Include="RegistrySearcher.cpp" />
     <ClCompile Include="RenameKeyCommand.cpp" />
     <ClCompile Include="SecurityHelper.cpp" />
     <ClCompile Include="Settings.cpp" />
@@ -166,12 +172,14 @@
     <Image Include="Icons\cut.ico" />
     <Image Include="Icons\delete.ico" />
     <Image Include="Icons\find.ico" />
+    <Image Include="Icons\find_next.ico" />
     <Image Include="Icons\folder-link.ico" />
     <Image Include="Icons\folder.ico" />
     <Image Include="Icons\folderup.ico" />
     <Image Include="Icons\folder_accessdenied.ico" />
     <Image Include="Icons\folder_closed.ico" />
     <Image Include="Icons\folder_new.ico" />
+    <Image Include="Icons\folder_view.ico" />
     <Image Include="Icons\forward.ico" />
     <Image Include="Icons\hive-accessdenied.ico" />
     <Image Include="Icons\hive.ico" />
@@ -200,11 +208,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\wtl.10.0.10320\build\native\wtl.targets" Condition="Exists('..\packages\wtl.10.0.10320\build\native\wtl.targets')" />
+    <Import Project="..\packages\Microsoft.Windows.ImplementationLibrary.1.0.210204.1\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.210204.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\wtl.10.0.10320\build\native\wtl.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\wtl.10.0.10320\build\native\wtl.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.210204.1\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.ImplementationLibrary.1.0.210204.1\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
   </Target>
 </Project>

@@ -10,12 +10,12 @@ extern "C" NTSYSCALLAPI NTSTATUS NTAPI NtOpenKey(
 
 #pragma comment(lib, "ntdll")
 
-DWORD Registry::EnumSubKeys(CRegKey& key, std::function<bool(PCWSTR, const FILETIME&)> handler) {
+DWORD Registry::EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&)> handler) {
 	WCHAR name[512];
 	FILETIME lastWrite;
 	for (DWORD i = 0;; ++i) {
 		DWORD len = _countof(name);
-		if (ERROR_SUCCESS != key.EnumKey(i, name, &len, &lastWrite))
+		if (ERROR_SUCCESS != ::RegEnumKeyEx(key, i, name, &len, nullptr, nullptr, nullptr, &lastWrite))
 			break;
 
 		if (!handler(name, lastWrite))
@@ -34,7 +34,7 @@ HKEY Registry::OpenRealRegistryKey(PCWSTR path, DWORD access) {
 	return (HKEY)hKey;
 }
 
-DWORD Registry::EnumKeyValues(CRegKey& key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler) {
+DWORD Registry::EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler) {
 	WCHAR name[256];
 	DWORD type;
 	int i;
@@ -42,7 +42,7 @@ DWORD Registry::EnumKeyValues(CRegKey& key, const std::function<void(DWORD, PCWS
 	for (i = 0; ; ++i) {
 		DWORD lname = _countof(name);
 		DWORD size = 0;
-		error = ::RegEnumValue(key.m_hKey, i, name, &lname, nullptr, &type, nullptr, &size);
+		error = ::RegEnumValue(key, i, name, &lname, nullptr, &type, nullptr, &size);
 		if (ERROR_NO_MORE_ITEMS == error)
 			break;
 		else if (error != ERROR_SUCCESS)

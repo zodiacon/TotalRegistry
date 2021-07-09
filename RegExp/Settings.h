@@ -59,6 +59,9 @@ struct Setting {
 	type name() const { return GetValueOrDefault<type>(L#name); }	\
 	void name(const type& value) { Set<type>(L#name, value); }
 
+#define DEF_SETTING_REF(name, type) \
+	type& name() const { return GetValueRef<type>(L#name); }
+
 class Settings {
 public:
 	Settings() = default;
@@ -85,6 +88,14 @@ public:
 
 	template<typename T>
 	T GetValue(PCWSTR name) const {
+		auto it = _settings.find(name);
+		ATLASSERT(it != _settings.end());
+		ATLASSERT(it->second.Size == sizeof(T));
+		return *(T*)it->second.Buffer.get();
+	}
+
+	template<typename T>
+	T& GetValueRef(PCWSTR name) const {
 		auto it = _settings.find(name);
 		ATLASSERT(it != _settings.end());
 		ATLASSERT(it->second.Size == sizeof(T));

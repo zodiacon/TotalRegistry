@@ -34,6 +34,28 @@
 #define IDI_TEXT                        143
 #define IDI_FOLDER_NEW                  144
 #define IDI_RENAME                      145
+#define IDI_FOLDER_VIEW                 146
+#define IDI_FIND_NEXT                 147
+
+#define IDD_FIND                        160
+#define IDC_TEXT                        1000
+#define IDC_BUTTON1                     1001
+#define IDC_FIND                        1001
+#define IDC_SEARCH_KEYS                 1002
+#define IDC_SEARCH_VALUES               1003
+#define IDC_CHECK3                      1004
+#define IDC_SEARCH_DATA                 1004
+#define IDC_SEARCH_ALL                  1005
+#define IDC_SEARCH_STD                  1006
+#define IDC_SEARCH_REAL                 1007
+#define IDC_SEARCH_SELECTED             1008
+#define IDC_SEARCH_CASE                 1009
+#define IDC_SEARCH_MATCHWHOLE           1010
+#define IDC_PROGRESS1                   1011
+#define IDC_PROGRESS                    1011
+#define IDC_CANCEL                      1012
+#define IDC_NEW                         1014
+#define IDC_STATUS                      1015
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -64,15 +86,16 @@
 #define ID_FILE_LOADHIVE                32805
 #define ID_TREE                         32806
 #define ID_EDIT_RENAME                  32807
+#define ID_SEARCH_FINDNEXT              32813
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        160
-#define _APS_NEXT_COMMAND_VALUE         32811
-#define _APS_NEXT_CONTROL_VALUE         1000
+#define _APS_NEXT_RESOURCE_VALUE        161
+#define _APS_NEXT_COMMAND_VALUE         32814
+#define _APS_NEXT_CONTROL_VALUE         1016
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

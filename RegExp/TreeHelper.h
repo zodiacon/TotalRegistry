@@ -1,9 +1,10 @@
 #pragma once
 
 struct TreeHelper {
-	explicit TreeHelper(const CTreeViewCtrlEx& tv) : _tv(tv) {}
+	explicit TreeHelper(CTreeViewCtrlEx& tv) : _tv(tv) {}
 	HTREEITEM FindChild(HTREEITEM item, PCWSTR name) const;
+	HTREEITEM FindItem(HTREEITEM hParent, PCWSTR name);
 
 private:
-	const CTreeViewCtrlEx& _tv;
+	CTreeViewCtrlEx& _tv;
 };

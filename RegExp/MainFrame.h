@@ -4,6 +4,8 @@
 #include "Registry.h"
 #include "AppSettings.h"
 #include "CommandManager.h"
+#include "FindDlg.h"
+#include "IMainFrame.h"
 
 enum class NodeType {
 	None = 0,
@@ -23,16 +25,29 @@ class CMainFrame :
 	public CFrameWindowImpl<CMainFrame>,
 	public CAutoUpdateUI<CMainFrame>,
 	public CVirtualListView<CMainFrame>,
+	public IMainFrame,
 	public CMessageFilter,
 	public CIdleHandler {
 public:
-	DECLARE_FRAME_WND_CLASS(nullptr, IDR_MAINFRAME)
+	DECLARE_FRAME_WND_CLASS(L"RegExpWndClass", IDR_MAINFRAME)
+
+	CMainFrame() : m_FindDlg(this) {}
 
 	const UINT WM_BUILD_TREE = WM_APP + 11;
+	const UINT WM_FIND_UPDATE = WM_APP + 12;
+	const UINT WM_RUN = WM_APP + 13;
 	const UINT TreeId = 123;
 
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual BOOL OnIdle();
+
+	void RunOnUiThread(std::function<void()> f);
+
+	// IMainFrame
+	AppSettings& GetSettings() override;
+	void OnFindNext(PCWSTR path, PCWSTR name, void* data) override;
+	void OnFindStart();
+	void OnFindEnd(bool cancelled);
 
 	CString GetColumnText(HWND, int row, int col) const;
 
@@ -58,6 +73,8 @@ public:
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		MESSAGE_HANDLER(WM_BUILD_TREE, OnBuildTree)
+		MESSAGE_HANDLER(WM_FIND_UPDATE, OnFindUpdate)
+		MESSAGE_HANDLER(WM_RUN, OnRunOnUIThread)
 		COMMAND_ID_HANDLER(ID_FILE_RUNASADMIN, OnRunAsAdmin)
 		COMMAND_ID_HANDLER(IDM_EXIT, OnExit)
 		COMMAND_ID_HANDLER(ID_VIEW_REFRESH, OnViewRefresh)
@@ -66,6 +83,8 @@ public:
 		COMMAND_ID_HANDLER(ID_OPTIONS_ALWAYSONTOP, OnAlwaysOnTop)
 		COMMAND_ID_HANDLER(ID_VIEW_SHOWKEYSINLIST, OnShowKeysInList)
 		COMMAND_ID_HANDLER(ID_NEW_KEY, OnNewKey)
+		COMMAND_ID_HANDLER(ID_EDIT_FIND, OnEditFind)
+		COMMAND_ID_HANDLER(ID_SEARCH_FINDNEXT, OnSearchFindNext)
 		COMMAND_ID_HANDLER(ID_EDIT_UNDO, OnEditUndo)
 		COMMAND_ID_HANDLER(ID_EDIT_REDO, OnEditRedo)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAbout)
@@ -81,6 +100,12 @@ public:
 	//	LRESULT NotifyHandler(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/)
 
 private:
+	struct FindData {
+		PCWSTR Path;
+		PCWSTR Name;
+		PVOID Data;
+	};
+
 	enum class ColumnType {
 		Name, Type, Value, Details, Size, TimeStamp
 	};
@@ -93,6 +118,7 @@ private:
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnTimer(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnFindUpdate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnExit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnAbout(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnBuildTree(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
@@ -114,6 +140,9 @@ private:
 	LRESULT OnTreeContextMenu(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnTreeKeyDown(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnListKeyDown(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
+	LRESULT OnEditFind(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnRunOnUIThread(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnSearchFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -142,7 +171,7 @@ private:
 	CSplitterWindow m_MainSplitter;
 	CMultiPaneStatusBarCtrl m_StatusBar;
 	CListViewCtrl m_List;
-	CTreeViewCtrlEx m_Tree;
+	mutable CTreeViewCtrlEx m_Tree;
 	CListViewCtrl m_Details;
 	std::vector<RegistryItem> m_Items;
 	CTreeItem m_hLocalRoot, m_hStdReg, m_hRealReg;
@@ -150,6 +179,7 @@ private:
 	int m_CurrentSelectedItem{ -1 };
 	AppSettings m_Settings;
 	Operation m_CurrentOperation{ Operation::None };
+	CFindDlg m_FindDlg;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };
