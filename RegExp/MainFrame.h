@@ -83,7 +83,11 @@ public:
 		COMMAND_ID_HANDLER(ID_OPTIONS_ALWAYSONTOP, OnAlwaysOnTop)
 		COMMAND_ID_HANDLER(ID_VIEW_SHOWKEYSINLIST, OnShowKeysInList)
 		COMMAND_ID_HANDLER(ID_NEW_KEY, OnNewKey)
+		COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
+		COMMAND_ID_HANDLER(ID_EDIT_PASTE, OnEditPaste)
 		COMMAND_ID_HANDLER(ID_EDIT_FIND, OnEditFind)
+		COMMAND_ID_HANDLER(ID_EDIT_RENAME, OnEditRename)
+		COMMAND_ID_HANDLER(ID_TREE_REFRESH, OnTreeRefresh)
 		COMMAND_ID_HANDLER(ID_SEARCH_FINDNEXT, OnSearchFindNext)
 		COMMAND_ID_HANDLER(ID_EDIT_UNDO, OnEditUndo)
 		COMMAND_ID_HANDLER(ID_EDIT_REDO, OnEditRedo)
@@ -114,6 +118,15 @@ private:
 		RenameKey,
 		CreateKey,
 	};
+	enum class ClipboardOperation {
+		Copy, Cut
+	};
+	struct LocalClipboard {
+		CString Path;
+		CString Name;
+		ClipboardOperation Operation;
+		bool Key;
+	};
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
@@ -143,13 +156,19 @@ private:
 	LRESULT OnEditFind(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnRunOnUIThread(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnSearchFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnEditRename(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnEditCopy(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnEditPaste(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnTreeRefresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
 	HTREEITEM BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name = nullptr);
 	void InitTree();
 	CString GetNodePath(HTREEITEM hItem, HKEY* pKey = nullptr) const;
+	CString GetParentNodePath(HTREEITEM hItem, HKEY* pKey = nullptr) const;
 	CString GetFullNodePath(HTREEITEM hItem) const;
+	CString GetFullParentNodePath(HTREEITEM hItem) const;
 	NodeType GetNodeData(HTREEITEM hItem) const;
 	void SetNodeData(HTREEITEM hItem, NodeType type);
 	void ExpandItem(HTREEITEM hItem);
@@ -158,6 +177,10 @@ private:
 	HTREEITEM FindItemByPath(PCWSTR path) const;
 	void InvokeTreeContextMenu(const CPoint& pt);
 	CString GetKeyDetails(const RegistryItem& item) const;
+	CString GetValueDetails(const RegistryItem& item) const;
+	bool RefreshItem(HTREEITEM hItem);
+	void DisplayError(PCWSTR msg);
+	static CString GetErrorText(DWORD error);
 	int GetKeyImage(const RegistryItem& item) const;
 
 	void UpdateUI();
@@ -165,6 +188,7 @@ private:
 
 	Registry m_Registry;
 	CommandManager m_CmdMgr;
+	LocalClipboard m_Clipboard;
 	mutable CRegKey m_CurrentKey;
 	CString m_CurrentPath;
 	CCommandBarCtrl m_CmdBar;

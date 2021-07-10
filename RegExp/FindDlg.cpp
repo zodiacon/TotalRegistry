@@ -130,6 +130,14 @@ LRESULT CFindDlg::OnTextChanged(WORD, WORD wID, HWND, BOOL&) {
     return 0;
 }
 
+LRESULT CFindDlg::OnClick(WORD, WORD wID, HWND, BOOL&) {
+    if (GetDlgItem(IDC_FIND).IsWindowEnabled()) {
+        if (IsDlgButtonChecked(IDC_SEARCH_STD) == BST_UNCHECKED && IsDlgButtonChecked(IDC_SEARCH_REAL) == BST_UNCHECKED)
+            GetDlgItem(IDC_FIND).EnableWindow(FALSE);
+    }
+    return 0;
+}
+
 void CFindDlg::ResetUI() {
     GetDlgItem(IDC_FIND).EnableWindow(TRUE);
     GetDlgItem(IDC_CANCEL).EnableWindow(FALSE);

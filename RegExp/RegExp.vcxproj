@@ -100,6 +100,9 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>manifest.xml</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -120,12 +123,16 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>manifest.xml</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AboutDlg.h" />
     <ClInclude Include="AppCommandBase.h" />
     <ClInclude Include="AppSettings.h" />
     <ClInclude Include="CommandManager.h" />
+    <ClInclude Include="CopyKeyCommand.h" />
     <ClInclude Include="CreateKeyCommand.h" />
     <ClInclude Include="FindDlg.h" />
     <ClInclude Include="FindOptions.h" />
@@ -147,6 +154,7 @@
     <ClCompile Include="AboutDlg.cpp" />
     <ClCompile Include="AppCommandBase.cpp" />
     <ClCompile Include="CommandManager.cpp" />
+    <ClCompile Include="CopyKeyCommand.cpp" />
     <ClCompile Include="CreateKeyCommand.cpp" />
     <ClCompile Include="FindDlg.cpp" />
     <ClCompile Include="MainFrame.cpp" />
@@ -204,6 +212,9 @@
     <ProjectReference Include="..\WTLHelper\WTLHelper.vcxproj">
       <Project>{be107d73-39aa-4ea8-b7ba-b0e26c018b98}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="manifest.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

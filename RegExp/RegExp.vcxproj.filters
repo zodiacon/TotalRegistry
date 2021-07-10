@@ -87,6 +87,9 @@
     <ClInclude Include="IMainFrame.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CopyKeyCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -130,6 +133,9 @@
     </ClCompile>
     <ClCompile Include="RegistrySearcher.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CopyKeyCommand.cpp">
+      <Filter>Commands</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -231,5 +237,8 @@
     <Image Include="Icons\find_next.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="manifest.xml" />
   </ItemGroup>
 </Project>

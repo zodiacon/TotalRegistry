@@ -8,6 +8,17 @@ extern "C" NTSYSCALLAPI NTSTATUS NTAPI NtOpenKey(
 	_In_ POBJECT_ATTRIBUTES ObjectAttributes
 );
 
+extern "C" NTSYSCALLAPI NTSTATUS NTAPI NtCreateKey(
+	_Out_ PHANDLE KeyHandle,
+	_In_ ACCESS_MASK DesiredAccess,
+	_In_ POBJECT_ATTRIBUTES ObjectAttributes,
+	_Reserved_ ULONG TitleIndex,
+	_In_opt_ PUNICODE_STRING Class,
+	_In_ ULONG CreateOptions,
+	_Out_opt_ PULONG Disposition
+);
+
+
 #pragma comment(lib, "ntdll")
 
 DWORD Registry::EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&)> handler) {
@@ -30,7 +41,19 @@ HKEY Registry::OpenRealRegistryKey(PCWSTR path, DWORD access) {
 	OBJECT_ATTRIBUTES keyAttr;
 	InitializeObjectAttributes(&keyAttr, &keyName, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
 	HANDLE hKey{ nullptr };
-	::NtOpenKey(&hKey, access, &keyAttr);
+	auto status = ::NtOpenKey(&hKey, access, &keyAttr);
+	::SetLastError(::RtlNtStatusToDosError(status));
+	return (HKEY)hKey;
+}
+
+HKEY Registry::CreateRealRegistryKey(PCWSTR path, DWORD access) {
+	UNICODE_STRING keyName;
+	RtlInitUnicodeString(&keyName, path);
+	OBJECT_ATTRIBUTES keyAttr;
+	InitializeObjectAttributes(&keyAttr, &keyName, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
+	HANDLE hKey{ nullptr };
+	auto status = ::NtCreateKey(&hKey, access, &keyAttr, 0, nullptr, 0, nullptr);
+	::SetLastError(::RtlNtStatusToDosError(status));
 	return (HKEY)hKey;
 }
 
@@ -78,12 +101,43 @@ CRegKey Registry::OpenKey(const CString& path, DWORD access) {
 	}
 	else {
 		auto bs = path.Find(L'\\');
-		ATLASSERT(bs >= 0);
-		auto keyname = path.Left(bs);
+		CString keyname = path;
+		if (bs >= 0) {
+			ATLASSERT(bs >= 0);
+			keyname = path.Left(bs);
+		}
 		auto pair = std::find_if(std::begin(Keys), std::end(Keys), [&](auto& k) { return k.text == keyname; });
 		ATLASSERT(pair != std::end(Keys));
-		key.Open(pair->hKey, path.Mid(bs + 1), access);
-		return key;
+		if (bs >= 0) {
+			auto error = key.Open(pair->hKey, path.Mid(bs + 1), access);
+			::SetLastError(error);
+		}
+		else {
+			key.Attach(pair->hKey);
+		}
+	}
+	return key;
+}
+
+CRegKey Registry::CreateKey(const CString& path, DWORD access) {
+	CRegKey key;
+	if (path[0] == L'\\') {
+		// real registry
+		key.Attach(CreateRealRegistryKey(path, access));
+	}
+	else {
+		auto bs = path.Find(L'\\');
+		CString keyname = path;
+		if (bs >= 0) {
+			ATLASSERT(bs >= 0);
+			keyname = path.Left(bs);
+		}
+		auto pair = std::find_if(std::begin(Keys), std::end(Keys), [&](auto& k) { return k.text == keyname; });
+		ATLASSERT(pair != std::end(Keys));
+		if (bs >= 0) {
+			auto error = key.Create(pair->hKey, path.Mid(bs + 1), nullptr, 0, access);
+			::SetLastError(error);
+		}
 	}
 	return key;
 }
@@ -117,6 +171,13 @@ bool Registry::IsHiveKey(const CString& path) const {
 	const auto& hives = GetHiveList();
 	bool stdReg = path[0] != L'\\';
 	return std::find_if(hives.begin(), hives.end(), [&](auto& hive) { return hive.Key.CompareNoCase(stdReg ? StdRegPathToRealPath(path) : path) == 0; }) != hives.end();
+}
+
+CString Registry::ExpandStrings(const CString& text) {
+	WCHAR buffer[1024];
+	buffer[0] = 0;
+	::ExpandEnvironmentStrings(text, buffer, _countof(buffer));
+	return buffer;
 }
 
 PCWSTR Registry::GetRegTypeAsString(DWORD type) {
@@ -219,5 +280,40 @@ bool Registry::IsKeyLink(HKEY hKey, PCWSTR path) {
 		}
 	}
 	return false;
+}
+
+bool Registry::RenameValue(HKEY hKey, PCWSTR path, PCWSTR oldName, PCWSTR newName) {
+	CRegKey key;
+	key.Open(hKey, path, KEY_QUERY_VALUE | KEY_SET_VALUE);
+	if (!key)
+		return false;
+
+	DWORD bytes = 0;
+	DWORD type;
+	key.QueryValue(oldName, &type, nullptr, &bytes);
+	if (bytes == 0)
+		return false;
+
+	auto buffer = std::make_unique<BYTE[]>(bytes);
+	if (ERROR_SUCCESS != key.QueryValue(oldName, &type, buffer.get(), &bytes))
+		return false;
+
+	if (ERROR_SUCCESS != key.SetValue(newName, type, buffer.get(), bytes))
+		return false;
+
+	return ERROR_SUCCESS == key.DeleteValue(oldName);
+}
+
+bool Registry::CopyKey(HKEY hKey, PCWSTR path, HKEY htarget) {
+	auto error = ::RegCopyTree(hKey, path, htarget);
+	::SetLastError(error);
+	return ERROR_SUCCESS == error;
+}
+
+DWORD Registry::GetSubKeyCount(HKEY hKey, DWORD* values) {
+	DWORD subkeys;
+	auto error = ::RegQueryInfoKey(hKey, nullptr, 0, nullptr, &subkeys, nullptr, nullptr, values, nullptr, nullptr, nullptr, nullptr);
+	::SetLastError(error);
+	return subkeys;
 }
 

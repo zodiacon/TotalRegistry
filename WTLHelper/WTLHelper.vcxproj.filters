@@ -45,6 +45,9 @@
     <ClInclude Include="IconHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="VersionResourceHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WTLHelper.cpp">
@@ -72,6 +75,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="IconHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VersionResourceHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

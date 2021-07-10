@@ -26,6 +26,7 @@ public:
 		COMMAND_ID_HANDLER(IDC_CANCEL, OnCancel)
 		COMMAND_ID_HANDLER(IDC_NEW, OnNewSearch)
 		COMMAND_CODE_HANDLER(EN_CHANGE, OnTextChanged)
+		COMMAND_CODE_HANDLER(BN_CLICKED, OnClick)
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):
@@ -44,6 +45,7 @@ private:
 	LRESULT OnCancel(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnNewSearch(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnTextChanged(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnClick(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	IMainFrame* m_pFrame;
 	RegistrySearcher m_Searcher;

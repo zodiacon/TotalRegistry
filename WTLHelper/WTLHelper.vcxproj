@@ -95,6 +95,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="SortHelper.h" />
     <ClInclude Include="StringHelper.h" />
+    <ClInclude Include="VersionResourceHelper.h" />
     <ClInclude Include="VirtualListView.h" />
   </ItemGroup>
   <ItemGroup>
@@ -110,6 +111,7 @@
     </ClCompile>
     <ClCompile Include="SortHelper.cpp" />
     <ClCompile Include="StringHelper.cpp" />
+    <ClCompile Include="VersionResourceHelper.cpp" />
     <ClCompile Include="WTLHelper.cpp" />
   </ItemGroup>
   <ItemGroup>

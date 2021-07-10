@@ -7,6 +7,8 @@
 #include "IconHelper.h"
 #include "CreateKeyCommand.h"
 #include "TreeHelper.h"
+#include "RenameKeyCommand.h"
+#include "CopyKeyCommand.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -75,18 +77,26 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 	switch (static_cast<ColumnType>(GetColumnManager(h)->GetColumnTag(col))) {
 		case ColumnType::Name: return item.Name.IsEmpty() ? CString(L"(Default)") : item.Name;
 		case ColumnType::Type: return Registry::GetRegTypeAsString(item.Type);
-		case ColumnType::Value: return item.Key ? CString(L"") : Registry::GetDataAsString(m_CurrentKey, item);
+		case ColumnType::Value: 
+			if (!item.Key) {
+				if (item.Value.IsEmpty())
+					item.Value = Registry::GetDataAsString(m_CurrentKey, item);
+				return item.Value;
+			}
+			break;
+
 		case ColumnType::Size: 
 			if(!item.Key)
 				text.Format(L"%u", item.Size);
 			break;
+		
 		case ColumnType::TimeStamp:
 			if (item.TimeStamp.dwHighDateTime + item.TimeStamp.dwHighDateTime)
 				return CTime(item.TimeStamp).Format(L"%x %X");
-		case ColumnType::Details:
-			if (item.Key)
-				return GetKeyDetails(item);
 			break;
+
+		case ColumnType::Details:
+			return item.Key ? GetKeyDetails(item) : GetValueDetails(item);
 	}
 	return text;
 }
@@ -218,7 +228,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	::SetWindowTheme(m_Tree, L"Explorer", nullptr);
 
 	m_List.Create(m_MainSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN
-		| LVS_OWNERDATA | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS, 0);
+		| LVS_OWNERDATA | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS, 0);
 	m_List.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_INFOTIP);
 	m_List.SetImageList(images, LVSIL_SMALL);
 	::SetWindowTheme(m_List, L"Explorer", nullptr);
@@ -264,7 +274,8 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled) {
 	m_Settings.Save();
 	m_FindDlg.Cancel();
-	m_FindDlg.DestroyWindow();
+	if(m_FindDlg)
+		m_FindDlg.DestroyWindow();
 
 	CMessageLoop* pLoop = _Module.GetMessageLoop();
 	ATLASSERT(pLoop != NULL);
@@ -338,7 +349,7 @@ LRESULT CMainFrame::OnRunAsAdmin(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnListItemChanged(int, LPNMHDR, BOOL&) {
-	int selected = m_List.GetSelectedIndex();
+	int selected = m_List.GetSelectionMark();
 	if (selected != m_CurrentSelectedItem) {
 		m_CurrentSelectedItem = selected;
 		UpdateUI();
@@ -347,8 +358,6 @@ LRESULT CMainFrame::OnListItemChanged(int, LPNMHDR, BOOL&) {
 }
 
 LRESULT CMainFrame::OnViewRefresh(WORD, WORD, HWND, BOOL&) {
-	int selected = m_List.GetSelectedIndex();
-
 	return 0;
 }
 
@@ -460,7 +469,23 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 		}
 		case Operation::RenameKey:
 		{
-			break;
+			CString name;
+			m_Tree.GetItemText(item.hItem, name);
+			auto cb = [this](auto& cmd, bool) {
+				auto hParent = FindItemByPath(cmd.GetPath());
+				ATLASSERT(hParent);
+				TreeHelper th(m_Tree);
+				auto hItem = th.FindChild(hParent, cmd.GetName());
+				ATLASSERT(hItem);
+				m_Tree.SetItemText(hItem, cmd.GetNewName());
+				return true;
+			};
+			auto hParent = m_Tree.GetParentItem(item.hItem);
+			auto cmd = std::make_shared<RenameKeyCommand>(GetFullNodePath(hParent), name, item.pszText);
+			if (!m_CmdMgr.AddCommand(cmd))
+				return FALSE;
+			cmd->SetCallback(cb);
+			return TRUE;
 		}
 	}
 	return FALSE;
@@ -493,6 +518,7 @@ LRESULT CMainFrame::OnTreeContextMenu(int, LPNMHDR hdr, BOOL&) {
 		m_Tree.SelectItem(hItem);
 		CMenu menu;
 		menu.LoadMenu(IDR_CONTEXT);
+		UpdateUI();
 		m_CmdBar.TrackPopupMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
 	}
 	return 0;
@@ -524,7 +550,7 @@ LRESULT CMainFrame::OnListKeyDown(int, LPNMHDR hdr, BOOL&) {
 			break;
 
 		case VK_RETURN:
-			OnDoubleClickList(m_List, m_List.GetSelectedIndex(), 0, POINT());
+			OnDoubleClickList(m_List, m_List.GetSelectionMark(), 0, POINT());
 			break;
 	}
 	return 0;
@@ -551,6 +577,54 @@ LRESULT CMainFrame::OnSearchFindNext(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*
 	return 0;
 }
 
+LRESULT CMainFrame::OnEditRename(WORD, WORD, HWND, BOOL&) {
+	if (::GetFocus() == m_Tree) {
+		m_CurrentOperation = Operation::RenameKey;
+		m_Tree.EditLabel(m_Tree.GetSelectedItem());
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnEditCopy(WORD, WORD, HWND, BOOL&) {
+	if (::GetFocus() == m_Tree) {
+		m_Clipboard.Key = true;
+		m_Clipboard.Path = GetFullParentNodePath(m_Tree.GetSelectedItem());
+		m_Tree.GetItemText(m_Tree.GetSelectedItem(), m_Clipboard.Name);
+		m_Clipboard.Operation = ClipboardOperation::Copy;
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnEditPaste(WORD, WORD, HWND, BOOL&) {
+	if (::GetFocus() == m_Tree) {
+		ATLASSERT(m_Clipboard.Key && !m_Clipboard.Path.IsEmpty());
+		auto target = GetFullNodePath(m_Tree.GetSelectedItem());
+		auto cb = [this](auto& cmd, bool execute) {
+			TreeHelper th(m_Tree);
+			auto real = cmd.GetTargetPath()[0] == L'\\';
+			auto hParent = th.FindItem(real ? m_hRealReg : m_hStdReg, cmd.GetTargetPath());
+			if (execute) {
+				ATLASSERT(hParent);
+				auto hItem = InsertKeyItem(hParent, cmd.GetName());
+			}
+			else {
+				m_Tree.DeleteItem(th.FindChild(hParent, cmd.GetName()));
+			}
+			return true;
+		};
+		auto cmd = std::make_shared<CopyKeyCommand>(m_Clipboard.Path, m_Clipboard.Name, target, cb);
+		if (!m_CmdMgr.AddCommand(cmd)) {
+			DisplayError(L"Failed to paste key");
+		}
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnTreeRefresh(WORD, WORD, HWND, BOOL&) {
+	RefreshItem(m_Tree.GetSelectedItem());
+	return 0;
+}
+
 void CMainFrame::InitCommandBar() {
 	struct {
 		UINT id, icon;
@@ -559,6 +633,7 @@ void CMainFrame::InitCommandBar() {
 		{ ID_FILE_RUNASADMIN, 0, IconHelper::GetShieldIcon() },
 		{ ID_EDIT_COPY, IDI_COPY },
 		{ ID_VIEW_REFRESH, IDI_REFRESH },
+		{ ID_TREE_REFRESH, IDI_REFRESH },
 		{ ID_EDIT_CUT, IDI_CUT },
 		{ ID_EDIT_PASTE, IDI_PASTE },
 		{ ID_EDIT_UNDO, IDI_UNDO },
@@ -700,6 +775,15 @@ CString CMainFrame::GetNodePath(HTREEITEM hItem, HKEY* pKey) const {
 	return path;
 }
 
+CString CMainFrame::GetParentNodePath(HTREEITEM hItem, HKEY* pKey) const {
+	auto path = GetNodePath(hItem, pKey);
+	auto index = path.ReverseFind(L'\\');
+	if (index < 0)
+		return L"";
+
+	return path.Left(index);
+}
+
 CString CMainFrame::GetFullNodePath(HTREEITEM hItem) const {
 	CString path;
 	auto hPrev = hItem;
@@ -712,6 +796,15 @@ CString CMainFrame::GetFullNodePath(HTREEITEM hItem) const {
 	}
 	path.TrimRight(L"\\");
 	return path;
+}
+
+CString CMainFrame::GetFullParentNodePath(HTREEITEM hItem) const {
+	auto path = GetFullNodePath(hItem);
+	auto index = path.ReverseFind(L'\\');
+	if (index < 0)
+		return L"";
+
+	return path.Left(index);
 }
 
 NodeType CMainFrame::GetNodeData(HTREEITEM hItem) const {
@@ -752,6 +845,11 @@ HKEY CMainFrame::GetKeyFromNode(HTREEITEM hItem) const {
 CTreeItem CMainFrame::InsertKeyItem(HTREEITEM hParent, PCWSTR name, NodeType type) {
 	auto item = m_Tree.InsertItem(name, 3, 2, hParent, TVI_LAST);
 	SetNodeData(item, type);
+	auto key = Registry::OpenKey(GetFullNodePath(item), KEY_READ);
+	if (key) {
+		if (Registry::GetSubKeyCount(key) > 0)
+			m_Tree.InsertItem(L"\\\\", item, TVI_LAST);
+	}
 	return item;
 }
 
@@ -782,6 +880,7 @@ void CMainFrame::InvokeTreeContextMenu(const CPoint& pt) {
 	m_Tree.ClientToScreen(&pt2);
 	CMenu menu;
 	menu.LoadMenu(IDR_CONTEXT);
+	UpdateUI();
 	m_CmdBar.TrackPopupMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
 }
 
@@ -790,12 +889,58 @@ CString CMainFrame::GetKeyDetails(const RegistryItem& item) const {
 	key.Open(m_CurrentKey, item.Name, KEY_QUERY_VALUE);
 	CString text;
 	if (key) {
-		DWORD subkeys = 0, values = 0;
-		auto error = ::RegQueryInfoKey(key, nullptr, 0, nullptr, &subkeys, nullptr, nullptr, &values, nullptr, nullptr, nullptr, nullptr);
-		if (ERROR_SUCCESS == error)
-			text.Format(L"Subkeys: %u, Values: %u", subkeys, values);
+		DWORD values = 0;
+		auto subkeys = Registry::GetSubKeyCount(key, &values);
+		text.Format(L"Subkeys: %u, Values: %u", subkeys, values);
 	}
 	return text;
+}
+
+CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
+	ATLASSERT(!item.Key);
+	CString text;
+	if (item.Value.IsEmpty())
+		item.Value = Registry::GetDataAsString(m_CurrentKey, item);
+	switch (item.Type) {
+		case REG_EXPAND_SZ:
+			if (item.Value.Find(L"%") >= 0) {
+				text = Registry::ExpandStrings(item.Value);
+			}
+			break;
+
+		case REG_SZ:
+			if (item.Value[0] == L'@') {
+				::RegLoadMUIString(m_CurrentKey, item.Name, text.GetBufferSetLength(512), 512, nullptr, REG_MUI_STRING_TRUNCATE, nullptr);
+			}
+			break;
+	}
+	return text;
+}
+
+bool CMainFrame::RefreshItem(HTREEITEM hItem) {
+	m_Tree.Expand(hItem, TVE_COLLAPSE);
+	TreeHelper th(m_Tree);
+	th.DeleteChildren(hItem);
+	m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
+	return true;
+}
+
+void CMainFrame::DisplayError(PCWSTR msg) {
+	CString text;
+	text.Format(L"%s (%s)", msg, GetErrorText(::GetLastError()));
+	AtlMessageBox(m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_ICONERROR);
+}
+
+CString CMainFrame::GetErrorText(DWORD error) {
+	ATLASSERT(error);
+	PWSTR buffer;
+	CString msg;
+	if (::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		nullptr, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buffer, 0, nullptr)) {
+		msg = buffer;
+		::LocalFree(buffer);
+	}
+	return msg;
 }
 
 int CMainFrame::GetKeyImage(const RegistryItem& item) const {
@@ -821,18 +966,24 @@ void CMainFrame::UpdateUI() {
 	if (m_CmdMgr.CanRedo())
 		UISetText(ID_EDIT_REDO, L"&Redo " + m_CmdMgr.GetRedoCommand()->GetCommandName() + L"\tCtrl+Y");
 
-	int listItem = m_List.GetSelectedIndex();
+	int listItem = m_List.GetSelectionMark();
 	bool listFocus = ::GetFocus() == m_List;
 	bool treeFocus = ::GetFocus() == m_Tree;
 	auto node = GetNodeData(m_Tree.GetSelectedItem());
 
+	auto properKey = (node & (NodeType::Key | NodeType::Predefined)) == NodeType::Key;
 	UIEnable(ID_NEW_KEY, !m_ReadOnly && (node & NodeType::Key) == NodeType::Key);
-
-	if (listFocus) {
-		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && listItem >= 0);
+	if (treeFocus) {
+		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && properKey);
+		UIEnable(ID_EDIT_RENAME, !m_ReadOnly && properKey);
+		UIEnable(ID_EDIT_COPY, properKey);
+		bool allowPaste = !m_ReadOnly && !m_Clipboard.Path.IsEmpty() && (node & NodeType::Key) == NodeType::Key;
+		UIEnable(ID_EDIT_PASTE, allowPaste);
+		ATLTRACE(L"Allow paste: %d\n", (int)allowPaste);
 	}
-	else if (treeFocus) {
-		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && (node & (NodeType::Key | NodeType::Predefined)) == NodeType::Key);
+	else if (listFocus) {
+		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && listItem >= 0);
+		UIEnable(ID_EDIT_COPY, listItem >= 0);
 	}
 	UIEnable(ID_SEARCH_FINDNEXT, m_FindDlg.IsFindNextAvailable());
 }

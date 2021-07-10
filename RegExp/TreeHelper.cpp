@@ -33,3 +33,15 @@ HTREEITEM TreeHelper::FindItem(HTREEITEM hParent, PCWSTR path) {
     }
     return hItem;
 }
+
+int TreeHelper::DeleteChildren(HTREEITEM hItem) {
+    int count = 0;
+    hItem = _tv.GetChildItem(hItem);
+    while (hItem) {
+        auto hNext = _tv.GetNextSiblingItem(hItem);
+        if (_tv.DeleteItem(hItem))
+            count++;
+        hItem = hNext;
+    }
+    return count;
+}
