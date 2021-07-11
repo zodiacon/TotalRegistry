@@ -33,6 +33,7 @@ public:
 		COMMAND_ID_HANDLER(IDC_CANCEL, OnCancel)
 		COMMAND_CODE_HANDLER(EN_CHANGE, OnTextChanged)
 		COMMAND_CODE_HANDLER(BN_CLICKED, OnClick)
+		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		CHAIN_MSG_MAP(CVirtualListView<CFindAllDlg>)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CFindAllDlg>)
 	END_MSG_MAP()
@@ -53,6 +54,7 @@ private:
 	FindOptions UpdateOptions();
 
 	LRESULT OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnFind(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnCancel(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);

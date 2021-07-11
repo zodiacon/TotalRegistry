@@ -44,7 +44,14 @@ struct Setting {
 };
 
 #define BEGIN_SETTINGS(className)	\
-	className() { InitSettings(); }	\
+	inline static className* _instance;	\
+	className() { \
+		if(_instance == nullptr) _instance = this;	\
+		InitSettings(); \
+	}	\
+	static className& Get() {	\
+		return *_instance;	\
+	}	\
 	void InitSettings() {	\
 
 #define END_SETTINGS } 

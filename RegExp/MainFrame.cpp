@@ -12,6 +12,8 @@
 #include "CopyKeyCommand.h"
 #include "ClipboardHelper.h"
 #include "DeleteKeyCommand.h"
+#include "StringValueDlg.h"
+#include "ChangeValueCommand.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -169,8 +171,10 @@ bool CMainFrame::IsSortable(HWND h, int col) const {
 BOOL CMainFrame::OnRightClickList(HWND h, int row, int col, const POINT& pt) {
 	CMenu menu;
 	menu.LoadMenu(IDR_CONTEXT);
-
-	return m_CmdBar.TrackPopupMenu(menu.GetSubMenu(1), 0, pt.x, pt.y);
+	int index = 3;
+	if (row >= 0)
+		index = m_Items[row].Key ? 1 : 2;
+	return m_CmdBar.TrackPopupMenu(menu.GetSubMenu(index), 0, pt.x, pt.y);
 }
 
 BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
@@ -195,6 +199,9 @@ BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
 		m_Tree.SelectItem(hItem);
 		m_Tree.EnsureVisible(hItem);
 		return TRUE;
+	}
+	else {
+		auto ret = ShowValueProperties(item);
 	}
 	return FALSE;
 }
@@ -303,6 +310,11 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 }
 
 LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled) {
+	WINDOWPLACEMENT wp;
+	wp.length = sizeof(wp);
+	if (GetWindowPlacement(&wp)) {
+		m_Settings.MainWindowPlacement(wp);
+	}
 	m_Settings.Save();
 	m_FindDlg.Cancel();
 	if(m_FindDlg)
@@ -321,6 +333,19 @@ LRESULT CMainFrame::OnTimer(UINT, WPARAM id, LPARAM, BOOL&) {
 	if (id == 2) {
 		KillTimer(2);
 		UpdateList();
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnShowWindow(UINT, WPARAM show, LPARAM, BOOL&) {
+	static bool shown = false;
+	if (show && !shown) {
+		shown = true;
+		auto wp = m_Settings.MainWindowPlacement();
+		if (wp.showCmd != SW_HIDE) {
+			SetWindowPlacement(&wp);
+			UpdateLayout();
+		}
 	}
 	return 0;
 }
@@ -1076,6 +1101,30 @@ int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 	return image;
 }
 
+INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
+	switch (item.Type) {
+		case REG_SZ:
+		case REG_EXPAND_SZ:
+		{
+			CStringValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
+			if (IDOK == dlg.DoModal() && dlg.IsModified()) {
+				auto hItem = m_Tree.GetSelectedItem();
+				auto cmd = std::make_shared<ChangeValueCommand>(
+					GetFullNodePath(hItem), item.Name, dlg.GetType(), (PVOID)(PCWSTR)dlg.GetValue(), (1 + dlg.GetValue().GetLength()) * (LONG)sizeof(WCHAR));
+				if (!m_CmdMgr.AddCommand(cmd))
+					DisplayError(L"Failed to changed value");
+				else {
+					item.Value = dlg.GetValue();
+					auto index = m_List.GetSelectionMark();
+					m_List.RedrawItems(index, index);
+				}
+			}
+			break;
+		}
+	}
+	return 0;
+}
+
 void CMainFrame::UpdateUI() {
 	UIEnable(ID_EDIT_UNDO, !m_ReadOnly && m_CmdMgr.CanUndo());
 	if (m_CmdMgr.CanUndo())
@@ -1093,6 +1142,7 @@ void CMainFrame::UpdateUI() {
 	UIEnable(ID_NEW_KEY, !m_ReadOnly && (node & NodeType::Key) == NodeType::Key);
 	if (treeFocus) {
 		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && properKey);
+		UIEnable(ID_EDIT_CUT, !m_ReadOnly && properKey);
 		UIEnable(ID_EDIT_RENAME, !m_ReadOnly && properKey);
 		UIEnable(ID_EDIT_COPY, properKey);
 		bool allowPaste = !m_ReadOnly && !m_Clipboard.Path.IsEmpty() && (node & NodeType::Key) == NodeType::Key;
@@ -1101,6 +1151,7 @@ void CMainFrame::UpdateUI() {
 	}
 	else if (listFocus) {
 		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && listItem >= 0);
+		UIEnable(ID_EDIT_CUT, !m_ReadOnly && listItem >= 0);
 		UIEnable(ID_EDIT_COPY, listItem >= 0);
 	}
 	UIEnable(ID_SEARCH_FINDNEXT, m_FindDlg.IsFindNextAvailable());

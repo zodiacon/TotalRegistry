@@ -2,6 +2,7 @@
 #include "resource.h"
 #include "FindAllDlg.h"
 #include "SortHelper.h"
+#include "Helpers.h"
 
 CFindAllDlg::CFindAllDlg(IMainFrame* frame) : m_pFrame(frame) {
 }
@@ -153,6 +154,14 @@ LRESULT CFindAllDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
     cm->AddColumn(L"Data", 0, 250);
 
     UpdateUI();
+
+    Helpers::RestoreWindowPosition(m_hWnd, L"FindAllDlgRect");
+    return 0;
+}
+
+LRESULT CFindAllDlg::OnDestroy(UINT, WPARAM, LPARAM, BOOL& handled) {
+    Helpers::SaveWindowPosition(m_hWnd, L"FindAllDlgRect");
+    handled = FALSE;
     return 0;
 }
 

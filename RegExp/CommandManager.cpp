@@ -23,7 +23,7 @@ bool CommandManager::AddCommand(std::shared_ptr<AppCommand> command, bool execut
 		if (!command->Execute())
 			return false;
 
-	if (_enabled)
+	if (!_enabled)
 		return true;
 
 	_undoList.push_back(command);

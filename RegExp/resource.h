@@ -36,9 +36,10 @@
 #define IDI_RENAME                      145
 #define IDI_FOLDER_VIEW                 146
 #define IDI_FIND_NEXT                   147
-#define IDI_FINDALL						148
+#define IDI_FINDALL                     148
 #define IDD_FIND                        160
 #define IDD_FINDALL                     161
+#define IDD_STRINGVALUE                 162
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
@@ -61,6 +62,13 @@
 #define IDC_SAVE                        1020
 #define IDC_LOAD                        1021
 #define IDC_PROGRESS1                   1022
+#define IDC_NAME                        1023
+#define IDC_VALUE                       1024
+#define IDC_STRING                      1025
+#define IDC_EXPANDSTRING                1026
+#define IDC_FILE                        1028
+#define IDC_BUTTON3                     1029
+#define IDC_FOLDER                      1029
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -108,9 +116,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        162
+#define _APS_NEXT_RESOURCE_VALUE        163
 #define _APS_NEXT_COMMAND_VALUE         32844
-#define _APS_NEXT_CONTROL_VALUE         1023
+#define _APS_NEXT_CONTROL_VALUE         1030
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif
