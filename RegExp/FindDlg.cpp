@@ -70,6 +70,7 @@ LRESULT CFindDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
     m_Progress.Attach(GetDlgItem(IDC_PROGRESS));
     ::SetWindowTheme(m_Progress, L"Explorer", L"");
     m_Progress.SetMarquee(TRUE);
+    UpdateUI();
 
     return 0;
 }

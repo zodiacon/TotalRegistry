@@ -45,9 +45,10 @@ public:
 
 	// IMainFrame
 	AppSettings& GetSettings() override;
-	void OnFindNext(PCWSTR path, PCWSTR name, void* data) override;
+	void OnFindNext(PCWSTR path, PCWSTR name, PCWSTR data) override;
 	void OnFindStart();
 	void OnFindEnd(bool cancelled);
+	bool GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) override;
 
 	CString GetColumnText(HWND, int row, int col) const;
 
@@ -87,10 +88,15 @@ public:
 		COMMAND_ID_HANDLER(ID_EDIT_PASTE, OnEditPaste)
 		COMMAND_ID_HANDLER(ID_EDIT_FIND, OnEditFind)
 		COMMAND_ID_HANDLER(ID_EDIT_RENAME, OnEditRename)
+		COMMAND_ID_HANDLER(ID_EDIT_DELETE, OnEditDelete)
 		COMMAND_ID_HANDLER(ID_TREE_REFRESH, OnTreeRefresh)
 		COMMAND_ID_HANDLER(ID_SEARCH_FINDNEXT, OnSearchFindNext)
 		COMMAND_ID_HANDLER(ID_EDIT_UNDO, OnEditUndo)
 		COMMAND_ID_HANDLER(ID_EDIT_REDO, OnEditRedo)
+		COMMAND_ID_HANDLER(ID_COPY_FULLNAME, OnCopyFullKeyName)
+		COMMAND_ID_HANDLER(ID_COPY_NAME, OnCopyKeyName)
+		COMMAND_ID_HANDLER(ID_SEARCH_FINDALL, OnFindAll)
+		COMMAND_RANGE_HANDLER(ID_LOCATIONS_SERVICES, ID_LOCATIONS_SERVICES + 15, OnKnownLocation)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAbout)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
@@ -107,7 +113,7 @@ private:
 	struct FindData {
 		PCWSTR Path;
 		PCWSTR Name;
-		PVOID Data;
+		PCWSTR Data;
 	};
 
 	enum class ColumnType {
@@ -159,7 +165,12 @@ private:
 	LRESULT OnEditRename(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnEditCopy(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnEditPaste(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnEditDelete(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnTreeRefresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnCopyFullKeyName(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnCopyKeyName(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnKnownLocation(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnFindAll(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);

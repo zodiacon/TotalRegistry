@@ -7,5 +7,5 @@ struct CreateKeyCommand : RegAppCommandBase<CreateKeyCommand> {
 
 	bool Execute() override;
 	bool Undo() override;
-
 };
+

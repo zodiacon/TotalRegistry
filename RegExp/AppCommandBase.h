@@ -1,5 +1,7 @@
 #pragma once
 
+const CString DeletedPathBackup(L"HKEY_CURRENT_USER\\ScorpioSoftware\\RegExp\\__Deleted__");
+
 struct AppCommand abstract {
 	explicit AppCommand(const CString& name) : _cmdname(name) {}
 
@@ -27,7 +29,7 @@ struct AppCommandBase abstract : AppCommand {
 	}
 
 protected:
-	bool InvokeCallback(bool execute) {
+	virtual bool InvokeCallback(bool execute) {
 		if (_cb)
 			return _cb(static_cast<T&>(*this), execute);
 		return true;

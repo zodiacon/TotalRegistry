@@ -122,11 +122,11 @@ struct CVirtualListView {
 		return false;
 	}
 
-	bool OnRightClickList(int row, int col, POINT& pt) {
+	bool OnRightClickList(HWND, int row, int col, const POINT& pt) const {
 		return false;
 	}
 
-	bool OnDoubleClickList(HWND, int row, int col, POINT& pt) {
+	bool OnDoubleClickList(HWND, int row, int col, const POINT& pt) const {
 		return false;
 	}
 

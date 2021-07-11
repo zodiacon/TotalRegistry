@@ -4,7 +4,7 @@
 #include <wil\resource.h>
 #include <mutex>
 
-using RegistrySearcherCallback = std::function<void(PCWSTR, PCWSTR, void*)>;
+using RegistrySearcherCallback = std::function<void(PCWSTR, PCWSTR, PCWSTR)>;
 
 struct RegistrySearcher {
 	void SetStartKey(PCWSTR startKey);
@@ -17,10 +17,11 @@ struct RegistrySearcher {
 
 	bool IsRunning() const;
 	bool IsCancelled() const;
+	bool WaitForCompletion(DWORD timeout = INFINITE);
 
 protected:
 	bool FindNextWorker(HKEY hKey, const CString& path);
-	bool Notify(PCWSTR path, PCWSTR value, void* data);
+	bool Notify(PCWSTR path, PCWSTR value, PCWSTR data);
 
 private:
 	DWORD DoSearch();
@@ -30,7 +31,7 @@ private:
 	CString _searchText;
 	std::mutex _lock;
 	CString _startKey;
-	wil::unique_handle _hCancelEvent, _hContinueEvent;
+	wil::unique_handle _hCancelEvent, _hContinueEvent, _hDoneEvent;
 	std::atomic<bool> _inProgress{ false };
 	std::atomic<bool> _cancel{ false };
 };

@@ -90,6 +90,12 @@
     <ClInclude Include="CopyKeyCommand.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="DeleteKeyCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="FindAllDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -136,6 +142,12 @@
     </ClCompile>
     <ClCompile Include="CopyKeyCommand.cpp">
       <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="DeleteKeyCommand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FindAllDlg.cpp">
+      <Filter>Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

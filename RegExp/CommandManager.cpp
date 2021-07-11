@@ -2,6 +2,14 @@
 #include "CommandManager.h"
 #include "AppCommandBase.h"
 
+void CommandManager::Enable(bool enable) {
+	_enabled = enable;
+}
+
+bool CommandManager::IsEnabled() const {
+	return _enabled;
+}
+
 bool CommandManager::CanUndo() const {
 	return !_undoList.empty();
 }
@@ -14,6 +22,9 @@ bool CommandManager::AddCommand(std::shared_ptr<AppCommand> command, bool execut
 	if (execute)
 		if (!command->Execute())
 			return false;
+
+	if (_enabled)
+		return true;
 
 	_undoList.push_back(command);
 	_redoList.clear();

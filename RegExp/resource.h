@@ -36,13 +36,13 @@
 #define IDI_RENAME                      145
 #define IDI_FOLDER_VIEW                 146
 #define IDI_FIND_NEXT                   147
+#define IDI_FINDALL						148
 #define IDD_FIND                        160
+#define IDD_FINDALL                     161
 #define IDC_TEXT                        1000
-#define IDC_BUTTON1                     1001
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
 #define IDC_SEARCH_VALUES               1003
-#define IDC_CHECK3                      1004
 #define IDC_SEARCH_DATA                 1004
 #define IDC_SEARCH_ALL                  1005
 #define IDC_SEARCH_STD                  1006
@@ -50,13 +50,17 @@
 #define IDC_SEARCH_SELECTED             1008
 #define IDC_SEARCH_CASE                 1009
 #define IDC_SEARCH_MATCHWHOLE           1010
-#define IDC_PROGRESS1                   1011
 #define IDC_PROGRESS                    1011
 #define IDC_CANCEL                      1012
 #define IDC_NEW                         1014
 #define IDC_STATUS                      1015
 #define IDC_VERSION                     1016
 #define IDC_COPYRIGHT                   1017
+#define IDC_LIST                        1018
+#define IDC_APPEND                      1019
+#define IDC_SAVE                        1020
+#define IDC_LOAD                        1021
+#define IDC_PROGRESS1                   1022
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -91,15 +95,22 @@
 #define ID_TREE_REFRESH                 32814
 #define ID_COPY_FULLNAME                32815
 #define ID_COPY_NAME                    32816
+#define ID_LOCATIONS_SERVICES           32817
+#define ID_LOCATIONS_HARDWARE           32818
+#define ID_LOCATIONS_CLASS              32819
+#define ID_LOCATIONS_HIVELIST           32820
+#define ID_OPTIONS_UNDO                 32841
+#define ID_OPTIONS_UNDOREDO             32842
+#define ID_SEARCH_FINDALL               32843
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        161
-#define _APS_NEXT_COMMAND_VALUE         32817
-#define _APS_NEXT_CONTROL_VALUE         1018
+#define _APS_NEXT_RESOURCE_VALUE        162
+#define _APS_NEXT_COMMAND_VALUE         32844
+#define _APS_NEXT_CONTROL_VALUE         1023
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

@@ -6,7 +6,7 @@ HTREEITEM TreeHelper::FindChild(HTREEITEM item, PCWSTR name) const {
     while (item) {
         CString text;
         _tv.GetItemText(item, text);
-        if (text == name)
+        if (text.CompareNoCase(name) == 0)
             return item;
         item = _tv.GetNextSiblingItem(item);
     }

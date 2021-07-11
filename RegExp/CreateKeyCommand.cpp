@@ -24,5 +24,8 @@ bool CreateKeyCommand::Undo() {
     if(!key)
         return false;
 
-    return ERROR_SUCCESS == ::RegDeleteTree(key, _name) ? InvokeCallback(false) : false;
+    auto error = ::RegDeleteTree(key, _name);
+    ::SetLastError(error);
+    return ERROR_SUCCESS == error ? InvokeCallback(false) : false;
 }
+
