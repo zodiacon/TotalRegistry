@@ -9,7 +9,7 @@ struct AppSettings : Settings {
 		SETTING(ShowExtraHives, 0, SettingType::Bool);
 		SETTING(ShowKeysInList, 0, SettingType::Bool);
 		SETTING(AlwaysOnTop, 0, SettingType::Bool);
-		SETTING(Find, FindOptions::SearchKeys | FindOptions::SearchValues | FindOptions::SearchStdRegistry, SettingType::Int32);
+		SETTING(Find, FindOptions::SearchKeys | FindOptions::SearchValues | FindOptions::SearchStdRegistry | FindOptions::SearchSelected, SettingType::Int32);
 	END_SETTINGS
 
 	DEF_SETTING(ShowExtraHives, int)

@@ -49,6 +49,7 @@ public:
 	void OnFindStart();
 	void OnFindEnd(bool cancelled);
 	bool GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) override;
+	CString GetCurrentKeyPath() override;
 
 	CString GetColumnText(HWND, int row, int col) const;
 

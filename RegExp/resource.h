@@ -40,6 +40,8 @@
 #define IDD_FIND                        160
 #define IDD_FINDALL                     161
 #define IDD_STRINGVALUE                 162
+#define IDD_DIALOG1                     163
+#define IDD_MULTISTRVALUE               163
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
@@ -116,7 +118,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        163
+#define _APS_NEXT_RESOURCE_VALUE        164
 #define _APS_NEXT_COMMAND_VALUE         32844
 #define _APS_NEXT_CONTROL_VALUE         1030
 #define _APS_NEXT_SYMED_VALUE           115

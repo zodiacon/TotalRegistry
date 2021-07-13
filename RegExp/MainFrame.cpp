@@ -14,6 +14,8 @@
 #include "DeleteKeyCommand.h"
 #include "StringValueDlg.h"
 #include "ChangeValueCommand.h"
+#include "MultiStringValueDlg.h"
+#include "ListViewHelper.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -51,10 +53,17 @@ LRESULT CMainFrame::OnFindUpdate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam
 	ATLASSERT(hItem);
 	m_Tree.SelectItem(hItem);
 	m_Tree.EnsureVisible(hItem);
-	if (fd->Name == nullptr)
+	if ((fd->Name == nullptr || *fd->Name == 0) && (fd->Data == nullptr || *fd->Data == 0)) {
 		m_Tree.SetFocus();
-	else
+	}
+	else {
+		UpdateList(true);
+		int index = ListViewHelper::FindItem(m_List, fd->Data ? fd->Data : fd->Name, true);
+		ATLASSERT(index >= 0);
+		m_List.SetItemState(index, LVIS_SELECTED, LVIS_SELECTED);
+		m_List.EnsureVisible(index, FALSE);
 		m_List.SetFocus();
+	}
 	return 0;
 }
 
@@ -99,6 +108,10 @@ bool CMainFrame::GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) {
 	return true;
 }
 
+CString CMainFrame::GetCurrentKeyPath() {
+	return GetFullNodePath(m_Tree.GetSelectedItem());
+}
+
 CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 	auto& item = m_Items[row];
 	CString text;
@@ -138,6 +151,7 @@ int CMainFrame::GetRowImage(HWND h, int row) const {
 			return 8;
 		case REG_SZ:
 		case REG_EXPAND_SZ:
+		case REG_MULTI_SZ:
 		case REG_NONE:
 			return 10;
 	}
@@ -897,6 +911,7 @@ void CMainFrame::InitTree() {
 	m_hRealReg = m_Tree.InsertItem(L"REGISTRY", 11, 11, m_hLocalRoot, TVI_LAST);
 	SetNodeData(m_hRealReg, NodeType::RegistryRoot | NodeType::Predefined);
 	m_hLocalRoot.Expand(TVE_EXPAND);
+	m_Tree.SelectItem(m_hStdReg);
 }
 
 CString CMainFrame::GetNodePath(HTREEITEM hItem, HKEY* pKey) const {
@@ -1028,7 +1043,10 @@ void CMainFrame::InvokeTreeContextMenu(const CPoint& pt) {
 
 CString CMainFrame::GetKeyDetails(const RegistryItem& item) const {
 	CRegKey key;
-	key.Open(m_CurrentKey, item.Name, KEY_QUERY_VALUE);
+	if (m_CurrentKey == nullptr)
+		key.Attach(Registry::OpenKey(item.Name, KEY_QUERY_VALUE).Detach());
+	else
+		key.Open(m_CurrentKey, item.Name, KEY_QUERY_VALUE);
 	CString text;
 	if (key) {
 		DWORD values = 0;
@@ -1064,6 +1082,7 @@ bool CMainFrame::RefreshItem(HTREEITEM hItem) {
 	TreeHelper th(m_Tree);
 	th.DeleteChildren(hItem);
 	m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
+	UpdateList(true);
 	return true;
 }
 
@@ -1088,6 +1107,9 @@ CString CMainFrame::GetErrorText(DWORD error) {
 
 int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 	int image = 3;
+	if (m_CurrentKey == nullptr)
+		return image;
+
 	if (Registry::IsKeyLink(m_CurrentKey, item.Name))
 		return 4;
 
@@ -1115,6 +1137,32 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 					DisplayError(L"Failed to changed value");
 				else {
 					item.Value = dlg.GetValue();
+					auto index = m_List.GetSelectionMark();
+					m_List.RedrawItems(index, index);
+				}
+			}
+			break;
+		}
+
+		case REG_MULTI_SZ:
+		{
+			CMultiStringValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
+			if (dlg.DoModal() == IDOK && dlg.IsModified()) {
+				auto hItem = m_Tree.GetSelectedItem();
+				auto value = dlg.GetValue();
+				value.TrimRight(L"\r\n");
+				value.Replace(L"\r\n", L"\n");
+				auto len = value.GetLength();
+				for (int i = 0; i < len; i++)
+					if (value[i] == L'\n')
+						value.SetAt(i, 0);
+
+				auto cmd = std::make_shared<ChangeValueCommand>(
+					GetFullNodePath(hItem), item.Name, REG_MULTI_SZ, (PVOID)(PCWSTR)value, (1 + len) * (LONG)sizeof(WCHAR));
+				if (!m_CmdMgr.AddCommand(cmd))
+					DisplayError(L"Failed to changed value");
+				else {
+					item.Value.Empty();
 					auto index = m_List.GetSelectionMark();
 					m_List.RedrawItems(index, index);
 				}
@@ -1162,8 +1210,30 @@ void CMainFrame::UpdateList(bool force) {
 	m_List.SetItemCount(0);
 
 	HKEY hKey;
-	m_CurrentPath = GetNodePath(m_Tree.GetSelectedItem(), &hKey);
+	auto hItem = m_Tree.GetSelectedItem();
+	m_CurrentPath = GetNodePath(hItem, &hKey);
 	m_StatusBar.SetText(2, GetFullNodePath(m_Tree.GetSelectedItem()));
+
+	if (hItem == m_hStdReg && m_Settings.ShowKeysInList()) {
+		// special case for root of registry
+		for (hItem = m_Tree.GetChildItem(hItem); hItem; hItem = m_Tree.GetNextSiblingItem(hItem)) {
+			RegistryItem item;
+			CString name;
+			m_Tree.GetItemText(hItem, name);
+			item.Name = name;
+			auto key = Registry::OpenKey(item.Name, KEY_READ);
+			if (key) {
+				Registry::GetSubKeyCount(key, nullptr, &item.TimeStamp);
+			}
+			item.Key = true;
+			item.Type = REG_KEY;
+			m_Items.push_back(std::move(item));
+		}
+		m_List.SetItemCount(static_cast<int>(m_Items.size()));
+		DoSort(GetSortInfo(m_List));
+
+		return;
+	}
 
 	if (!hKey)
 		return;
@@ -1208,8 +1278,5 @@ void CMainFrame::UpdateList(bool force) {
 		});
 	m_List.SetItemCount(static_cast<int>(m_Items.size()));
 	DoSort(GetSortInfo(m_List));
-	if (!m_Items.empty())
-		m_List.SetItemState(0, LVIS_SELECTED, LVIS_SELECTED);
-	else
-		m_Tree.SetFocus();
+	m_List.RedrawItems(m_List.GetTopIndex(), m_List.GetTopIndex() + m_List.GetCountPerPage());
 }

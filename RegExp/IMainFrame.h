@@ -8,4 +8,5 @@ struct IMainFrame abstract {
 	virtual void OnFindNext(PCWSTR path, PCWSTR name, PCWSTR data) = 0;
 	virtual void OnFindEnd(bool cancelled) = 0;
 	virtual bool GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) = 0;
+	virtual CString GetCurrentKeyPath() = 0;
 };

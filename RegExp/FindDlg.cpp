@@ -99,7 +99,7 @@ LRESULT CFindDlg::OnFind(WORD, WORD wID, HWND, BOOL&) {
         return 0;
     }
   
-    m_Searcher.SetStartKey(L"");
+    m_Searcher.SetStartKey(m_pFrame->GetCurrentKeyPath());
     m_Searcher.Find([&](auto path, auto name, auto data) {
         if (path == nullptr) {
             // search done

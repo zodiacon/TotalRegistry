@@ -93,7 +93,10 @@ CString Registry::StdRegPathToRealPath(const CString& path) {
 	return result;
 }
 
-CRegKey Registry::OpenKey(const CString& path, DWORD access) {
+CRegKey Registry::OpenKey(const CString& path, DWORD access, bool* root) {
+	if (root)
+		*root = false;
+
 	CRegKey key;
 	if (path[0] == L'\\') {
 		// real registry
@@ -114,6 +117,8 @@ CRegKey Registry::OpenKey(const CString& path, DWORD access) {
 		}
 		else {
 			key.Attach(pair->hKey);
+			if(root)
+				*root = true;
 		}
 	}
 	return key;
@@ -201,8 +206,9 @@ PCWSTR Registry::GetRegTypeAsString(DWORD type) {
 CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
 	ULONG realsize = item.Size;
 	ULONG size = (realsize > (1 << 12) ? (1 << 12) : realsize) / sizeof(WCHAR);
-	LRESULT status;
+	LSTATUS status;
 	CString text;
+	DWORD type;
 
 	switch (item.Type) {
 		case REG_SZ:
@@ -217,7 +223,8 @@ CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
 
 		case REG_MULTI_SZ:
 			text.Preallocate(size + 1);
-			status = key.QueryMultiStringValue(item.Name, text.GetBuffer(), &size);
+			size *= sizeof(WCHAR);
+			status = ::RegQueryValueEx(key, item.Name, nullptr, &type, (PBYTE)text.GetBuffer(), &size);
 			if (status == ERROR_SUCCESS) {
 				auto p = text.GetBuffer();
 				while (*p) {
@@ -310,9 +317,9 @@ bool Registry::CopyKey(HKEY hKey, PCWSTR path, HKEY htarget) {
 	return ERROR_SUCCESS == error;
 }
 
-DWORD Registry::GetSubKeyCount(HKEY hKey, DWORD* values) {
+DWORD Registry::GetSubKeyCount(HKEY hKey, DWORD* values, FILETIME* ft) {
 	DWORD subkeys;
-	auto error = ::RegQueryInfoKey(hKey, nullptr, 0, nullptr, &subkeys, nullptr, nullptr, values, nullptr, nullptr, nullptr, nullptr);
+	auto error = ::RegQueryInfoKey(hKey, nullptr, 0, nullptr, &subkeys, nullptr, nullptr, values, nullptr, nullptr, nullptr, ft);
 	::SetLastError(error);
 	return subkeys;
 }

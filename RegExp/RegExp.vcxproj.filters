@@ -105,6 +105,9 @@
     <ClInclude Include="ChangeValueCommand.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="MultiStringValueDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -166,6 +169,9 @@
     </ClCompile>
     <ClCompile Include="ChangeValueCommand.cpp">
       <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="MultiStringValueDlg.cpp">
+      <Filter>Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

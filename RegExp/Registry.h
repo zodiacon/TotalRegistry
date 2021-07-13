@@ -29,9 +29,9 @@ struct Registry {
 	static bool RenameKey(HKEY hKey, PCWSTR name, PCWSTR newName);
 	static bool RenameValue(HKEY hKey, PCWSTR path, PCWSTR oldName, PCWSTR newName);
 	static bool CopyKey(HKEY hKey, PCWSTR path, HKEY htarget);
-	static DWORD GetSubKeyCount(HKEY hKey, DWORD* values = 0);
+	static DWORD GetSubKeyCount(HKEY hKey, DWORD* values = 0, FILETIME* ft = nullptr);
 
-	static CRegKey OpenKey(const CString& path, DWORD access);
+	static CRegKey OpenKey(const CString& path, DWORD access, bool* root = nullptr);
 	static CRegKey CreateKey(const CString& path, DWORD access);
 	static bool IsKeyLink(HKEY hKey, PCWSTR path);
 	static CString ExpandStrings(const CString& text);

@@ -49,3 +49,22 @@ CString ListViewHelper::GetRowAsString(CListViewCtrl& lv, int row, WCHAR separat
 	}
 	return text;
 }
+
+int ListViewHelper::FindItem(CListViewCtrl& lv, PCWSTR text, bool partial) {
+	auto columns = lv.GetHeader().GetItemCount();
+	CString stext(text);
+	stext.MakeLower();
+	for (int i = 0; i < lv.GetItemCount(); i++) {
+		for (int c = 0; c < columns; c++) {
+			CString text;
+			lv.GetItemText(i, c, text);
+			text.MakeLower();
+			if (partial && text.Find(stext) >= 0)
+				return i;
+			if (!partial && text == stext)
+				return i;
+		}
+	}
+
+	return -1;
+}

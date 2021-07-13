@@ -142,6 +142,7 @@
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="IMainFrame.h" />
     <ClInclude Include="MainFrame.h" />
+    <ClInclude Include="MultiStringValueDlg.h" />
     <ClInclude Include="NavigationManager.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RegExp.h" />
@@ -167,6 +168,7 @@
     <ClCompile Include="FindDlg.cpp" />
     <ClCompile Include="Helpers.cpp" />
     <ClCompile Include="MainFrame.cpp" />
+    <ClCompile Include="MultiStringValueDlg.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>

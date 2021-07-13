@@ -133,14 +133,14 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 			if (!caseSensitive)
 				text.MakeUpper();
 			if (text.Find(_searchText) >= 0) {
-				if (Notify(path + L"\\" + name, nullptr, nullptr))
+				if (Notify(path + (path.IsEmpty() ? L"" : L"\\") + name, nullptr, nullptr))
 					return false;
 			}
 		}
 		CRegKey subKey;
 		subKey.Open(hKey, name, KEY_READ);
 		if (subKey)
-			FindNextWorker(subKey, path + L"\\" + name);
+			FindNextWorker(subKey, path + (path.IsEmpty() ? L"" : L"\\") + name);
 		if (_cancel)
 			return false;
 		return true;
@@ -177,6 +177,10 @@ DWORD RegistrySearcher::DoSearch() {
 	if ((_options & (FindOptions::SearchRealRegistry | FindOptions::SearchSelected)) == FindOptions::SearchRealRegistry) {
 		FindNextWorker(Registry::OpenRealRegistryKey(), L"\\REGISTRY");
 	}
+	if ((_options & FindOptions::SearchSelected) == FindOptions::SearchSelected) {
+		FindNextWorker(Registry::OpenKey(_startKey, KEY_READ), _startKey);
+	}
+
 	_cb(nullptr, nullptr, nullptr);
 	::SetEvent(_hDoneEvent.get());
 
