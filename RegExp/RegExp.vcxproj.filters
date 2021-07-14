@@ -108,6 +108,9 @@
     <ClInclude Include="MultiStringValueDlg.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="NumberValueDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -171,6 +174,9 @@
       <Filter>Commands</Filter>
     </ClCompile>
     <ClCompile Include="MultiStringValueDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="NumberValueDlg.cpp">
       <Filter>Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
@@ -275,6 +281,12 @@
       <Filter>Resource Files\Icons</Filter>
     </Image>
     <Image Include="Icons\registrysearch.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\number-4.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\number-8.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
   </ItemGroup>

@@ -16,6 +16,7 @@
 #include "ChangeValueCommand.h"
 #include "MultiStringValueDlg.h"
 #include "ListViewHelper.h"
+#include "NumberValueDlg.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -149,6 +150,10 @@ int CMainFrame::GetRowImage(HWND h, int row) const {
 			return GetKeyImage(m_Items[row]);
 		case REG_KEY_UP:
 			return 8;
+		case REG_DWORD:
+			return 12;
+		case REG_QWORD:
+			return 13;
 		case REG_SZ:
 		case REG_EXPAND_SZ:
 		case REG_MULTI_SZ:
@@ -272,7 +277,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	UINT icons[] = {
 		IDR_MAINFRAME, IDI_COMPUTER, IDI_FOLDER, IDI_FOLDER_CLOSED, IDI_FOLDER_LINK, 
 		IDI_FOLDER_ACCESSDENIED, IDI_HIVE, IDI_HIVE_ACCESSDENIED, IDI_FOLDER_UP, IDI_BINARY, 
-		IDI_TEXT, IDI_REAL_REG
+		IDI_TEXT, IDI_REAL_REG, IDI_NUM4, IDI_NUM8
 	};
 	for (auto icon : icons)
 		images.AddIcon(AtlLoadIconImage(icon, 0, 16, 16));
@@ -1168,6 +1173,24 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 				}
 			}
 			break;
+		}
+		case REG_DWORD:
+		case REG_QWORD:
+		{
+			CNumberValueDlg dlg(m_CurrentKey, item.Name, item.Type, m_ReadOnly);
+			if (IDOK == dlg.DoModal()) {
+				auto hItem = m_Tree.GetSelectedItem();
+				auto value = dlg.GetValue();
+				auto cmd = std::make_shared<ChangeValueCommand>(
+					GetFullNodePath(hItem), item.Name, item.Type, &value, dlg.GetType() == REG_DWORD ? 4 : 8);
+				if (!m_CmdMgr.AddCommand(cmd))
+					DisplayError(L"Failed to changed value");
+				else {
+					item.Value.Empty();
+					auto index = m_List.GetSelectionMark();
+					m_List.RedrawItems(index, index);
+				}
+			}
 		}
 	}
 	return 0;

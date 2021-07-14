@@ -144,6 +144,7 @@
     <ClInclude Include="MainFrame.h" />
     <ClInclude Include="MultiStringValueDlg.h" />
     <ClInclude Include="NavigationManager.h" />
+    <ClInclude Include="NumberValueDlg.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RegExp.h" />
     <ClInclude Include="Registry.h" />
@@ -169,6 +170,7 @@
     <ClCompile Include="Helpers.cpp" />
     <ClCompile Include="MainFrame.cpp" />
     <ClCompile Include="MultiStringValueDlg.cpp" />
+    <ClCompile Include="NumberValueDlg.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -206,6 +208,8 @@
     <Image Include="Icons\laptop.ico" />
     <Image Include="Icons\link.ico" />
     <Image Include="Icons\lock.ico" />
+    <Image Include="Icons\number-4.ico" />
+    <Image Include="Icons\number-8.ico" />
     <Image Include="Icons\paste.ico" />
     <Image Include="Icons\quickfind.ico" />
     <Image Include="Icons\redo.ico" />
