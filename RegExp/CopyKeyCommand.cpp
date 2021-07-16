@@ -3,7 +3,7 @@
 #include "Registry.h"
 
 CopyKeyCommand::CopyKeyCommand(PCWSTR path, PCWSTR name, PCWSTR targetPath, AppCommandCallback<CopyKeyCommand> cb) 
-	: RegAppCommandBase(L"Paste Key", path, name, cb), _targetPath(targetPath) {
+	: RegAppCommandBase(L"Paste Key " + CString(name), path, name, cb), _targetPath(targetPath) {
 }
 
 const CString& CopyKeyCommand::GetTargetPath() const {

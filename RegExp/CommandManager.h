@@ -21,6 +21,6 @@ public:
 private:
 	std::vector<std::shared_ptr<AppCommand>> _undoList;
 	std::vector<std::shared_ptr<AppCommand>> _redoList;
-	bool _enabled{ false };
+	bool _enabled{ true };
 };
 

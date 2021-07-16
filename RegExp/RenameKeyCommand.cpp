@@ -7,7 +7,7 @@ RenameKeyCommand::RenameKeyCommand(PCWSTR path, PCWSTR name, PCWSTR newName, App
 }
 
 bool RenameKeyCommand::Execute() {
-	auto key = Registry::OpenKey(_path, KEY_WRITE);
+	auto key = Registry::OpenKey(_path, KEY_ALL_ACCESS);
 	if (!key)
 		return false;
 
@@ -27,4 +27,8 @@ bool RenameKeyCommand::Undo() {
 
 const CString& RenameKeyCommand::GetNewName() const {
 	return _newName;
+}
+
+CString RenameKeyCommand::GetCommandName() const {
+	return L"Rename Key " + GetName();
 }

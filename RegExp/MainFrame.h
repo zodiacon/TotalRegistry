@@ -186,6 +186,7 @@ private:
 	NodeType GetNodeData(HTREEITEM hItem) const;
 	void SetNodeData(HTREEITEM hItem, NodeType type);
 	void ExpandItem(HTREEITEM hItem);
+	void RefreshFull(HTREEITEM hItem);
 	HKEY GetKeyFromNode(HTREEITEM hItem) const;
 	CTreeItem InsertKeyItem(HTREEITEM hParent, PCWSTR name, NodeType type = NodeType::Key);
 	HTREEITEM FindItemByPath(PCWSTR path) const;

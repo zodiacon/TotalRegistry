@@ -17,6 +17,7 @@
 #include "MultiStringValueDlg.h"
 #include "ListViewHelper.h"
 #include "NumberValueDlg.h"
+#include "BinaryValueDlg.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -119,7 +120,7 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 	switch (static_cast<ColumnType>(GetColumnManager(h)->GetColumnTag(col))) {
 		case ColumnType::Name: return item.Name.IsEmpty() ? CString(L"(Default)") : item.Name;
 		case ColumnType::Type: return Registry::GetRegTypeAsString(item.Type);
-		case ColumnType::Value: 
+		case ColumnType::Value:
 			if (!item.Key) {
 				if (item.Value.IsEmpty())
 					item.Value = Registry::GetDataAsString(m_CurrentKey, item);
@@ -127,11 +128,11 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 			}
 			break;
 
-		case ColumnType::Size: 
-			if(!item.Key)
+		case ColumnType::Size:
+			if (!item.Key)
 				text.Format(L"%u", item.Size);
 			break;
-		
+
 		case ColumnType::TimeStamp:
 			if (item.TimeStamp.dwHighDateTime + item.TimeStamp.dwHighDateTime)
 				return CTime(item.TimeStamp).Format(L"%x %X");
@@ -226,6 +227,8 @@ BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
 }
 
 LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
+	::RegDeleteTree(HKEY_CURRENT_USER, DeletedPathBackup.Left(DeletedPathBackup.GetLength() - 1));
+
 	m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp");
 	CMenuHandle menu = GetMenu();
 	if (SecurityHelper::IsRunningElevated()) {
@@ -261,7 +264,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	CreateSimpleStatusBar(ATL_IDS_IDLEMESSAGE, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | SBARS_SIZEGRIP | SBT_TOOLTIPS);
 	m_StatusBar.SubclassWindow(m_hWndStatusBar);
-	int panes[] = { 200, 224, 1100 };
+	int panes[] = { 200, 224, 1300 };
 	m_StatusBar.SetParts(_countof(panes), panes);
 	m_StatusBar.SetIcon(1, AtlLoadIconImage(IDR_MAINFRAME, 0, 16, 16));
 	::SetWindowTheme(m_StatusBar, L"Explorer", nullptr);
@@ -275,8 +278,8 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	CImageList images;
 	images.Create(16, 16, ILC_COLOR32, 8, 4);
 	UINT icons[] = {
-		IDR_MAINFRAME, IDI_COMPUTER, IDI_FOLDER, IDI_FOLDER_CLOSED, IDI_FOLDER_LINK, 
-		IDI_FOLDER_ACCESSDENIED, IDI_HIVE, IDI_HIVE_ACCESSDENIED, IDI_FOLDER_UP, IDI_BINARY, 
+		IDR_MAINFRAME, IDI_COMPUTER, IDI_FOLDER, IDI_FOLDER_CLOSED, IDI_FOLDER_LINK,
+		IDI_FOLDER_ACCESSDENIED, IDI_HIVE, IDI_HIVE_ACCESSDENIED, IDI_FOLDER_UP, IDI_BINARY,
 		IDI_TEXT, IDI_REAL_REG, IDI_NUM4, IDI_NUM8
 	};
 	for (auto icon : icons)
@@ -336,7 +339,7 @@ LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
 	}
 	m_Settings.Save();
 	m_FindDlg.Cancel();
-	if(m_FindDlg)
+	if (m_FindDlg)
 		m_FindDlg.DestroyWindow();
 
 	CMessageLoop* pLoop = _Module.GetMessageLoop();
@@ -433,6 +436,8 @@ LRESULT CMainFrame::OnListItemChanged(int, LPNMHDR, BOOL&) {
 }
 
 LRESULT CMainFrame::OnViewRefresh(WORD, WORD, HWND, BOOL&) {
+	RefreshFull(m_hStdReg);
+	RefreshFull(m_hRealReg);
 	return 0;
 }
 
@@ -475,7 +480,7 @@ LRESULT CMainFrame::OnAlwaysOnTop(WORD, WORD id, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnFocusChanged(int, LPNMHDR hdr, BOOL&) {
-	if(hdr->hwndFrom == m_List || hdr->hwndFrom == m_Tree)
+	if (hdr->hwndFrom == m_List || hdr->hwndFrom == m_Tree)
 		UpdateUI();
 	return 0;
 }
@@ -514,7 +519,7 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 		//
 		// cancelled
 		//
-		if(m_CurrentOperation == Operation::CreateKey)
+		if (m_CurrentOperation == Operation::CreateKey)
 			m_Tree.DeleteItem(item.hItem);
 		return FALSE;
 	}
@@ -526,7 +531,7 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 			auto cmd = std::make_shared<CreateKeyCommand>(GetFullNodePath(hParent), item.pszText);
 			if (!m_CmdMgr.AddCommand(cmd))
 				return FALSE;
-			auto cb = [this](auto& cmd, bool execute) {		
+			auto cb = [this](auto& cmd, bool execute) {
 				if (execute) {
 					auto hParent = FindItemByPath(cmd.GetPath());
 					ATLASSERT(hParent);
@@ -558,8 +563,10 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 			};
 			auto hParent = m_Tree.GetParentItem(item.hItem);
 			auto cmd = std::make_shared<RenameKeyCommand>(GetFullNodePath(hParent), name, item.pszText);
-			if (!m_CmdMgr.AddCommand(cmd))
+			if (!m_CmdMgr.AddCommand(cmd)) {
+				DisplayError(L"Failed to rename keu");
 				return FALSE;
+			}
 			cmd->SetCallback(cb);
 			return TRUE;
 		}
@@ -990,6 +997,69 @@ void CMainFrame::ExpandItem(HTREEITEM hItem) {
 	}
 }
 
+void CMainFrame::RefreshFull(HTREEITEM hItem) {
+	hItem = m_Tree.GetChildItem(hItem);
+	TreeHelper th(m_Tree);
+	while (hItem) {
+		auto state = m_Tree.GetItemState(hItem, TVIS_EXPANDED | TVIS_EXPANDEDONCE);
+		if (state) {
+			if (state == TVIS_EXPANDEDONCE) {
+				CString text;
+				if (m_Tree.GetChildItem(hItem) && m_Tree.GetItemText(m_Tree.GetChildItem(hItem), text) && text != L"\\\\") {
+					// not expanded now, delete all items and insert a dummy item
+					th.DeleteChildren(hItem);
+					m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
+				}
+			}
+			else {
+				// really expanded
+				RefreshFull(hItem);
+				auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_READ);
+				if (key) {
+					auto keys = th.GetChildItems(hItem);
+					Registry::EnumSubKeys(key, [&](auto name, const auto&) {
+						if (!th.FindChild(hItem, name)) {
+							// new sub key
+							auto hChild = InsertKeyItem(hItem, name);
+						}
+						else {
+							keys.erase(name);
+						}
+						return true;
+						});
+					for (auto& [name, h] : keys)
+						m_Tree.DeleteItem(h);
+
+					if (m_Tree.GetChildItem(hItem) == nullptr) {
+						// remove children indicator
+						TVITEM tvi;
+						tvi.hItem = hItem;
+						tvi.mask = TVIF_CHILDREN;
+						tvi.cChildren = 0;
+						m_Tree.SetItem(&tvi);
+					}
+					else {
+						m_Tree.SortChildren(hItem);
+					}
+				}
+			}
+		}
+		else if (m_Tree.GetChildItem(hItem) == nullptr && (GetNodeData(hItem) & NodeType::AccessDenied) == NodeType::None) {
+			// no children - check if new exist
+			auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_READ);
+			if (Registry::GetSubKeyCount(key) > 0) {
+				m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
+				TVITEM tvi;
+				tvi.hItem = hItem;
+				tvi.mask = TVIF_CHILDREN;
+				tvi.cChildren = 1;
+				m_Tree.SetItem(&tvi);
+			}
+		}
+		hItem = m_Tree.GetNextSiblingItem(hItem);
+	}
+}
+
 HKEY CMainFrame::GetKeyFromNode(HTREEITEM hItem) const {
 	while (hItem && (GetNodeData(hItem) & NodeType::Predefined) != NodeType::Predefined)
 		hItem = m_Tree.GetParentItem(hItem);
@@ -1083,10 +1153,13 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 }
 
 bool CMainFrame::RefreshItem(HTREEITEM hItem) {
-	m_Tree.Expand(hItem, TVE_COLLAPSE);
+	auto expanded = m_Tree.GetItemState(hItem, TVIS_EXPANDED);
+	m_Tree.Expand(hItem, TVE_COLLAPSE | TVE_COLLAPSERESET);
 	TreeHelper th(m_Tree);
 	th.DeleteChildren(hItem);
 	m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
+	if (expanded)
+		m_Tree.Expand(hItem, TVE_EXPAND);
 	UpdateList(true);
 	return true;
 }
@@ -1191,6 +1264,26 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 					m_List.RedrawItems(index, index);
 				}
 			}
+		}
+		case REG_BINARY:
+		case REG_FULL_RESOURCE_DESCRIPTOR:
+		case REG_RESOURCE_REQUIREMENTS_LIST:
+		case REG_RESOURCE_LIST:
+		{
+			CBinaryValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
+			if (IDOK == dlg.DoModal() && dlg.IsModified()) {
+				auto hItem = m_Tree.GetSelectedItem();
+				auto cmd = std::make_shared<ChangeValueCommand>(
+					GetFullNodePath(hItem), item.Name, item.Type, (const PVOID)dlg.GetValue().data(), (LONG)dlg.GetValue().size());
+				if (!m_CmdMgr.AddCommand(cmd))
+					DisplayError(L"Failed to changed value");
+				else {
+					item.Value.Empty();
+					auto index = m_List.GetSelectionMark();
+					m_List.RedrawItems(index, index);
+				}
+			}
+			break;
 		}
 	}
 	return 0;

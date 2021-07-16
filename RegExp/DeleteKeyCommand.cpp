@@ -4,7 +4,7 @@
 #include "Helpers.h"
 
 DeleteKeyCommand::DeleteKeyCommand(PCWSTR path, PCWSTR name, AppCommandCallback<DeleteKeyCommand> cb)
-	: RegAppCommandBase(L"Delete Key", path, name, cb) {
+	: RegAppCommandBase(L"Delete Key " + CString(name), path, name, cb) {
 }
 
 bool DeleteKeyCommand::Execute() {
@@ -12,12 +12,24 @@ bool DeleteKeyCommand::Execute() {
     if (!key)
         return false;
 
+    if (_savePath.IsEmpty()) {
+        LARGE_INTEGER li;
+        ::QueryPerformanceCounter(&li);
+        _savePath.Format(L"%llX", li.QuadPart);
+    }
+    CRegKey keyBackup;
+    auto error = keyBackup.Create(HKEY_CURRENT_USER, DeletedPathBackup + _savePath, nullptr, 0, KEY_ALL_ACCESS);
+    ::SetLastError(error);
+    if (!keyBackup)
+        return false;
+    ::SetLastError(error = ::RegCopyTree(key, _name, keyBackup));
+    if (ERROR_SUCCESS != error)
+        return false;
 
-    auto error = ::RegDeleteTree(key, _name);
+    ::SetLastError(error = ::RegDeleteTree(key, _name));
     if (ERROR_SUCCESS != error) {
         return false;
     }
-    ::SetLastError(error);
     return InvokeCallback(true);
 }
 
@@ -26,10 +38,20 @@ bool DeleteKeyCommand::Undo() {
     if (!key)
         return false;
 
+    DWORD error;
+    CRegKey keyBackup;
+    ::SetLastError(error = keyBackup.Open(HKEY_CURRENT_USER, DeletedPathBackup + _savePath, KEY_READ));
+    if (!keyBackup)
+        return false;
+
     CRegKey newKey;
     DWORD disp;
-    auto error = newKey.Create(key, _name, nullptr, 0, KEY_READ | KEY_WRITE, nullptr, &disp);
+    error = newKey.Create(key, _name, nullptr, 0, KEY_ALL_ACCESS, nullptr, &disp);
     ::SetLastError(error);
+    if (error != ERROR_SUCCESS)
+        return false;
+
+    ::SetLastError(error = ::RegCopyTree(keyBackup, nullptr, newKey));
     if (error != ERROR_SUCCESS)
         return false;
 

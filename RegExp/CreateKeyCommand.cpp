@@ -2,7 +2,8 @@
 #include "CreateKeyCommand.h"
 #include "Registry.h"
 
-CreateKeyCommand::CreateKeyCommand(PCWSTR path, PCWSTR name, AppCommandCallback<CreateKeyCommand> cb) : RegAppCommandBase(L"Create Key", path, name, cb) {
+CreateKeyCommand::CreateKeyCommand(PCWSTR path, PCWSTR name, AppCommandCallback<CreateKeyCommand> cb) 
+    : RegAppCommandBase(L"Create Key " + CString(name), path, name, cb) {
 }
 
 bool CreateKeyCommand::Execute() {

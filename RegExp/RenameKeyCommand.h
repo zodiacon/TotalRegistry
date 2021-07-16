@@ -10,6 +10,8 @@ struct RenameKeyCommand : RegAppCommandBase<RenameKeyCommand> {
 
 	const CString& GetNewName() const;
 
+	CString GetCommandName() const override;
+
 private:
 	CString _newName;
 };

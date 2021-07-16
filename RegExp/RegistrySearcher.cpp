@@ -183,6 +183,7 @@ DWORD RegistrySearcher::DoSearch() {
 
 	_cb(nullptr, nullptr, nullptr);
 	::SetEvent(_hDoneEvent.get());
+	_inProgress = false;
 
 	return 0;
 }

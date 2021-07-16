@@ -148,7 +148,9 @@ CRegKey Registry::CreateKey(const CString& path, DWORD access) {
 }
 
 bool Registry::RenameKey(HKEY hKey, PCWSTR name, PCWSTR newName) {
-	return ERROR_SUCCESS == ::RegRenameKey(hKey, name, newName);
+	auto error = ::RegRenameKey(hKey, name, newName);
+	::SetLastError(error);
+	return ERROR_SUCCESS == error;
 }
 
 const std::vector<Hive>& Registry::GetHiveList(bool refresh) const {

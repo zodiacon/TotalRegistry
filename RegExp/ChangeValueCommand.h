@@ -4,7 +4,7 @@
 
 struct ChangeValueCommand : RegAppCommandBase<ChangeValueCommand> {
 public:
-	ChangeValueCommand(PCWSTR path, PCWSTR name, DWORD type, PVOID data, LONG size, AppCommandCallback<ChangeValueCommand> cb = nullptr);
+	ChangeValueCommand(PCWSTR path, PCWSTR name, DWORD type, const PVOID data, LONG size, AppCommandCallback<ChangeValueCommand> cb = nullptr);
 
 	bool Execute() override;
 	bool Undo() override {
