@@ -126,6 +126,15 @@
     <ClInclude Include="MemoryBuffer.h">
       <Filter>Controls</Filter>
     </ClInclude>
+    <ClInclude Include="SecurityInformation.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="CreateValueCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="RenameValueCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -205,6 +214,15 @@
     </ClCompile>
     <ClCompile Include="MemoryBuffer.cpp">
       <Filter>Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="SecurityInformation.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="CreateValueCommand.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="RenameValueCommand.cpp">
+      <Filter>Commands</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -315,6 +333,15 @@
     </Image>
     <Image Include="Icons\number-8.ico">
       <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\shield.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\export.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\properties.ico">
+      <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>

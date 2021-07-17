@@ -148,14 +148,17 @@
     <ClInclude Include="MemoryBuffer.h" />
     <ClInclude Include="MultiStringValueDlg.h" />
     <ClInclude Include="NavigationManager.h" />
+    <ClInclude Include="CreateValueCommand.h" />
     <ClInclude Include="NumberValueDlg.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RegExp.h" />
     <ClInclude Include="Registry.h" />
     <ClInclude Include="RegistrySearcher.h" />
     <ClInclude Include="RenameKeyCommand.h" />
+    <ClInclude Include="RenameValueCommand.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SecurityHelper.h" />
+    <ClInclude Include="SecurityInformation.h" />
     <ClInclude Include="Settings.h" />
     <ClInclude Include="StringValueDlg.h" />
     <ClInclude Include="targetver.h" />
@@ -169,6 +172,7 @@
     <ClCompile Include="CommandManager.cpp" />
     <ClCompile Include="CopyKeyCommand.cpp" />
     <ClCompile Include="CreateKeyCommand.cpp" />
+    <ClCompile Include="CreateValueCommand.cpp" />
     <ClCompile Include="DeleteKeyCommand.cpp" />
     <ClCompile Include="DeleteValueCommand.cpp" />
     <ClCompile Include="FindAllDlg.cpp" />
@@ -187,7 +191,9 @@
     <ClCompile Include="Registry.cpp" />
     <ClCompile Include="RegistrySearcher.cpp" />
     <ClCompile Include="RenameKeyCommand.cpp" />
+    <ClCompile Include="RenameValueCommand.cpp" />
     <ClCompile Include="SecurityHelper.cpp" />
+    <ClCompile Include="SecurityInformation.cpp" />
     <ClCompile Include="Settings.cpp" />
     <ClCompile Include="StringValueDlg.cpp" />
     <ClCompile Include="TreeHelper.cpp" />
@@ -201,6 +207,7 @@
     <Image Include="Icons\copy.ico" />
     <Image Include="Icons\cut.ico" />
     <Image Include="Icons\delete.ico" />
+    <Image Include="Icons\export.ico" />
     <Image Include="Icons\find.ico" />
     <Image Include="Icons\find_next.ico" />
     <Image Include="Icons\folder-link.ico" />
@@ -219,6 +226,7 @@
     <Image Include="Icons\number-4.ico" />
     <Image Include="Icons\number-8.ico" />
     <Image Include="Icons\paste.ico" />
+    <Image Include="Icons\properties.ico" />
     <Image Include="Icons\quickfind.ico" />
     <Image Include="Icons\redo.ico" />
     <Image Include="Icons\refresh.ico" />
@@ -226,6 +234,7 @@
     <Image Include="Icons\registry.ico" />
     <Image Include="Icons\registrysearch.ico" />
     <Image Include="Icons\rename.ico" />
+    <Image Include="Icons\shield.ico" />
     <Image Include="Icons\text.ico" />
     <Image Include="Icons\undo.ico" />
     <Image Include="RegExp.ico" />

@@ -18,6 +18,9 @@
 #include "ListViewHelper.h"
 #include "NumberValueDlg.h"
 #include "BinaryValueDlg.h"
+#include "SecurityInformation.h"
+#include "CreateValueCommand.h"
+#include "RenameValueCommand.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -229,7 +232,9 @@ BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
 LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	::RegDeleteTree(HKEY_CURRENT_USER, DeletedPathBackup.Left(DeletedPathBackup.GetLength() - 1));
 
-	m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp");
+	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp"))
+		m_ReadOnly = m_Settings.ReadOnly();
+
 	CMenuHandle menu = GetMenu();
 	if (SecurityHelper::IsRunningElevated()) {
 		auto fileMenu = menu.GetSubMenu(0);
@@ -288,7 +293,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	::SetWindowTheme(m_Tree, L"Explorer", nullptr);
 
 	m_List.Create(m_MainSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN
-		| LVS_OWNERDATA | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS, 0);
+		| LVS_OWNERDATA | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | LVS_EDITLABELS, 0);
 	m_List.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_INFOTIP);
 	m_List.SetImageList(images, LVSIL_SMALL);
 	::SetWindowTheme(m_List, L"Explorer", nullptr);
@@ -323,7 +328,6 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 		SetWindowPos(HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
 	UISetCheck(ID_EDIT_READONLY, m_ReadOnly);
-
 	UpdateLayout();
 	PostMessage(WM_BUILD_TREE);
 	UpdateUI();
@@ -337,6 +341,7 @@ LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
 	if (GetWindowPlacement(&wp)) {
 		m_Settings.MainWindowPlacement(wp);
 	}
+	m_Settings.ReadOnly(m_ReadOnly);
 	m_Settings.Save();
 	m_FindDlg.Cancel();
 	if (m_FindDlg)
@@ -369,6 +374,10 @@ LRESULT CMainFrame::OnShowWindow(UINT, WPARAM show, LPARAM, BOOL&) {
 			UpdateLayout();
 		}
 	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnMenuSelect(UINT, WPARAM, LPARAM, BOOL&) {
 	return 0;
 }
 
@@ -406,6 +415,7 @@ LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 }
 
 LRESULT CMainFrame::OnTreeSelChanged(int, LPNMHDR, BOOL&) {
+	UpdateUI();
 	if (m_UpdateNoDelay) {
 		m_UpdateNoDelay = false;
 		UpdateList();
@@ -665,6 +675,13 @@ LRESULT CMainFrame::OnEditRename(WORD, WORD, HWND, BOOL&) {
 		m_CurrentOperation = Operation::RenameKey;
 		m_Tree.EditLabel(m_Tree.GetSelectedItem());
 	}
+	else if (::GetFocus() == m_List) {
+		auto index = m_List.GetSelectionMark();
+		if (index >= 0) {
+			m_CurrentOperation = m_Items[index].Key ? Operation::RenameKey : Operation::RenameValue;
+			m_List.EditLabel(index);
+		}
+	}
 	return 0;
 }
 
@@ -790,6 +807,133 @@ LRESULT CMainFrame::OnFindAll(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
+	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
+	CRegKey key;
+	if (::GetFocus() == m_Tree) {
+		auto key2 = Registry::OpenKey(path, KEY_READ | (m_ReadOnly ? 0 : KEY_WRITE));
+		key.Attach(key2.Detach());
+	}
+	else {
+		ATLASSERT(::GetFocus() == m_List);
+		auto& item = m_Items[m_List.GetSelectionMark()];
+		ATLASSERT(item.Key);
+		path += L"\\" + item.Name;
+		auto key2 = Registry::OpenKey(path, KEY_READ | (m_ReadOnly ? 0 : KEY_WRITE));
+		key.Attach(key2.Detach());
+	}
+	if (!key) {
+		DisplayError(L"Failed to open key");
+	}
+	else {
+		CSecurityInformation si((HANDLE)key.m_hKey, path, m_ReadOnly);
+		::EditSecurity(m_hWnd, &si);
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnNewValue(WORD, WORD id, HWND, BOOL&) {
+	static const DWORD types[] = { REG_DWORD, REG_QWORD, REG_SZ, REG_MULTI_SZ, REG_EXPAND_SZ, REG_BINARY };
+	ATLASSERT(id - ID_NEW_DWORDVALUE < _countof(types));
+	RegistryItem item;
+	item.Name = L"NewValue";
+	item.Type = types[id - ID_NEW_DWORDVALUE];
+	item.Key = false;
+	m_Items.push_back(item);
+	m_List.SetItemCountEx(m_List.GetItemCount() + 1, LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
+	m_CurrentOperation = Operation::CreateValue;
+	m_List.EditLabel((int)m_Items.size() - 1);
+	return 0;
+}
+
+LRESULT CMainFrame::OnListBeginEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/) {
+	if (m_ReadOnly)
+		return TRUE;
+
+	if (m_CurrentOperation != Operation::None)
+		return FALSE;
+
+	auto lv = (NMLVDISPINFO*)pnmh;
+	auto& item = m_Items[lv->item.iItem];
+	m_CurrentOperation = item.Key ? Operation::RenameKey : Operation::RenameValue;
+	return FALSE;
+}
+
+LRESULT CMainFrame::OnProperties(WORD, WORD, HWND, BOOL&) {
+	if (::GetFocus() == m_List) {
+		auto index = m_List.GetSelectionMark();
+		if(index >= 0 && !m_Items[index].Key)
+			return (LRESULT)ShowValueProperties(m_Items[index]);
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/) {
+	auto lv = (NMLVDISPINFO*)pnmh;
+	if (lv->item.pszText == nullptr) {
+		// cancelled
+		return FALSE;
+	}
+
+	std::shared_ptr<AppCommand> cmd;
+	auto hItem = m_Tree.GetSelectedItem();
+	auto index = lv->item.iItem;
+	auto& item = m_Items[index];
+	auto path = GetFullNodePath(hItem);
+	switch (m_CurrentOperation) {
+		case Operation::RenameKey:
+			cmd = std::make_shared<RenameKeyCommand>(path, item.Name, lv->item.pszText);
+			break;
+
+		case Operation::RenameValue:
+			cmd = std::make_shared<RenameValueCommand>(GetFullNodePath(hItem), item.Name, lv->item.pszText);
+			break;
+
+		case Operation::CreateValue:
+		{
+			auto cb = [this](auto cmd, auto) {
+				if (m_CurrentOperation == Operation::None && cmd.GetPath() == GetFullNodePath(m_Tree.GetSelectedItem())) {
+					UpdateList(true);
+				}
+				return true;
+			};
+			cmd = std::make_shared<CreateValueCommand>(path, lv->item.pszText, item.Type, cb);
+			break;
+		}
+
+		case Operation::CreateKey:
+			cmd = std::make_shared<CreateKeyCommand>(path, lv->item.pszText);
+			break;
+	}
+	LRESULT rv = FALSE;
+	ATLASSERT(cmd);
+	if (cmd) {
+		auto op = m_CurrentOperation;
+		m_CurrentOperation = Operation::None;
+		if (!m_CmdMgr.AddCommand(cmd)) {
+			DisplayError(L"Failed to " + cmd->GetCommandName());
+		}
+		else {
+			switch (op) {
+				case Operation::CreateValue:
+					item.Size = std::static_pointer_cast<CreateValueCommand>(cmd)->GetSize();
+					break;
+
+				case Operation::RenameKey:
+				case Operation::RenameValue:
+					item.Name = lv->item.pszText;
+					break;
+			}
+
+			m_List.RedrawItems(index, index);
+			m_List.SetSelectionMark(index);
+			m_List.EnsureVisible(index, FALSE);
+			rv = TRUE;
+		}
+	}
+	return rv;
+}
+
 void CMainFrame::InitCommandBar() {
 	struct {
 		UINT id, icon;
@@ -813,6 +957,9 @@ void CMainFrame::InitCommandBar() {
 		{ ID_EDIT_RENAME, IDI_RENAME },
 		{ ID_NEW_KEY, IDI_FOLDER_NEW },
 		{ ID_VIEW_SHOWKEYSINLIST, IDI_FOLDER_VIEW },
+		{ ID_KEY_PERMISSIONS, IDI_PERM },
+		{ ID_FILE_EXPORT, IDI_EXPORT },
+		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
 	};
 	for (auto& cmd : cmds) {
 		HICON hIcon = cmd.hIcon;
@@ -838,6 +985,7 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 		{ ID_VIEW_GOBACK, IDI_BACK },
 		{ ID_VIEW_GOFORWARD, IDI_FORWARD },
 		{ 0 },
+		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
 		{ ID_EDIT_READONLY, IDI_LOCK },
 		{ ID_VIEW_REFRESH, IDI_REFRESH },
 		{ ID_VIEW_SHOWKEYSINLIST, IDI_FOLDER_VIEW },
@@ -1154,12 +1302,14 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 
 bool CMainFrame::RefreshItem(HTREEITEM hItem) {
 	auto expanded = m_Tree.GetItemState(hItem, TVIS_EXPANDED);
+	m_Tree.LockWindowUpdate();
 	m_Tree.Expand(hItem, TVE_COLLAPSE | TVE_COLLAPSERESET);
 	TreeHelper th(m_Tree);
 	th.DeleteChildren(hItem);
 	m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
 	if (expanded)
 		m_Tree.Expand(hItem, TVE_EXPAND);
+	m_Tree.LockWindowUpdate(FALSE);
 	UpdateList(true);
 	return true;
 }
@@ -1202,22 +1352,33 @@ int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 }
 
 INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
+	auto cb = [this](auto& cmd, bool) {
+		if (GetFullNodePath(m_Tree.GetSelectedItem()) == cmd.GetPath()) {
+			int index = m_List.FindItem(cmd.GetName());
+			ATLASSERT(index >= 0);
+			if (index >= 0) {
+				m_Items[index].Value.Empty();
+				m_List.RedrawItems(index, index);
+			}
+		}
+		UpdateUI();
+		return true;
+	};
+	bool success = false;
+	INT_PTR result = IDCANCEL;
 	switch (item.Type) {
 		case REG_SZ:
 		case REG_EXPAND_SZ:
 		{
 			CStringValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
-			if (IDOK == dlg.DoModal() && dlg.IsModified()) {
+			result = dlg.DoModal();
+			if (IDOK == result && dlg.IsModified()) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto cmd = std::make_shared<ChangeValueCommand>(
 					GetFullNodePath(hItem), item.Name, dlg.GetType(), (PVOID)(PCWSTR)dlg.GetValue(), (1 + dlg.GetValue().GetLength()) * (LONG)sizeof(WCHAR));
-				if (!m_CmdMgr.AddCommand(cmd))
-					DisplayError(L"Failed to changed value");
-				else {
-					item.Value = dlg.GetValue();
-					auto index = m_List.GetSelectionMark();
-					m_List.RedrawItems(index, index);
-				}
+				success = m_CmdMgr.AddCommand(cmd);
+				if (success)
+					cmd->SetCallback(cb);
 			}
 			break;
 		}
@@ -1225,7 +1386,8 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		case REG_MULTI_SZ:
 		{
 			CMultiStringValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
-			if (dlg.DoModal() == IDOK && dlg.IsModified()) {
+			result = dlg.DoModal();
+			if (IDOK == result && dlg.IsModified()) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto value = dlg.GetValue();
 				value.TrimRight(L"\r\n");
@@ -1237,13 +1399,9 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 
 				auto cmd = std::make_shared<ChangeValueCommand>(
 					GetFullNodePath(hItem), item.Name, REG_MULTI_SZ, (PVOID)(PCWSTR)value, (1 + len) * (LONG)sizeof(WCHAR));
-				if (!m_CmdMgr.AddCommand(cmd))
-					DisplayError(L"Failed to changed value");
-				else {
-					item.Value.Empty();
-					auto index = m_List.GetSelectionMark();
-					m_List.RedrawItems(index, index);
-				}
+				success = m_CmdMgr.AddCommand(cmd);
+				if (success)
+					cmd->SetCallback(cb);
 			}
 			break;
 		}
@@ -1251,19 +1409,17 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		case REG_QWORD:
 		{
 			CNumberValueDlg dlg(m_CurrentKey, item.Name, item.Type, m_ReadOnly);
-			if (IDOK == dlg.DoModal()) {
+			result = dlg.DoModal();
+			if (IDOK == result && dlg.IsModified()) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto value = dlg.GetValue();
 				auto cmd = std::make_shared<ChangeValueCommand>(
 					GetFullNodePath(hItem), item.Name, item.Type, &value, dlg.GetType() == REG_DWORD ? 4 : 8);
-				if (!m_CmdMgr.AddCommand(cmd))
-					DisplayError(L"Failed to changed value");
-				else {
-					item.Value.Empty();
-					auto index = m_List.GetSelectionMark();
-					m_List.RedrawItems(index, index);
-				}
+				success = m_CmdMgr.AddCommand(cmd);
+				if (success)
+					cmd->SetCallback(cb);
 			}
+			break;
 		}
 		case REG_BINARY:
 		case REG_FULL_RESOURCE_DESCRIPTOR:
@@ -1271,20 +1427,29 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		case REG_RESOURCE_LIST:
 		{
 			CBinaryValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
-			if (IDOK == dlg.DoModal() && dlg.IsModified()) {
+			result = dlg.DoModal();
+			if (IDOK == result && dlg.IsModified()) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto cmd = std::make_shared<ChangeValueCommand>(
 					GetFullNodePath(hItem), item.Name, item.Type, (const PVOID)dlg.GetValue().data(), (LONG)dlg.GetValue().size());
-				if (!m_CmdMgr.AddCommand(cmd))
-					DisplayError(L"Failed to changed value");
-				else {
-					item.Value.Empty();
-					auto index = m_List.GetSelectionMark();
-					m_List.RedrawItems(index, index);
-				}
+				success = m_CmdMgr.AddCommand(cmd);
+				if (success)
+					cmd->SetCallback(cb);
 			}
 			break;
 		}
+	}
+	if (result == IDCANCEL)
+		return 0;
+
+	if (!success) {
+		DisplayError(L"Failed to changed value");
+	}
+	else {
+		item.Value.Empty();
+		auto index = m_List.GetSelectionMark();
+		m_List.RedrawItems(index, index);
+		UpdateUI();
 	}
 	return 0;
 }
@@ -1312,12 +1477,20 @@ void CMainFrame::UpdateUI() {
 		bool allowPaste = !m_ReadOnly && !m_Clipboard.Path.IsEmpty() && (node & NodeType::Key) == NodeType::Key;
 		UIEnable(ID_EDIT_PASTE, allowPaste);
 		ATLTRACE(L"Allow paste: %d\n", (int)allowPaste);
+		UIEnable(ID_KEY_PERMISSIONS, properKey);
 	}
 	else if (listFocus) {
 		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && listItem >= 0);
 		UIEnable(ID_EDIT_CUT, !m_ReadOnly && listItem >= 0);
 		UIEnable(ID_EDIT_COPY, listItem >= 0);
+		UIEnable(ID_KEY_PERMISSIONS, listItem >= 0 && m_Items[listItem].Key);
+		UIEnable(ID_EDIT_RENAME, !m_ReadOnly && listItem >= 0);
 	}
+	else {
+		UIEnable(ID_KEY_PERMISSIONS, FALSE);
+	}
+	for (auto id = ID_NEW_DWORDVALUE; id <= ID_NEW_BINARYVALUE; id++)
+		UIEnable(id, !m_ReadOnly);
 	UIEnable(ID_SEARCH_FINDNEXT, m_FindDlg.IsFindNextAvailable());
 }
 
@@ -1329,6 +1502,9 @@ void CMainFrame::UpdateList(bool force) {
 	auto hItem = m_Tree.GetSelectedItem();
 	m_CurrentPath = GetNodePath(hItem, &hKey);
 	m_StatusBar.SetText(2, GetFullNodePath(m_Tree.GetSelectedItem()));
+	int image;
+	m_Tree.GetItemImage(hItem, image, image);
+	m_StatusBar.SetIcon(1, m_Tree.GetImageList(TVSIL_NORMAL).GetIcon(image));
 
 	if (hItem == m_hStdReg && m_Settings.ShowKeysInList()) {
 		// special case for root of registry

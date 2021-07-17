@@ -39,6 +39,9 @@
 #define IDI_FINDALL                     148
 #define IDI_NUM4                        149
 #define IDI_NUM8                        150
+#define IDI_PERM						151
+#define IDI_EXPORT						152
+#define IDI_PROPERTIES					153
 #define IDD_FIND                        160
 #define IDD_FINDALL                     161
 #define IDD_STRINGVALUE                 162

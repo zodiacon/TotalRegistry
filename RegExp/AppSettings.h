@@ -9,12 +9,14 @@ struct AppSettings : Settings {
 		SETTING(ShowExtraHives, 0, SettingType::Bool);
 		SETTING(ShowKeysInList, 0, SettingType::Bool);
 		SETTING(AlwaysOnTop, 0, SettingType::Bool);
+		SETTING(ReadOnly, 0, SettingType::Bool);
 		SETTING(Find, FindOptions::SearchKeys | FindOptions::SearchValues | FindOptions::SearchStdRegistry | FindOptions::SearchSelected, SettingType::Int32);
 	END_SETTINGS
 
 	DEF_SETTING(ShowExtraHives, int)
 	DEF_SETTING(AlwaysOnTop, int)
 	DEF_SETTING(ShowKeysInList, int)
+	DEF_SETTING(ReadOnly, int)
 	DEF_SETTING(MainWindowPlacement, WINDOWPLACEMENT)
 	DEF_SETTING(Find, FindOptions)
 };

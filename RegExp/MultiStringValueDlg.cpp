@@ -19,23 +19,24 @@ LRESULT CMultiStringValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 
 	ULONG chars = 0;
 	m_Key.QueryMultiStringValue(m_Name, nullptr, &chars);
-	chars++;
-	auto buffer = std::make_unique<WCHAR[]>(chars);
-	ZeroMemory(buffer.get(), chars * sizeof(WCHAR));
-	DWORD type;
-	auto len = chars * 2;
-	if (ERROR_SUCCESS != ::RegQueryValueEx(m_Key, m_Name, nullptr, &type, (PBYTE)buffer.get(), &len)) {
-		EndDialog(IDRETRY);
-		return 0;
-	}
-	std::for_each(buffer.get(), buffer.get() + chars - 1, [](auto& ch) {
-		if (ch == 0) ch = L'\n';
-		});
-		
-	m_Value = buffer.get();
-	m_Value.Replace(L"\n", L"\r\n");
-	SetDlgItemText(IDC_VALUE, m_Value);
+	if (chars) {
+		chars++;
+		auto buffer = std::make_unique<WCHAR[]>(chars);
+		ZeroMemory(buffer.get(), chars * sizeof(WCHAR));
+		DWORD type;
+		auto len = chars * 2;
+		if (ERROR_SUCCESS != ::RegQueryValueEx(m_Key, m_Name, nullptr, &type, (PBYTE)buffer.get(), &len)) {
+			EndDialog(IDRETRY);
+			return 0;
+		}
+		std::for_each(buffer.get(), buffer.get() + chars - 1, [](auto& ch) {
+			if (ch == 0) ch = L'\n';
+			});
 
+		m_Value = buffer.get();
+		m_Value.Replace(L"\n", L"\r\n");
+		SetDlgItemText(IDC_VALUE, m_Value);
+	}
 	if (m_ReadOnly) {
 		((CEdit)GetDlgItem(IDC_VALUE)).SetReadOnly(TRUE);
 	}

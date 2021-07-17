@@ -61,14 +61,14 @@ public:
 
 	BEGIN_MSG_MAP(CMainFrame)
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
-		//NOTIFY_CODE_HANDLER(TVN_GETDISPINFO, OnGetTreeDispInfo)
-		NOTIFY_CODE_HANDLER(NM_KILLFOCUS, OnFocusChanged)
 		NOTIFY_CODE_HANDLER(NM_SETFOCUS, OnFocusChanged)
 		NOTIFY_CODE_HANDLER(TVN_ITEMEXPANDING, OnTreeItemExpanding)
 		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnTreeSelChanged)
 		NOTIFY_CODE_HANDLER(LVN_ITEMCHANGED, OnListItemChanged)
 		NOTIFY_CODE_HANDLER(TVN_BEGINLABELEDIT, OnTreeBeginEdit)
 		NOTIFY_CODE_HANDLER(TVN_ENDLABELEDIT, OnTreeEndEdit)
+		NOTIFY_CODE_HANDLER(LVN_ENDLABELEDIT, OnListEndEdit)
+		NOTIFY_CODE_HANDLER(LVN_BEGINLABELEDIT, OnListBeginEdit)
 		NOTIFY_HANDLER(TreeId, NM_RCLICK, OnTreeContextMenu)
 		NOTIFY_CODE_HANDLER(TVN_KEYDOWN, OnTreeKeyDown)
 		NOTIFY_CODE_HANDLER(LVN_KEYDOWN, OnListKeyDown)
@@ -77,6 +77,7 @@ public:
 		MESSAGE_HANDLER(WM_BUILD_TREE, OnBuildTree)
 		MESSAGE_HANDLER(WM_FIND_UPDATE, OnFindUpdate)
 		MESSAGE_HANDLER(WM_RUN, OnRunOnUIThread)
+		MESSAGE_HANDLER(WM_MENUSELECT, OnMenuSelect)
 		COMMAND_ID_HANDLER(ID_FILE_RUNASADMIN, OnRunAsAdmin)
 		COMMAND_ID_HANDLER(IDM_EXIT, OnExit)
 		COMMAND_ID_HANDLER(ID_VIEW_REFRESH, OnViewRefresh)
@@ -85,6 +86,7 @@ public:
 		COMMAND_ID_HANDLER(ID_OPTIONS_ALWAYSONTOP, OnAlwaysOnTop)
 		COMMAND_ID_HANDLER(ID_VIEW_SHOWKEYSINLIST, OnShowKeysInList)
 		COMMAND_ID_HANDLER(ID_NEW_KEY, OnNewKey)
+		COMMAND_RANGE_HANDLER(ID_NEW_DWORDVALUE, ID_NEW_BINARYVALUE, OnNewValue)
 		COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
 		COMMAND_ID_HANDLER(ID_EDIT_PASTE, OnEditPaste)
 		COMMAND_ID_HANDLER(ID_EDIT_FIND, OnEditFind)
@@ -98,6 +100,8 @@ public:
 		COMMAND_ID_HANDLER(ID_COPY_NAME, OnCopyKeyName)
 		COMMAND_ID_HANDLER(ID_SEARCH_FINDALL, OnFindAll)
 		COMMAND_RANGE_HANDLER(ID_LOCATIONS_SERVICES, ID_LOCATIONS_SERVICES + 15, OnKnownLocation)
+		COMMAND_ID_HANDLER(ID_KEY_PERMISSIONS, OnKeyPermissions)
+		COMMAND_ID_HANDLER(ID_KEY_PROPERTIES, OnProperties)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAbout)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
@@ -125,6 +129,8 @@ private:
 		None,
 		RenameKey,
 		CreateKey,
+		CreateValue,
+		RenameValue,
 	};
 	enum class ClipboardOperation {
 		Copy, Cut
@@ -140,6 +146,7 @@ private:
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnTimer(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnShowWindow(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnMenuSelect(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnFindUpdate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnExit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnAbout(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
@@ -174,6 +181,11 @@ private:
 	LRESULT OnCopyKeyName(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnKnownLocation(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnFindAll(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnKeyPermissions(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnNewValue(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnListEndEdit(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
+	LRESULT OnListBeginEdit(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
+	LRESULT OnProperties(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);

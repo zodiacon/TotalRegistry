@@ -39,5 +39,5 @@ bool ChangeValueCommand::Execute() {
 	_type = type;
 	_data = std::move(buffer);
 
-	return true;
+	return InvokeCallback(false);
 }

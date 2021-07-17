@@ -23,12 +23,14 @@ LRESULT CStringValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 
 	ULONG chars = 0;
 	m_Key.QueryStringValue(m_Name, nullptr, &chars);
-	auto buffer = std::make_unique<WCHAR[]>(chars);
-	if (ERROR_SUCCESS != m_Key.QueryStringValue(m_Name, buffer.get(), &chars)) {
-		EndDialog(IDRETRY);
-		return 0;
+	if (chars) {
+		auto buffer = std::make_unique<WCHAR[]>(chars);
+		if (ERROR_SUCCESS != m_Key.QueryStringValue(m_Name, buffer.get(), &chars)) {
+			EndDialog(IDRETRY);
+			return 0;
+		}
+		SetDlgItemText(IDC_VALUE, m_Value = buffer.get());
 	}
-	SetDlgItemText(IDC_VALUE, m_Value = buffer.get());
 	m_Key.QueryValue(m_Name, &m_Type, nullptr, nullptr);
 	ATLASSERT(m_Type == REG_SZ || m_Type == REG_EXPAND_SZ);
 	CheckDlgButton(m_Type == REG_SZ ? IDC_STRING : IDC_EXPANDSTRING, BST_CHECKED);
