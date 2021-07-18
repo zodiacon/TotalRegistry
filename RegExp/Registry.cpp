@@ -153,7 +153,7 @@ bool Registry::RenameKey(HKEY hKey, PCWSTR name, PCWSTR newName) {
 	return ERROR_SUCCESS == error;
 }
 
-const std::vector<Hive>& Registry::GetHiveList(bool refresh) const {
+const std::vector<Hive>& Registry::GetHiveList(bool refresh) {
 	if (refresh)
 		_hives.clear();
 	if (!_hives.empty())
@@ -167,17 +167,17 @@ const std::vector<Hive>& Registry::GetHiveList(bool refresh) const {
 	EnumKeyValues(key, [&](auto type, auto name, auto size) {
 		if (type == REG_SZ && name && *name) {
 			auto value = QueryStringValue(key, name);
-			_hives.push_back({ name, value });
+			_hives.push_back({ name, (PCWSTR)value });
 		}
 		return true;
 		});
 	return _hives;
 }
 
-bool Registry::IsHiveKey(const CString& path) const {
+bool Registry::IsHiveKey(const CString& path) {
 	const auto& hives = GetHiveList();
 	bool stdReg = path[0] != L'\\';
-	return std::find_if(hives.begin(), hives.end(), [&](auto& hive) { return hive.Key.CompareNoCase(stdReg ? StdRegPathToRealPath(path) : path) == 0; }) != hives.end();
+	return std::find_if(hives.begin(), hives.end(), [&](auto& hive) { return _wcsicmp(hive.Key.c_str(), stdReg ? StdRegPathToRealPath(path) : path) == 0; }) != hives.end();
 }
 
 CString Registry::ExpandStrings(const CString& text) {

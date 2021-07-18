@@ -1,15 +1,15 @@
 #pragma once
 
 struct Hive {
-	CString Key;
-	CString Path;
+	std::wstring Key;
+	std::wstring Path;
 };
 
 struct RegistryItem {
 	CString Name;
 	mutable CString Value;
 	DWORD Type;
-	DWORD Size{ 0 };
+	mutable DWORD Size{ 0 };
 	FILETIME TimeStamp{};
 	bool Key : 1 { false };
 };
@@ -17,7 +17,7 @@ struct RegistryItem {
 const DWORD REG_KEY = 0x1111;
 const DWORD REG_KEY_UP = 0x1112;
 
-struct Registry {
+struct Registry abstract final {
 	static DWORD EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&)> handler);
 	static DWORD EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler);
 	static CString QueryStringValue(CRegKey& key, PCWSTR name);
@@ -36,8 +36,8 @@ struct Registry {
 	static bool IsKeyLink(HKEY hKey, PCWSTR path);
 	static CString ExpandStrings(const CString& text);
 
-	const std::vector<Hive>& GetHiveList(bool refresh = false) const;
-	bool IsHiveKey(const CString& path) const;
+	static const std::vector<Hive>& GetHiveList(bool refresh = false);
+	static bool IsHiveKey(const CString& path);
 
 	static inline const struct {
 		PCWSTR text;
@@ -55,5 +55,5 @@ struct Registry {
 	};
 
 private:
-	mutable std::vector<Hive> _hives;
+	inline static std::vector<Hive> _hives;
 };

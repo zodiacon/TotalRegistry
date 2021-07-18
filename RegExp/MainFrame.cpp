@@ -132,8 +132,14 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 			break;
 
 		case ColumnType::Size:
-			if (!item.Key)
+			if (!item.Key) {
+				if (item.Size == -1) {
+					// recalculate
+					item.Size = 0;
+					m_CurrentKey.QueryValue(item.Name, nullptr, nullptr, &item.Size);
+				}
 				text.Format(L"%u", item.Size);
+			}
 			break;
 
 		case ColumnType::TimeStamp:
@@ -195,8 +201,11 @@ BOOL CMainFrame::OnRightClickList(HWND h, int row, int col, const POINT& pt) {
 	CMenu menu;
 	menu.LoadMenu(IDR_CONTEXT);
 	int index = 3;
-	if (row >= 0)
+	if (row >= 0) {
 		index = m_Items[row].Key ? 1 : 2;
+		if (m_Items[row].Type == REG_KEY_UP)
+			return FALSE;
+	}
 	return m_CmdBar.TrackPopupMenu(menu.GetSubMenu(index), 0, pt.x, pt.y);
 }
 
@@ -868,6 +877,10 @@ LRESULT CMainFrame::OnProperties(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
+	return 0;
+}
+
 LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/) {
 	auto lv = (NMLVDISPINFO*)pnmh;
 	if (lv->item.pszText == nullptr) {
@@ -959,6 +972,7 @@ void CMainFrame::InitCommandBar() {
 		{ ID_VIEW_SHOWKEYSINLIST, IDI_FOLDER_VIEW },
 		{ ID_KEY_PERMISSIONS, IDI_PERM },
 		{ ID_FILE_EXPORT, IDI_EXPORT },
+		{ ID_FILE_IMPORT, IDI_IMPORT },
 		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
 	};
 	for (auto& cmd : cmds) {
@@ -1015,7 +1029,7 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 	if (name) {
 		hRoot = m_Tree.InsertItem(name, 3, 2, hRoot, TVI_LAST);
 		auto path = GetFullNodePath(hRoot);
-		if (m_Registry.IsHiveKey(path)) {
+		if (Registry::IsHiveKey(path)) {
 			m_Tree.SetItemImage(hRoot, 6, 6);
 			SetNodeData(hRoot, GetNodeData(hRoot) | NodeType::Hive);
 		}
@@ -1046,7 +1060,7 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 				m_Tree.SetItemImage(hItem, 5, 5);
 			}
 			auto path = GetFullNodePath(hItem);
-			if (m_Registry.IsHiveKey(path)) {
+			if (Registry::IsHiveKey(path)) {
 				int image = error == ERROR_ACCESS_DENIED ? 7 : 6;
 				m_Tree.SetItemImage(hItem, image, image);
 				SetNodeData(hItem, GetNodeData(hItem) | NodeType::Hive);
@@ -1343,7 +1357,7 @@ int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 
 	CRegKey key;
 	auto error = key.Open(m_CurrentKey, item.Name, KEY_READ);
-	if (m_Registry.IsHiveKey(GetFullNodePath(m_Tree.GetSelectedItem()) + L"\\" + item.Name))
+	if (Registry::IsHiveKey(GetFullNodePath(m_Tree.GetSelectedItem()) + L"\\" + item.Name))
 		image = error == ERROR_ACCESS_DENIED ? 7 : 6;
 	else if (error == ERROR_ACCESS_DENIED)
 		image = 5;
@@ -1358,6 +1372,7 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 			ATLASSERT(index >= 0);
 			if (index >= 0) {
 				m_Items[index].Value.Empty();
+				m_Items[index].Size = -1;
 				m_List.RedrawItems(index, index);
 			}
 		}
@@ -1433,8 +1448,10 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 				auto cmd = std::make_shared<ChangeValueCommand>(
 					GetFullNodePath(hItem), item.Name, item.Type, (const PVOID)dlg.GetValue().data(), (LONG)dlg.GetValue().size());
 				success = m_CmdMgr.AddCommand(cmd);
-				if (success)
+				if (success) {
 					cmd->SetCallback(cb);
+					item.Size = (DWORD)dlg.GetValue().size();
+				}
 			}
 			break;
 		}
@@ -1483,7 +1500,7 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && listItem >= 0);
 		UIEnable(ID_EDIT_CUT, !m_ReadOnly && listItem >= 0);
 		UIEnable(ID_EDIT_COPY, listItem >= 0);
-		UIEnable(ID_KEY_PERMISSIONS, listItem >= 0 && m_Items[listItem].Key);
+		UIEnable(ID_KEY_PERMISSIONS, listItem >= 0 && m_Items[listItem].Key && m_Items[listItem].Type != REG_KEY_UP);
 		UIEnable(ID_EDIT_RENAME, !m_ReadOnly && listItem >= 0);
 	}
 	else {

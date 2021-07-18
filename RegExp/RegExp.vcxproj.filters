@@ -341,7 +341,10 @@
       <Filter>Resource Files\Icons</Filter>
     </Image>
     <Image Include="Icons\properties.ico">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\import.ico">
+      <Filter>Resource Files\Icons</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>

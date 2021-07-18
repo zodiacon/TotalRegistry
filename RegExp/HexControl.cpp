@@ -61,8 +61,9 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 	dc.SetBkColor(m_Colors.Background);
 	x = 0;
 	m_Text.clear();
-	m_Text.resize(lines);
-	for (int y = 0; y < lines; y++) {
+	int nlines = std::max(1, lines);
+	m_Text.resize(nlines);
+	for (int y = 0; y < nlines; y++) {
 		std::wstring text;
 		::StringCchPrintf(str, _countof(str), addrFormat.c_str(), m_StartOffset + y * m_BytesPerLine);
 		text = str;
@@ -74,7 +75,7 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 		m_Text[y] = text;
 		p.lpstr = m_Text[y].c_str();
 	}
-	::PolyTextOut(dc, poly, (int)m_Text.size());
+	::PolyTextOut(dc, poly, nlines);
 
 	// ASCII
 	dc.SetTextColor(m_Colors.Ascii);
@@ -103,8 +104,8 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 			break;
 		i += m_BytesPerLine;
 	}
-	::PolyTextOut(dc, poly, (int)m_Text.size());
-
+	if(!m_Text.empty())
+		::PolyTextOut(dc, poly, (int)m_Text.size());
 
 	UpdateCaret();
 }
@@ -264,6 +265,9 @@ void CHexControl::CommitValue(int64_t offset, uint64_t value) {
 		RecalcLayout();
 	}
 
+	if (m_CaretOffset == m_Buffer->GetSize())
+		m_Buffer->Increase(m_DataSize);
+
 	DWORD64 oldValue;
 	m_Buffer->GetData(offset, (uint8_t*)&oldValue, m_DataSize);
 	m_Buffer->SetData(offset, (const uint8_t*)&value, m_DataSize);
@@ -271,8 +275,6 @@ void CHexControl::CommitValue(int64_t offset, uint64_t value) {
 	ResetInput();
 	if (m_CaretOffset > m_EndOffset - m_BytesPerLine * 2)
 		SendMessage(WM_VSCROLL, SB_LINEDOWN);
-	if(m_CaretOffset == m_Buffer->GetSize())
-		m_Buffer->Increase(m_DataSize);
 }
 
 LRESULT CHexControl::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
@@ -363,7 +365,10 @@ LRESULT CHexControl::OnVScroll(UINT, WPARAM wParam, LPARAM, BOOL&) {
 		m_StartOffset = si.nPos * m_BytesPerLine;
 		if (m_StartOffset + m_Lines * m_BytesPerLine >= m_Buffer->GetSize()) {
 			m_StartOffset = m_Buffer->GetSize() - (m_Lines - 1) * m_BytesPerLine;
+			if (m_StartOffset < 0)
+				m_StartOffset = 0;
 			m_StartOffset = m_StartOffset - m_StartOffset % m_BytesPerLine;
+			ATLASSERT(m_StartOffset >= 0);
 		}
 		m_EndOffset = m_StartOffset + m_Lines * m_BytesPerLine;
 		if (m_EndOffset > m_Buffer->GetSize())
@@ -374,7 +379,7 @@ LRESULT CHexControl::OnVScroll(UINT, WPARAM wParam, LPARAM, BOOL&) {
 }
 
 void CHexControl::RecalcLayout() {
-	if (m_Buffer == nullptr) {
+	if (m_Buffer == nullptr || m_Buffer->GetSize() == 0) {
 		return;
 	}
 
@@ -405,9 +410,13 @@ void CHexControl::RecalcLayout() {
 	GetScrollInfo(SB_VERT, &si);
 
 	m_StartOffset = si.nPos * m_BytesPerLine;
+	ATLASSERT(m_StartOffset >= 0);
 	if (m_StartOffset + m_Lines * m_BytesPerLine >= m_Buffer->GetSize()) {
 		m_StartOffset = m_Buffer->GetSize() - (m_Lines - 1) * m_BytesPerLine;
+		if (m_StartOffset < 0)
+			m_StartOffset = 0;
 		m_StartOffset = m_StartOffset - m_StartOffset % m_BytesPerLine;
+		ATLASSERT(m_StartOffset >= 0);
 	}
 	m_EndOffset = m_StartOffset + m_Lines * m_BytesPerLine;
 	if (m_EndOffset > m_Buffer->GetSize())
@@ -581,11 +590,15 @@ LRESULT CHexControl::OnChar(UINT, WPARAM wParam, LPARAM, BOOL&) {
 			//			DrawOffset(m_CaretOffset);
 		}
 		SetCaretPos(pos.x, pos.y);
+		RECT rcClient;
+		GetClientRect(&rcClient);
+		RECT rc = { pos.x - m_CharWidth, pos.y, rcClient.right, pos.y + m_CharHeight };
+		RedrawWindow(&rc);
 	}
-	RECT rcClient;
-	GetClientRect(&rcClient);
-	RECT rc = { pos.x - m_CharWidth, pos.y, rcClient.right, pos.y + m_CharHeight };
-	RedrawWindow(&rc);
+	else {
+		CClientDC dc(m_hWnd);
+		DrawNumber(dc.m_hDC, m_CaretOffset, m_CurrentInput, m_EditDigits);
+	}
 	return 0;
 }
 

@@ -220,6 +220,7 @@
     <Image Include="Icons\forward.ico" />
     <Image Include="Icons\hive-accessdenied.ico" />
     <Image Include="Icons\hive.ico" />
+    <Image Include="Icons\import.ico" />
     <Image Include="Icons\laptop.ico" />
     <Image Include="Icons\link.ico" />
     <Image Include="Icons\lock.ico" />
