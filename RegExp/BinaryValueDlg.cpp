@@ -13,6 +13,13 @@ bool CBinaryValueDlg::IsModified() const {
 	return m_Modified;
 }
 
+void CBinaryValueDlg::UpdateBufferSize() {
+	CString text;
+	auto bytes = (ULONG)m_Buffer.GetSize();
+	text.Format(L"Size: %u bytes", bytes);
+	SetDlgItemText(IDC_BUFFERSIZE, text);
+}
+
 LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	InitDynamicLayout();
 	SetDialogIcon(IDI_BINARY);
@@ -34,9 +41,7 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 
 	m_Buffer.Init(m_Value.data(), (uint32_t)m_Value.size());
 
-	CString text;
-	text.Format(L"Size: %u bytes", bytes);
-	SetDlgItemText(IDC_BUFFERSIZE, text);
+	UpdateBufferSize();
 
 	m_Hex.SetReadOnly(m_ReadOnly);
 	m_Hex.SetBufferManager(&m_Buffer);
@@ -73,5 +78,10 @@ LRESULT CBinaryValueDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
 		}
 	}
 	EndDialog(wID);
+	return 0;
+}
+
+LRESULT CBinaryValueDlg::OnHexBufferSizeChanged(int, LPNMHDR, BOOL&) {
+	UpdateBufferSize();
 	return 0;
 }

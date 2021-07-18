@@ -157,12 +157,34 @@ LRESULT CHexControl::OnKeyDown(UINT, WPARAM wParam, LPARAM, BOOL&) {
 			m_Selection.SetAnchor(m_CaretOffset);
 		}
 	}
-	else if (!shift && !m_Selection.IsEmpty()) {
-		ClearSelection();
-		redraw = true;
-	}
 
 	switch (wParam) {
+		case VK_BACK:
+			if (m_Selection.IsEmpty()) {
+				m_Buffer->Delete(m_CaretOffset - 1, m_DataSize);
+				m_CaretOffset--;
+			}
+			else {
+				m_Buffer->Delete(m_Selection.GetOffset(), m_Selection.GetLength());
+			}
+			RedrawWindow();
+			m_NotifyData.hdr.code = HCN_SIZECHANGED;
+			SendNotify(&m_NotifyData);
+			return 0;
+
+		case VK_DELETE:
+			if (m_Selection.IsEmpty()) {
+				m_Buffer->Delete(m_CaretOffset, m_DataSize);
+			}
+			else {
+				m_Buffer->Delete(m_Selection.GetOffset(), m_Selection.GetLength());
+			}
+			RedrawWindow();
+			m_NotifyData.hdr.code = HCN_SIZECHANGED;
+			SendNotify(&m_NotifyData);
+
+			return 0;
+
 		case VK_ESCAPE:
 			if (m_EditDigits > 0) {
 				abortEdit = true;
@@ -206,6 +228,10 @@ LRESULT CHexControl::OnKeyDown(UINT, WPARAM wParam, LPARAM, BOOL&) {
 			//	else
 			//		m_CaretOffset = m_CaretOffset % m_BytesPerLine;
 			//	break;
+	}
+	if (!shift && !m_Selection.IsEmpty()) {
+		ClearSelection();
+		redraw = true;
 	}
 	if (shift && m_CaretOffset != current) {
 		if (alt) {
@@ -265,8 +291,11 @@ void CHexControl::CommitValue(int64_t offset, uint64_t value) {
 		RecalcLayout();
 	}
 
-	if (m_CaretOffset == m_Buffer->GetSize())
+	if (m_CaretOffset == m_Buffer->GetSize()) {
 		m_Buffer->Increase(m_DataSize);
+		m_NotifyData.hdr.code = HCN_SIZECHANGED;
+		SendNotify(&m_NotifyData);
+	}
 
 	DWORD64 oldValue;
 	m_Buffer->GetData(offset, (uint8_t*)&oldValue, m_DataSize);
@@ -280,6 +309,8 @@ void CHexControl::CommitValue(int64_t offset, uint64_t value) {
 LRESULT CHexControl::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	InitFontMetrics();
 	CreateSolidCaret(m_InsertMode ? 2 : m_CharWidth, m_CharHeight);
+	m_NotifyData.hdr.hwndFrom = m_hWnd;
+	m_NotifyData.hdr.idFrom = GetWindowLongPtr(GWLP_ID);
 
 	return 0;
 }
@@ -554,6 +585,9 @@ LRESULT CHexControl::OnChar(UINT, WPARAM wParam, LPARAM, BOOL&) {
 	if (IsReadOnly())
 		return 0;
 
+	if (wParam == VK_BACK)
+		return 0;
+
 	bool digit = wParam >= '0' && wParam <= '9';
 	bool hexdigit = wParam >= 'A' && wParam <= 'F' || wParam >= 'a' && wParam <= 'f';
 
@@ -624,6 +658,10 @@ PCWSTR CHexControl::FormatNumber(ULONGLONG number) const {
 	else
 		result.Format(format[m_DataSize].format, number);
 	return result.TrimRight();
+}
+
+void CHexControl::SendNotify(HCNOTIFY* notify) {
+	GetParent().SendMessage(WM_NOTIFY, 0, reinterpret_cast<LPARAM>(notify));
 }
 
 LRESULT CHexControl::OnSize(UINT, WPARAM, LPARAM, BOOL&) {
@@ -777,7 +815,7 @@ bool Selection::IsSelected(int64_t offset) const {
 }
 
 bool Selection::IsEmpty() const {
-	return _offset < 0;
+	return _offset < 0 || _length == 0;
 }
 
 SelectionType Selection::GetSelectionType() const {

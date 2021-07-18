@@ -42,6 +42,9 @@ public:
 	bool IsSelected(int64_t offset) const;
 	bool IsEmpty() const;
 	SelectionType GetSelectionType() const;
+	int64_t GetLength() const {
+		return _length;
+	}
 
 	void Clear();
 
@@ -50,6 +53,12 @@ private:
 	int64_t _offset{ -1 }, _anchor{ -1 };
 	int64_t _length{ 0 };
 	int _width, _height, _bytesPerLine;
+};
+
+const UINT HCN_SIZECHANGED = NM_FIRST - 3000;
+
+struct HCNOTIFY {
+	NMHDR hdr;
 };
 
 class CHexControl :
@@ -64,10 +73,6 @@ public:
 	bool IsReadOnly() const;
 	void SetAllowExtension(bool allow);
 	bool IsAllowExtension() const;
-	bool CanUndo() const;
-	bool CanRedo() const;
-	bool Undo();
-	bool Redo();
 	void SetSize(int64_t size);
 	bool SetDataSize(int32_t size);
 	int32_t GetDataSize() const;
@@ -128,6 +133,7 @@ private:
 	int64_t GetOffsetFromPoint(const POINT& pt) const;
 	void DrawNumber(CDCHandle dc, int64_t offset, uint64_t value, int editDigits);
 	PCWSTR FormatNumber(ULONGLONG number) const;
+	void SendNotify(HCNOTIFY* notify);
 
 	void UpdateCaret();
 	void RedrawWindow(RECT* = nullptr);
@@ -151,6 +157,7 @@ private:
 	int m_AddressDigits{ 4 };
 	int m_EditDigits{ 0 }, m_LastDigits{ 0 };
 	Selection m_Selection;
+	HCNOTIFY m_NotifyData;
 	uint64_t m_CurrentInput{ 0 }, m_OldValue;
 	bool m_InsertMode{ false };
 	bool m_ReadOnly{ false };

@@ -207,7 +207,7 @@ PCWSTR Registry::GetRegTypeAsString(DWORD type) {
 
 CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
 	ULONG realsize = item.Size;
-	ULONG size = (realsize > (1 << 12) ? (1 << 12) : realsize) / sizeof(WCHAR);
+	ULONG size = (realsize > (1 << 10) ? (1 << 10) : realsize) / sizeof(WCHAR);
 	LSTATUS status;
 	CString text;
 	DWORD type;
@@ -215,8 +215,7 @@ CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
 	switch (item.Type) {
 		case REG_SZ:
 		case REG_EXPAND_SZ:
-			text.Preallocate(size + 1);
-			status = key.QueryStringValue(item.Name, text.GetBuffer(), &size);
+			status = key.QueryStringValue(item.Name, text.GetBufferSetLength(size), &size);
 			break;
 
 		case REG_LINK:
@@ -224,9 +223,8 @@ CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
 			break;
 
 		case REG_MULTI_SZ:
-			text.Preallocate(size + 1);
-			size *= sizeof(WCHAR);
-			status = ::RegQueryValueEx(key, item.Name, nullptr, &type, (PBYTE)text.GetBuffer(), &size);
+			size *= 2;
+			status = ::RegQueryValueEx(key, item.Name, nullptr, &type, (PBYTE)text.GetBufferSetLength(size / 2), &size);
 			if (status == ERROR_SUCCESS) {
 				auto p = text.GetBuffer();
 				while (*p) {
@@ -275,16 +273,17 @@ CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
 	return text.GetLength() < 1024 ? text : text.Mid(0, 1024);
 }
 
-bool Registry::IsKeyLink(HKEY hKey, PCWSTR path) {
+bool Registry::IsKeyLink(HKEY hKey, PCWSTR path, CString& link) {
 	CRegKey hLinkKey;
 	auto error = ::RegOpenKeyExW(hKey, path, REG_OPTION_OPEN_LINK, KEY_READ, &hLinkKey.m_hKey);
 	if (ERROR_SUCCESS == error) {
 		DWORD type = 0;
-		WCHAR linkPath[512];
+		WCHAR linkPath[512] = { 0 };
 		DWORD size = sizeof(linkPath) - sizeof(WCHAR);
 		auto error = ::RegQueryValueEx(hLinkKey, L"SymbolicLinkValue", nullptr, &type, (BYTE*)linkPath, &size);
 		if (type == REG_LINK) {
 			// link
+			link = linkPath;
 			return true;
 		}
 	}

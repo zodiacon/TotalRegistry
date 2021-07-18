@@ -8,7 +8,7 @@ struct Hive {
 struct RegistryItem {
 	CString Name;
 	mutable CString Value;
-	DWORD Type;
+	mutable DWORD Type;
 	mutable DWORD Size{ 0 };
 	FILETIME TimeStamp{};
 	bool Key : 1 { false };
@@ -33,7 +33,7 @@ struct Registry abstract final {
 
 	static CRegKey OpenKey(const CString& path, DWORD access, bool* root = nullptr);
 	static CRegKey CreateKey(const CString& path, DWORD access);
-	static bool IsKeyLink(HKEY hKey, PCWSTR path);
+	static bool IsKeyLink(HKEY hKey, PCWSTR path, CString& linkPath);
 	static CString ExpandStrings(const CString& text);
 
 	static const std::vector<Hive>& GetHiveList(bool refresh = false);

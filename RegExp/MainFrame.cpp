@@ -121,8 +121,12 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 	auto& item = m_Items[row];
 	CString text;
 	switch (static_cast<ColumnType>(GetColumnManager(h)->GetColumnTag(col))) {
-		case ColumnType::Name: return item.Name.IsEmpty() ? CString(L"(Default)") : item.Name;
-		case ColumnType::Type: return Registry::GetRegTypeAsString(item.Type);
+		case ColumnType::Name: 
+			return item.Name.IsEmpty() ? CString(L"(Default)") : item.Name;
+
+		case ColumnType::Type: 
+			return Registry::GetRegTypeAsString(item.Type);
+
 		case ColumnType::Value:
 			if (!item.Key) {
 				if (item.Value.IsEmpty())
@@ -360,6 +364,8 @@ LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
 	ATLASSERT(pLoop != NULL);
 	pLoop->RemoveMessageFilter(this);
 	pLoop->RemoveIdleHandler(this);
+
+	m_Items.clear();
 
 	bHandled = FALSE;
 	return 1;
@@ -1051,7 +1057,8 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 					m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
 				}
 				subKey.Close();
-				if (Registry::IsKeyLink(key, name)) {
+				CString linkPath;
+				if (Registry::IsKeyLink(key, name, linkPath)) {
 					m_Tree.SetItemImage(hItem, 4, 4);
 				}
 			}
@@ -1352,7 +1359,8 @@ int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 	if (m_CurrentKey == nullptr)
 		return image;
 
-	if (Registry::IsKeyLink(m_CurrentKey, item.Name))
+	CString linkPath;
+	if (Registry::IsKeyLink(m_CurrentKey, item.Name, linkPath))
 		return 4;
 
 	CRegKey key;
@@ -1380,14 +1388,18 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		return true;
 	};
 	bool success = false;
-	INT_PTR result = IDCANCEL;
+	bool result = false;
 	switch (item.Type) {
+		case REG_LINK:
+			AtlMessageBox(m_hWnd, L"No special properties available for a symbolic link", IDS_APP_TITLE, MB_ICONINFORMATION);
+			return 0;
+
 		case REG_SZ:
 		case REG_EXPAND_SZ:
 		{
 			CStringValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
-			result = dlg.DoModal();
-			if (IDOK == result && dlg.IsModified()) {
+			result = dlg.DoModal() == IDOK && dlg.IsModified();
+			if (result) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto cmd = std::make_shared<ChangeValueCommand>(
 					GetFullNodePath(hItem), item.Name, dlg.GetType(), (PVOID)(PCWSTR)dlg.GetValue(), (1 + dlg.GetValue().GetLength()) * (LONG)sizeof(WCHAR));
@@ -1401,8 +1413,8 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		case REG_MULTI_SZ:
 		{
 			CMultiStringValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
-			result = dlg.DoModal();
-			if (IDOK == result && dlg.IsModified()) {
+			result = dlg.DoModal() == IDOK && dlg.IsModified();
+			if (result) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto value = dlg.GetValue();
 				value.TrimRight(L"\r\n");
@@ -1424,8 +1436,8 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		case REG_QWORD:
 		{
 			CNumberValueDlg dlg(m_CurrentKey, item.Name, item.Type, m_ReadOnly);
-			result = dlg.DoModal();
-			if (IDOK == result && dlg.IsModified()) {
+			result = dlg.DoModal() == IDOK && dlg.IsModified();
+			if (result) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto value = dlg.GetValue();
 				auto cmd = std::make_shared<ChangeValueCommand>(
@@ -1442,8 +1454,8 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		case REG_RESOURCE_LIST:
 		{
 			CBinaryValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
-			result = dlg.DoModal();
-			if (IDOK == result && dlg.IsModified()) {
+			result = dlg.DoModal() == IDOK && dlg.IsModified();
+			if (result) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto cmd = std::make_shared<ChangeValueCommand>(
 					GetFullNodePath(hItem), item.Name, item.Type, (const PVOID)dlg.GetValue().data(), (LONG)dlg.GetValue().size());
@@ -1456,7 +1468,7 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 			break;
 		}
 	}
-	if (result == IDCANCEL)
+	if (!result)
 		return 0;
 
 	if (!success) {
@@ -1585,6 +1597,24 @@ void CMainFrame::UpdateList(bool force) {
 		m_Items.push_back(item);
 		return true;
 		});
+
+	auto parentPath = GetFullParentNodePath(hItem);
+	if (!parentPath.IsEmpty()) {
+		auto temp = Registry::OpenKey(parentPath, KEY_READ);
+		if (temp) {
+			CString name, linkPath;
+			m_Tree.GetItemText(hItem, name);
+			if (Registry::IsKeyLink(temp, name, linkPath)) {
+				RegistryItem item;
+				item.Name = L"SymbolicLinkName";
+				item.Type = REG_LINK;
+				item.Size = (linkPath.GetLength() + 1) * sizeof(WCHAR);
+				item.Value = linkPath;
+				m_Items.push_back(item);
+			}
+		}
+	}
+
 	m_List.SetItemCount(static_cast<int>(m_Items.size()));
 	DoSort(GetSortInfo(m_List));
 	m_List.RedrawItems(m_List.GetTopIndex(), m_List.GetTopIndex() + m_List.GetCountPerPage());
