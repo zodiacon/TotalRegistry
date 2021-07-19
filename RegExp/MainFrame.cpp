@@ -65,8 +65,9 @@ LRESULT CMainFrame::OnFindUpdate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam
 		UpdateList(true);
 		int index = ListViewHelper::FindItem(m_List, fd->Data ? fd->Data : fd->Name, true);
 		ATLASSERT(index >= 0);
-		m_List.SetItemState(index, LVIS_SELECTED, LVIS_SELECTED);
 		m_List.EnsureVisible(index, FALSE);
+		m_List.SetItemState(index, LVIS_SELECTED, LVIS_SELECTED);
+		m_List.SetSelectionMark(index);
 		m_List.SetFocus();
 	}
 	return 0;
@@ -967,8 +968,6 @@ void CMainFrame::InitCommandBar() {
 		{ ID_EDIT_UNDO, IDI_UNDO },
 		{ ID_EDIT_REDO, IDI_REDO },
 		{ ID_EDIT_DELETE, IDI_DELETE },
-		{ ID_VIEW_GOBACK, IDI_BACK },
-		{ ID_VIEW_GOFORWARD, IDI_FORWARD },
 		{ ID_EDIT_FIND, IDI_FIND },
 		{ ID_SEARCH_FINDALL, IDI_FINDALL },
 		{ ID_SEARCH_FINDNEXT, IDI_FIND_NEXT },
@@ -1002,13 +1001,10 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 		BYTE style = BTNS_BUTTON;
 		PCWSTR text = nullptr;
 	} buttons[] = {
-		{ ID_VIEW_GOBACK, IDI_BACK },
-		{ ID_VIEW_GOFORWARD, IDI_FORWARD },
-		{ 0 },
-		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
 		{ ID_EDIT_READONLY, IDI_LOCK },
 		{ ID_VIEW_REFRESH, IDI_REFRESH },
 		{ ID_VIEW_SHOWKEYSINLIST, IDI_FOLDER_VIEW },
+		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
 		{ 0 },
 		{ ID_EDIT_COPY, IDI_COPY },
 		{ ID_EDIT_CUT, IDI_CUT },

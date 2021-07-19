@@ -104,14 +104,31 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 				if (type == REG_SZ || type == REG_EXPAND_SZ) {
 					auto buffer = std::make_unique<WCHAR[]>(size / sizeof(WCHAR));
 					if (buffer) {
-						LONG bytes = size;
-						if (ERROR_SUCCESS == ::RegQueryValue(hKey, name, buffer.get(), &bytes)) {
+						DWORD bytes = size;
+						if (ERROR_SUCCESS == ::RegQueryValueEx(hKey, name, nullptr, nullptr, (BYTE*)buffer.get(), &bytes)) {
 							CString text(buffer.get());
 							if (!caseSensitive)
 								text.MakeUpper();
 							if (compare(text, _searchText)) {
 								if (Notify(path, name, buffer.get()))
 									return false;
+							}
+						}
+					}
+				}
+				else if (type == REG_MULTI_SZ) {
+					auto buffer = std::make_unique<WCHAR[]>(size / sizeof(WCHAR));
+					if (buffer) {
+						DWORD bytes = size;
+						if (ERROR_SUCCESS == ::RegQueryValueEx(hKey, name, nullptr, nullptr, (BYTE*)buffer.get(), &bytes)) {
+							for (auto p = buffer.get(); *p; p += wcslen(p) + 1) {
+								CString text(p);
+								if (!caseSensitive)
+									text.MakeUpper();
+								if (compare(text, _searchText)) {
+									if (Notify(path, name, buffer.get()))
+										return false;
+								}
 							}
 						}
 					}

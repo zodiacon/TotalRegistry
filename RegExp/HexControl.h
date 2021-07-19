@@ -56,6 +56,7 @@ private:
 };
 
 const UINT HCN_SIZECHANGED = NM_FIRST - 3000;
+const UINT HCN_RCLICK = NM_FIRST - 3001;
 
 struct HCNOTIFY {
 	NMHDR hdr;
@@ -106,6 +107,7 @@ public:
 		MESSAGE_HANDLER(WM_SETFOCUS, OnSetFocus)
 		MESSAGE_HANDLER(WM_KILLFOCUS, OnKillFocus)
 		MESSAGE_HANDLER(WM_GETDLGCODE, OnGetDialogCode)
+		MESSAGE_HANDLER(WM_CONTEXTMENU, OnContextMenu)
 		CHAIN_MSG_MAP(CBufferedPaintWindowImpl<CHexControl>)
 	END_MSG_MAP()
 
@@ -125,6 +127,7 @@ private:
 	LRESULT OnChar(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnMouseMove(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnLeftButtonUp(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnContextMenu(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
 private:
 	void RecalcLayout();
@@ -133,7 +136,7 @@ private:
 	int64_t GetOffsetFromPoint(const POINT& pt) const;
 	void DrawNumber(CDCHandle dc, int64_t offset, uint64_t value, int editDigits);
 	PCWSTR FormatNumber(ULONGLONG number) const;
-	void SendNotify(HCNOTIFY* notify);
+	LRESULT SendNotify(HCNOTIFY* notify);
 
 	void UpdateCaret();
 	void RedrawWindow(RECT* = nullptr);

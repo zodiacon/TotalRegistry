@@ -549,6 +549,11 @@ LRESULT CHexControl::OnLeftButtonUp(UINT, WPARAM, LPARAM, BOOL&) {
 	return 0;
 }
 
+LRESULT CHexControl::OnContextMenu(UINT, WPARAM, LPARAM, BOOL&) {
+	m_NotifyData.hdr.code = HCN_RCLICK;
+	return SendNotify(&m_NotifyData);
+}
+
 LRESULT CHexControl::OnMouseWheel(UINT, WPARAM wParam, LPARAM, BOOL&) {
 	auto delta = GET_WHEEL_DELTA_WPARAM(wParam);
 	if (delta == 0)
@@ -660,8 +665,8 @@ PCWSTR CHexControl::FormatNumber(ULONGLONG number) const {
 	return result.TrimRight();
 }
 
-void CHexControl::SendNotify(HCNOTIFY* notify) {
-	GetParent().SendMessage(WM_NOTIFY, 0, reinterpret_cast<LPARAM>(notify));
+LRESULT CHexControl::SendNotify(HCNOTIFY* notify) {
+	return GetParent().SendMessage(WM_NOTIFY, notify->hdr.idFrom, reinterpret_cast<LPARAM>(notify));
 }
 
 LRESULT CHexControl::OnSize(UINT, WPARAM, LPARAM, BOOL&) {
@@ -685,6 +690,7 @@ IBufferManager* CHexControl::GetBufferManager() const {
 
 void CHexControl::SetReadOnly(bool readonly) {
 	m_ReadOnly = readonly;
+	Invalidate();
 }
 
 bool CHexControl::IsReadOnly() const {

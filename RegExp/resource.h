@@ -42,7 +42,7 @@
 #define IDI_PERM                        151
 #define IDI_EXPORT                      152
 #define IDI_PROPERTIES                  153
-#define IDI_IMPORT						154
+#define IDI_IMPORT                      154
 #define IDD_FIND                        160
 #define IDD_FINDALL                     161
 #define IDD_STRINGVALUE                 162
@@ -133,7 +133,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        166
-#define _APS_NEXT_COMMAND_VALUE         32845
+#define _APS_NEXT_COMMAND_VALUE         32846
 #define _APS_NEXT_CONTROL_VALUE         1036
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
