@@ -49,6 +49,7 @@
 #define IDD_MULTISTRVALUE               163
 #define IDD_NUMBERVALUE                 164
 #define IDD_BINVALUE                    165
+#define IDD_EXPORT                      166
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
@@ -84,6 +85,12 @@
 #define IDC_BUTTON1                     1033
 #define IDC_COLOR                       1033
 #define IDC_BUFFERSIZE                  1035
+#define IDC_EXPORT_STD                  1036
+#define IDC_EXPORT_REAL                 1037
+#define IDC_RADIO3                      1038
+#define IDC_KEY                         1039
+#define IDC_PATH                        1040
+#define IDC_BROWSE                      1041
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -132,9 +139,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        166
+#define _APS_NEXT_RESOURCE_VALUE        167
 #define _APS_NEXT_COMMAND_VALUE         32846
-#define _APS_NEXT_CONTROL_VALUE         1036
+#define _APS_NEXT_CONTROL_VALUE         1042
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

@@ -11,7 +11,7 @@ class CFindAllDlg :
 	public CDialogImpl<CFindAllDlg>,
 	public CDynamicDialogLayout<CFindAllDlg>,
 	public CVirtualListView<CFindAllDlg>,
-	public DialogHelper<CFindAllDlg> {
+	public CDialogHelper<CFindAllDlg> {
 public:
 	enum { IDD = IDD_FINDALL };
 

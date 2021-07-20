@@ -121,6 +121,7 @@ CRegKey Registry::OpenKey(const CString& path, DWORD access, bool* root) {
 				*root = true;
 		}
 	}
+	ATLASSERT(key.m_hKey == nullptr || (DWORD_PTR)key.m_hKey > 0x80000000 || ((DWORD_PTR)key.m_hKey & 3) == 0);
 	return key;
 }
 

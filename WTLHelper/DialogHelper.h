@@ -1,7 +1,7 @@
 #pragma once
 
 template<typename T>
-class DialogHelper {
+class CDialogHelper {
 public:
 #ifdef IDI_OK
 	void AdjustOKCancelButtons() {

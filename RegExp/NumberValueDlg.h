@@ -4,7 +4,7 @@
 
 class CNumberValueDlg :
 	public CDialogImpl<CNumberValueDlg>,
-	public DialogHelper<CNumberValueDlg> {
+	public CDialogHelper<CNumberValueDlg> {
 public:
 	enum { IDD = IDD_NUMBERVALUE };
 

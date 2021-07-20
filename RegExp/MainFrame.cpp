@@ -122,10 +122,10 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 	auto& item = m_Items[row];
 	CString text;
 	switch (static_cast<ColumnType>(GetColumnManager(h)->GetColumnTag(col))) {
-		case ColumnType::Name: 
+		case ColumnType::Name:
 			return item.Name.IsEmpty() ? CString(L"(Default)") : item.Name;
 
-		case ColumnType::Type: 
+		case ColumnType::Type:
 			return Registry::GetRegTypeAsString(item.Type);
 
 		case ColumnType::Value:
@@ -283,9 +283,8 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	CreateSimpleStatusBar(ATL_IDS_IDLEMESSAGE, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | SBARS_SIZEGRIP | SBT_TOOLTIPS);
 	m_StatusBar.SubclassWindow(m_hWndStatusBar);
-	int panes[] = { 200, 224, 1300 };
+	int panes[] = { 24, 1300 };
 	m_StatusBar.SetParts(_countof(panes), panes);
-	m_StatusBar.SetIcon(1, AtlLoadIconImage(IDR_MAINFRAME, 0, 16, 16));
 	::SetWindowTheme(m_StatusBar, L"Explorer", nullptr);
 
 	m_hWndClient = m_MainSplitter.Create(m_hWnd, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, WS_EX_CLIENTEDGE);
@@ -512,13 +511,11 @@ LRESULT CMainFrame::OnFocusChanged(int, LPNMHDR hdr, BOOL&) {
 }
 
 LRESULT CMainFrame::OnNewKey(WORD, WORD, HWND, BOOL&) {
-	if (::GetFocus() == m_Tree) {
-		m_Tree.GetSelectedItem().Expand(TVE_EXPAND);
-		auto hItem = InsertKeyItem(m_Tree.GetSelectedItem(), L"(NewKey)");
-		hItem.EnsureVisible();
-		m_CurrentOperation = Operation::CreateKey;
-		m_Tree.EditLabel(hItem);
-	}
+	m_Tree.GetSelectedItem().Expand(TVE_EXPAND);
+	auto hItem = InsertKeyItem(m_Tree.GetSelectedItem(), L"(NewKey)");
+	hItem.EnsureVisible();
+	m_CurrentOperation = Operation::CreateKey;
+	m_Tree.EditLabel(hItem);
 	return 0;
 }
 
@@ -555,8 +552,11 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 			auto hItem = item.hItem;
 			auto hParent = m_Tree.GetParentItem(hItem);
 			auto cmd = std::make_shared<CreateKeyCommand>(GetFullNodePath(hParent), item.pszText);
-			if (!m_CmdMgr.AddCommand(cmd))
+			if (!m_CmdMgr.AddCommand(cmd)) {
+				DisplayError(L"Failed to create key");
+				m_Tree.DeleteItem(hItem);
 				return FALSE;
+			}
 			auto cb = [this](auto& cmd, bool execute) {
 				if (execute) {
 					auto hParent = FindItemByPath(cmd.GetPath());
@@ -572,6 +572,8 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 				return true;
 			};
 			cmd->SetCallback(cb);
+			if(AppSettings::Get().ShowKeysInList())
+				UpdateList();
 			return TRUE;
 		}
 		case Operation::RenameKey:
@@ -714,6 +716,10 @@ LRESULT CMainFrame::OnEditCopy(WORD, WORD, HWND, BOOL&) {
 LRESULT CMainFrame::OnEditPaste(WORD, WORD, HWND, BOOL&) {
 	if (::GetFocus() == m_Tree) {
 		ATLASSERT(m_Clipboard.Key && !m_Clipboard.Path.IsEmpty());
+		if (TreeHelper(m_Tree).FindChild(m_Tree.GetSelectedItem(), m_Clipboard.Name)) {
+			AtlMessageBox(m_hWnd, (PCWSTR)(L"Key " + m_Clipboard.Name + L" already exists."), IDS_APP_TITLE, MB_ICONWARNING);
+			return 0;
+		}
 		auto target = GetFullNodePath(m_Tree.GetSelectedItem());
 		auto cb = [this](auto& cmd, bool execute) {
 			TreeHelper th(m_Tree);
@@ -878,7 +884,7 @@ LRESULT CMainFrame::OnListBeginEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandl
 LRESULT CMainFrame::OnProperties(WORD, WORD, HWND, BOOL&) {
 	if (::GetFocus() == m_List) {
 		auto index = m_List.GetSelectionMark();
-		if(index >= 0 && !m_Items[index].Key)
+		if (index >= 0 && !m_Items[index].Key)
 			return (LRESULT)ShowValueProperties(m_Items[index]);
 	}
 	return 0;
@@ -1372,12 +1378,13 @@ int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 	auto cb = [this](auto& cmd, bool) {
 		if (GetFullNodePath(m_Tree.GetSelectedItem()) == cmd.GetPath()) {
-			int index = m_List.FindItem(cmd.GetName());
+			int index = m_List.FindItem(cmd.GetName(), false);
 			ATLASSERT(index >= 0);
 			if (index >= 0) {
 				m_Items[index].Value.Empty();
 				m_Items[index].Size = -1;
 				m_List.RedrawItems(index, index);
+				m_List.SetItemState(index, LVIS_SELECTED, LVIS_SELECTED);
 			}
 		}
 		UpdateUI();
@@ -1526,10 +1533,10 @@ void CMainFrame::UpdateList(bool force) {
 	HKEY hKey;
 	auto hItem = m_Tree.GetSelectedItem();
 	m_CurrentPath = GetNodePath(hItem, &hKey);
-	m_StatusBar.SetText(2, GetFullNodePath(m_Tree.GetSelectedItem()));
+	m_StatusBar.SetText((int)StatusPane::Key, GetFullNodePath(m_Tree.GetSelectedItem()));
 	int image;
 	m_Tree.GetItemImage(hItem, image, image);
-	m_StatusBar.SetIcon(1, m_Tree.GetImageList(TVSIL_NORMAL).GetIcon(image));
+	m_StatusBar.SetIcon((int)StatusPane::Icon, m_Tree.GetImageList(TVSIL_NORMAL).GetIcon(image));
 
 	if (hItem == m_hStdReg && m_Settings.ShowKeysInList()) {
 		// special case for root of registry

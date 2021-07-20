@@ -8,7 +8,7 @@
 
 class CFindDlg : 
 	public CDialogImpl<CFindDlg>,
-	public DialogHelper<CFindDlg> {
+	public CDialogHelper<CFindDlg> {
 public:
 	enum { IDD = IDD_FIND };
 

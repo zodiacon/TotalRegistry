@@ -15,6 +15,10 @@ bool CreateKeyCommand::Execute() {
     DWORD disp;
     auto error = newKey.Create(key, _name, nullptr, 0, KEY_READ | KEY_WRITE, nullptr, &disp);
     if (error == ERROR_SUCCESS) {
+        if (disp == REG_OPENED_EXISTING_KEY) {
+            ::SetLastError(ERROR_OBJECT_ALREADY_EXISTS);
+            return false;
+        }
         return InvokeCallback(true);
     }
     return false;

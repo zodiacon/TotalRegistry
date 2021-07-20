@@ -117,6 +117,10 @@ public:
 	//	LRESULT NotifyHandler(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/)
 
 private:
+	enum class StatusPane {
+		Icon,
+		Key
+	};
 	struct FindData {
 		PCWSTR Path;
 		PCWSTR Name;

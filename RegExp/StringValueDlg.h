@@ -4,7 +4,7 @@
 
 class CStringValueDlg :
 	public CDialogImpl<CStringValueDlg>,
-	public DialogHelper<CStringValueDlg>,
+	public CDialogHelper<CStringValueDlg>,
 	public CDynamicDialogLayout<CStringValueDlg> {
 public:
 	enum { IDD = IDD_STRINGVALUE };

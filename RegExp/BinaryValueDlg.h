@@ -6,7 +6,7 @@
 
 class CBinaryValueDlg :
 	public CDialogImpl<CBinaryValueDlg>,
-	public DialogHelper<CBinaryValueDlg>,
+	public CDialogHelper<CBinaryValueDlg>,
 	public CDynamicDialogLayout<CBinaryValueDlg> {
 public:
 	enum { IDD = IDD_BINVALUE };
