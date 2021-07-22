@@ -8,3 +8,8 @@ Replacement for the built-in *Regedit.exe* tool. Improvements over that tool inc
 * Undo/redo
 * more...
 
+![](https://github.com/zodiacon/RegExp/blob/master/regexp1.png)
+
+![](https://github.com/zodiacon/RegExp/blob/master/regexp2.png)
+
+![](https://github.com/zodiacon/RegExp/blob/master/regexp3.png)
