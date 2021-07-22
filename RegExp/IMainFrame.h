@@ -9,4 +9,5 @@ struct IMainFrame abstract {
 	virtual void OnFindEnd(bool cancelled) = 0;
 	virtual bool GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) = 0;
 	virtual CString GetCurrentKeyPath() = 0;
+	virtual BOOL TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y) = 0;
 };

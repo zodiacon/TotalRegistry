@@ -114,6 +114,10 @@ bool CMainFrame::GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) {
 	return true;
 }
 
+BOOL CMainFrame::TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y) {
+	return m_CmdBar.TrackPopupMenu(hMenu, flags, x, y);
+}
+
 CString CMainFrame::GetCurrentKeyPath() {
 	return GetFullNodePath(m_Tree.GetSelectedItem());
 }
@@ -1456,7 +1460,7 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		case REG_RESOURCE_REQUIREMENTS_LIST:
 		case REG_RESOURCE_LIST:
 		{
-			CBinaryValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly);
+			CBinaryValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly, this);
 			result = dlg.DoModal() == IDOK && dlg.IsModified();
 			if (result) {
 				auto hItem = m_Tree.GetSelectedItem();

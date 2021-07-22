@@ -17,7 +17,7 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 	dc.SetBkMode(OPAQUE);
 	dc.SetBkColor(back);
 
-	WCHAR str[16];
+	WCHAR str[20];
 	int i = 0;
 	uint8_t data[512];
 	POLYTEXT poly[128] = { 0 };
@@ -29,7 +29,7 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 	// data
 	m_Text.clear();
 	int lines = 0;
-	std::wstring format(L"%0" + std::to_wstring(m_DataSize * 2) + L"X ");
+	std::wstring format(L"%0" + std::to_wstring(m_DataSize * 2) + L"llX ");
 	int factor = m_CharWidth * (m_DataSize * 2 + 1);
 	for (int y = 0;; y++) {
 		auto offset = m_StartOffset + i;
@@ -42,19 +42,32 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 		}
 		lines++;
 		int jcount = std::min(m_BytesPerLine / m_DataSize, count);
-		for (int j = 0; j < jcount; j += m_DataSize) {
-			::StringCchPrintf(str, _countof(str), format.c_str(), data[j * m_DataSize]);
+		for (int j = 0; j < jcount; j++) {
+			if (offset + j * m_DataSize >= m_EndOffset)
+				break;
+			auto ds = int(m_EndOffset - offset - j * m_DataSize);
+			ATLASSERT(ds >= 1);
+			if (ds > m_DataSize)
+				ds = m_DataSize;
+			if (ds & (ds - 1))
+				ds = m_DataSize >> 1;
+
+			switch (ds) {
+				case 1:	::StringCchPrintf(str, _countof(str), L"%02X", data[j * m_DataSize]); break;
+				case 2:	::StringCchPrintf(str, _countof(str), L"%04X", *(WORD*)&data[j * m_DataSize]); break;
+				case 4:	::StringCchPrintf(str, _countof(str), L"%08X", *(DWORD*)&data[j * m_DataSize]); break;
+				case 8:	::StringCchPrintf(str, _countof(str), L"%0llX", *(DWORD64*)&data[j * m_DataSize]); break;
+			}
 			bool selected = m_Selection.IsSelected(offset + j);
 			dc.SetTextColor(selected ? m_Colors.SelectionText : m_Colors.Text);
 			dc.SetBkColor(selected ? m_Colors.SelectionBackground : back);
 
-			dc.TextOut(x + xstart + j * factor, y * m_CharHeight, str, m_DataSize * 2 + 1);
+			dc.TextOut(x + xstart + j * factor, y * m_CharHeight, str, ds * 2 + 1);
 		}
 		if (y * m_CharHeight > rect.bottom)
 			break;
 		i += m_BytesPerLine;
 	}
-	//::PolyTextOut(dc, poly, (int)m_Text.size());
 
 	// offsets
 	dc.SetTextColor(m_Colors.Offset);
@@ -104,7 +117,7 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 			break;
 		i += m_BytesPerLine;
 	}
-	if(!m_Text.empty())
+	if (!m_Text.empty())
 		::PolyTextOut(dc, poly, (int)m_Text.size());
 
 	UpdateCaret();
@@ -236,7 +249,7 @@ LRESULT CHexControl::OnKeyDown(UINT, WPARAM wParam, LPARAM, BOOL&) {
 	if (shift && m_CaretOffset != current) {
 		if (alt) {
 			m_Selection.SetBox(std::min(m_CaretOffset, m_Selection.GetAnchor()), m_BytesPerLine,
-				(m_CaretOffset - m_Selection.GetAnchor()) % m_BytesPerLine, (int) (m_CaretOffset - m_Selection.GetAnchor()) / m_BytesPerLine);
+				(m_CaretOffset - m_Selection.GetAnchor()) % m_BytesPerLine, (int)(m_CaretOffset - m_Selection.GetAnchor()) / m_BytesPerLine);
 		}
 		else {
 			m_Selection.SetSimple(std::min(m_CaretOffset, m_Selection.GetAnchor()), abs(m_CaretOffset - m_Selection.GetAnchor()));
@@ -708,11 +721,17 @@ void CHexControl::SetSize(int64_t size) {
 }
 
 bool CHexControl::SetDataSize(int32_t size) {
-	return false;
+	if (size > 8 || size < 1 || (size & (size - 1)) != 0)
+		return false;
+
+	m_DataSize = size;
+	RecalcLayout();
+
+	return true;
 }
 
 int32_t CHexControl::GetDataSize() const {
-	return int32_t();
+	return m_DataSize;
 }
 
 bool CHexControl::SetBytesPerLine(int32_t bytesPerLine) {

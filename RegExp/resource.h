@@ -43,6 +43,10 @@
 #define IDI_EXPORT                      152
 #define IDI_PROPERTIES                  153
 #define IDI_IMPORT                      154
+#define IDI_NUM1                        155
+#define IDI_NUM2                        156
+#define IDI_NUM8_2                      157
+#define IDI_OPTIONS						158
 #define IDD_FIND                        160
 #define IDD_FINDALL                     161
 #define IDD_STRINGVALUE                 162
@@ -133,6 +137,10 @@
 #define ID_OPTIONS_UNDOREDO             32842
 #define ID_SEARCH_FINDALL               32843
 #define ID_FILE_IMPORT                  32844
+#define ID_HEX_8BYTES                   32846
+#define ID_HEX_16BYTES                  32847
+#define ID_HEX_24BYTES                  32848
+#define ID_HEX_32BYTES                  32849
 
 // Next default values for new objects
 // 
@@ -140,7 +148,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        167
-#define _APS_NEXT_COMMAND_VALUE         32846
+#define _APS_NEXT_COMMAND_VALUE         32850
 #define _APS_NEXT_CONTROL_VALUE         1042
 #define _APS_NEXT_SYMED_VALUE           115
 #endif

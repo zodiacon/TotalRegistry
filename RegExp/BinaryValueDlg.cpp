@@ -2,7 +2,8 @@
 #include "resource.h"
 #include "BinaryValueDlg.h"
 
-CBinaryValueDlg::CBinaryValueDlg(CRegKey& key, PCWSTR name, bool readOnly) : m_Key(key), m_Name(name), m_ReadOnly(readOnly) {
+CBinaryValueDlg::CBinaryValueDlg(CRegKey& key, PCWSTR name, bool readOnly, IMainFrame* frame)
+	: m_Key(key), m_Name(name), m_ReadOnly(readOnly), m_pFrame(frame) {
 }
 
 const std::vector<BYTE>& CBinaryValueDlg::GetValue() const {
@@ -11,6 +12,46 @@ const std::vector<BYTE>& CBinaryValueDlg::GetValue() const {
 
 bool CBinaryValueDlg::IsModified() const {
 	return m_Modified;
+}
+
+void CBinaryValueDlg::BuildToolBar(CRect& rc) {
+	CToolBarCtrl tb;
+	tb.Create(m_hWnd, &rc, nullptr, ATL_SIMPLE_TOOLBAR_PANE_STYLE | TBSTYLE_LIST, 0, ATL_IDW_TOOLBAR);
+	tb.SetExtendedStyle(TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DRAWDDARROWS);
+
+	CImageList tbImages;
+	tbImages.Create(16, 16, ILC_COLOR32, 8, 4);
+	tb.SetImageList(tbImages);
+
+	const struct {
+		UINT id;
+		int image;
+		BYTE style = BTNS_BUTTON;
+		BYTE state = TBSTATE_ENABLED;
+		PCWSTR text = nullptr;
+	} buttons[] = {
+		{ ID_DATA_BYTE, IDI_NUM1, BTNS_BUTTON | BTNS_CHECKGROUP, TBSTATE_ENABLED | TBSTATE_CHECKED },
+		{ ID_DATA_BYTE + 1, IDI_NUM2, BTNS_BUTTON | BTNS_CHECKGROUP },
+		{ ID_DATA_BYTE + 2, IDI_NUM4, BTNS_BUTTON | BTNS_CHECKGROUP },
+		{ ID_DATA_BYTE + 3, IDI_NUM8_2, BTNS_BUTTON | BTNS_CHECKGROUP },
+		{ 0 },
+		{ ID_LINE, IDI_OPTIONS, BTNS_BUTTON | BTNS_DROPDOWN, TBSTATE_ENABLED, L"Bytes / Line" },
+	};
+	for (auto& b : buttons) {
+		if (b.id == 0)
+			tb.AddSeparator(0);
+		else {
+			HICON hIcon = nullptr;
+			int image = -1;
+			if (b.image) {
+				hIcon = AtlLoadIconImage(b.image, 0, 16, 16);
+				ATLASSERT(hIcon);
+				image = tbImages.AddIcon(hIcon);
+			}
+			tb.AddButton(b.id, b.style | (b.text ? BTNS_SHOWTEXT : 0), b.state, image, b.text, 0);
+		}
+	}
+	UIAddToolBar(tb);
 }
 
 void CBinaryValueDlg::UpdateBufferSize() {
@@ -28,8 +69,10 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	GetDlgItem(IDC_BUTTON1).GetWindowRect(&rc);
 	ScreenToClient(&rc);
 	GetDlgItem(IDC_BUTTON1).ShowWindow(SW_HIDE);
-	
+
 	m_Hex.Create(m_hWnd, &rc, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, WS_EX_CLIENTEDGE, IDC_HEX);
+	rc.OffsetRect(0, -30);
+	BuildToolBar(rc);
 
 	ULONG bytes = 0;
 	m_Key.QueryBinaryValue(m_Name, nullptr, &bytes);
@@ -83,5 +126,33 @@ LRESULT CBinaryValueDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
 
 LRESULT CBinaryValueDlg::OnHexBufferSizeChanged(int, LPNMHDR, BOOL&) {
 	UpdateBufferSize();
+	return 0;
+}
+
+LRESULT CBinaryValueDlg::OnDataSize(WORD, WORD id, HWND, BOOL&) {
+	m_Hex.SetDataSize(1 << (id - ID_DATA_BYTE));
+
+	return 0;
+}
+
+LRESULT CBinaryValueDlg::OnToolBarDropdown(int, LPNMHDR hdr, BOOL&) {
+	auto tb = (NMTOOLBAR*)hdr;
+	CMenu menu;
+	menu.LoadMenu(IDR_CONTEXT);
+	CWindow win(hdr->hwndFrom);
+	CRect rc(tb->rcButton);
+	rc.OffsetRect(0, rc.Height());
+	win.ClientToScreen(&rc);
+	auto id = (UINT)m_pFrame->TrackPopupMenu(menu.GetSubMenu(4), TPM_RETURNCMD, rc.left, rc.top);
+	if (id) {
+		LRESULT result = 0;
+		ProcessWindowMessage(m_hWnd, WM_COMMAND, id, 0, result);
+	}
+	return 0;
+}
+
+LRESULT CBinaryValueDlg::OnBytesPerLine(WORD, WORD id, HWND, BOOL&) {
+	m_Hex.SetBytesPerLine(8 * (id - ID_HEX_8BYTES + 1));
+
 	return 0;
 }

@@ -126,6 +126,9 @@
     <Manifest>
       <AdditionalManifestFiles>manifest.xml</AdditionalManifestFiles>
     </Manifest>
+    <PostBuildEvent>
+      <Command>signtool sign /i DigiCert /fd sha256 $(TargetPath)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AboutDlg.h" />
@@ -226,7 +229,10 @@
     <Image Include="Icons\laptop.ico" />
     <Image Include="Icons\link.ico" />
     <Image Include="Icons\lock.ico" />
+    <Image Include="Icons\number-1.ico" />
+    <Image Include="Icons\number-2.ico" />
     <Image Include="Icons\number-4.ico" />
+    <Image Include="Icons\number-8-2.ico" />
     <Image Include="Icons\number-8.ico" />
     <Image Include="Icons\paste.ico" />
     <Image Include="Icons\properties.ico" />

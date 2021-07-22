@@ -352,6 +352,15 @@
     <Image Include="Icons\import.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
+    <Image Include="Icons\number-1.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\number-2.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\number-8-2.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="manifest.xml" />
