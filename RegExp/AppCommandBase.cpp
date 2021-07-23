@@ -1,24 +1,25 @@
 #include "pch.h"
 #include "AppCommandBase.h"
 
-AppCommandList::AppCommandList() : AppCommand(L"") {
-	_commands.reserve(4);
-}
-
 void AppCommandList::AddCommand(std::shared_ptr<AppCommand> command) {
 	_commands.push_back(command);
+}
+
+std::shared_ptr<AppCommand> AppCommandList::GetCommand(size_t i) const {
+	return i < _commands.size() ? _commands[i] : nullptr;
 }
 
 bool AppCommandList::Execute() {
 	for (auto& cmd : _commands)
 		if (!cmd->Execute())
 			return false;
-	return true;
+	return InvokeCallback(true);
 }
 
 bool AppCommandList::Undo() {
-	for (size_t i = _commands.size() - 1; i >= 0; --i)
+	for (int i = (int)_commands.size() - 1; i >= 0; --i)
 		if (!_commands[i]->Undo())
 			return false;
-	return true;
+
+	return InvokeCallback(false);
 }

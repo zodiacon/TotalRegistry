@@ -21,6 +21,7 @@
 #include "SecurityInformation.h"
 #include "CreateValueCommand.h"
 #include "RenameValueCommand.h"
+#include "DeleteValueCommand.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -775,6 +776,40 @@ LRESULT CMainFrame::OnEditDelete(WORD, WORD, HWND, BOOL&) {
 			DisplayError(L"Failed to delete key");
 	}
 	else {
+		ATLASSERT(::GetFocus() == m_List);
+		auto count = m_List.GetSelectedCount();
+		ATLASSERT(count >= 1);
+		int index = -1;
+		auto cb = [this](auto& cmd, auto) {
+			auto cmd0 = std::static_pointer_cast<DeleteValueCommand>(cmd.GetCommand(0));
+			if (GetFullNodePath(m_Tree.GetSelectedItem()) == cmd0->GetPath()) {
+				RefreshItem(m_Tree.GetSelectedItem());
+				UpdateList();
+				UpdateUI();
+			}
+			return true;
+		};
+		auto list = std::make_shared<AppCommandList>(L"", cb);
+		auto path = GetFullNodePath(m_Tree.GetSelectedItem());
+		for (UINT i = 0; i < count; i++) {
+			index = m_List.GetNextItem(index, LVIS_SELECTED);
+			ATLASSERT(index >= 0);
+			auto& item = m_Items[index];
+			std::shared_ptr<AppCommand> cmd;
+			if (item.Key) {
+				cmd = std::make_shared<DeleteKeyCommand>(path, item.Name);
+			}
+			else {
+				cmd = std::make_shared<DeleteValueCommand>(path, item.Name);
+			}
+			list->AddCommand(cmd);
+		}
+		if (count == 1)
+			list->SetCommandName(list->GetCommand(0)->GetCommandName());
+		else
+			list->SetCommandName(L"Delete");
+		if (!m_CmdMgr.AddCommand(list))
+			DisplayError(L"Delete failed.");
 	}
 	return 0;
 }

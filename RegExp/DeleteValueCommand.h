@@ -7,4 +7,9 @@ struct DeleteValueCommand : RegAppCommandBase<DeleteValueCommand> {
 
 	bool Execute() override;
 	bool Undo() override;
+
+private:
+	DWORD _type;
+	std::unique_ptr<BYTE[]> _data;
+	DWORD _size;
 };

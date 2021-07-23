@@ -9,6 +9,10 @@ struct AppCommand abstract {
 		return _cmdname;
 	}
 
+	void SetCommandName(PCWSTR name) {
+		_cmdname = name;
+	}
+
 	virtual ~AppCommand() = default;
 	virtual bool Execute() = 0;
 	virtual bool Undo() = 0;
@@ -39,18 +43,6 @@ private:
 	AppCommandCallback<T> _cb;
 };
 
-struct AppCommandList final : AppCommand {
-	AppCommandList();
-
-	void AddCommand(std::shared_ptr<AppCommand> command);
-
-	bool Execute() override;
-	bool Undo() override;
-
-private:
-	std::vector<std::shared_ptr<AppCommand>> _commands;
-};
-
 template<typename T>
 struct RegAppCommandBase : AppCommandBase<T> {
 	RegAppCommandBase(const CString& cmdname, PCWSTR path, PCWSTR name, AppCommandCallback<T> cb = nullptr) 
@@ -67,3 +59,16 @@ protected:
 	CString _path, _name;
 };
 
+struct AppCommandList final : AppCommandBase<AppCommandList> {
+	AppCommandList(PCWSTR name = nullptr, AppCommandCallback<AppCommandList> cb = nullptr) : AppCommandBase(name, cb) {}
+
+	void AddCommand(std::shared_ptr<AppCommand> command);
+
+	std::shared_ptr<AppCommand> GetCommand(size_t i) const;
+
+	bool Execute() override;
+	bool Undo() override;
+
+private:
+	std::vector<std::shared_ptr<AppCommand>> _commands;
+};
