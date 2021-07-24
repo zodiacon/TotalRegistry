@@ -12,6 +12,10 @@ Replacement for the Windows built-in *Regedit.exe* tool. Improvements over that 
 * Copy/paste of keys/values
 * more to come!
 
+## Build instructions
+
+Build the solution file with Visual Studio 2022 preview. Can be built with Visual Studio 2019 as well (change toolset to v142).
+
 ![](https://github.com/zodiacon/RegExp/blob/master/regexp1.png)
 
 ![](https://github.com/zodiacon/RegExp/blob/master/regexp2.png)
