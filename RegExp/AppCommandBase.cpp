@@ -9,6 +9,10 @@ std::shared_ptr<AppCommand> AppCommandList::GetCommand(size_t i) const {
 	return i < _commands.size() ? _commands[i] : nullptr;
 }
 
+int AppCommandList::GetCount() const {
+	return static_cast<int>(_commands.size());
+}
+
 bool AppCommandList::Execute() {
 	for (auto& cmd : _commands)
 		if (!cmd->Execute())

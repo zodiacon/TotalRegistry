@@ -138,6 +138,9 @@
     <ClInclude Include="ExportDlg.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="CopyValueCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -229,6 +232,9 @@
     </ClCompile>
     <ClCompile Include="ExportDlg.cpp">
       <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="CopyValueCommand.cpp">
+      <Filter>Commands</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

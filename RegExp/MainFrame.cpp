@@ -22,6 +22,7 @@
 #include "CreateValueCommand.h"
 #include "RenameValueCommand.h"
 #include "DeleteValueCommand.h"
+#include "CopyValueCommand.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -710,19 +711,51 @@ LRESULT CMainFrame::OnEditRename(WORD, WORD, HWND, BOOL&) {
 
 LRESULT CMainFrame::OnEditCopy(WORD, WORD, HWND, BOOL&) {
 	if (::GetFocus() == m_Tree) {
-		m_Clipboard.Key = true;
-		m_Clipboard.Path = GetFullParentNodePath(m_Tree.GetSelectedItem());
-		m_Tree.GetItemText(m_Tree.GetSelectedItem(), m_Clipboard.Name);
+		ClipboardItem item;
+		item.Key = true;
+		item.Path = GetFullParentNodePath(m_Tree.GetSelectedItem());
+		m_Tree.GetItemText(m_Tree.GetSelectedItem(), item.Name);
+		m_Clipboard.Items.clear();
+		m_Clipboard.Items.push_back(item);
 		m_Clipboard.Operation = ClipboardOperation::Copy;
 	}
+	else {
+		ATLASSERT(::GetFocus() == m_List);
+		auto count = m_List.GetSelectedCount();
+		ATLASSERT(count >= 1);
+		int index = -1;
+		auto path = GetFullNodePath(m_Tree.GetSelectedItem());
+		m_Clipboard.Items.clear();
+		for (UINT i = 0; i < count; i++) {
+			index = m_List.GetNextItem(index, LVIS_SELECTED);
+			ATLASSERT(index >= 0);
+			ClipboardItem ci;
+			ci.Path = path;
+			auto& item = m_Items[index];
+			ci.Key = item.Key;
+			ci.Name = item.Name;
+			m_Clipboard.Items.push_back(ci);
+		}
+		m_Clipboard.Operation = ClipboardOperation::Copy;
+	}
+	UpdateUI();
+	return 0;
+}
+
+LRESULT CMainFrame::OnEditCut(WORD code, WORD id, HWND hWndCtl, BOOL& bHandled) {
+	OnEditCopy(code, id, hWndCtl, bHandled);
+	if (m_Clipboard.Operation == ClipboardOperation::Copy)
+		m_Clipboard.Operation = ClipboardOperation::Cut;
 	return 0;
 }
 
 LRESULT CMainFrame::OnEditPaste(WORD, WORD, HWND, BOOL&) {
 	if (::GetFocus() == m_Tree) {
-		ATLASSERT(m_Clipboard.Key && !m_Clipboard.Path.IsEmpty());
-		if (TreeHelper(m_Tree).FindChild(m_Tree.GetSelectedItem(), m_Clipboard.Name)) {
-			AtlMessageBox(m_hWnd, (PCWSTR)(L"Key " + m_Clipboard.Name + L" already exists."), IDS_APP_TITLE, MB_ICONWARNING);
+		ATLASSERT(m_Clipboard.Items.size() == 1);
+		auto& item = m_Clipboard.Items[0];
+		ATLASSERT(item.Key && !item.Path.IsEmpty());
+		if (TreeHelper(m_Tree).FindChild(m_Tree.GetSelectedItem(), item.Name)) {
+			AtlMessageBox(m_hWnd, (PCWSTR)(L"Key " + item.Name + L" already exists."), IDS_APP_TITLE, MB_ICONWARNING);
 			return 0;
 		}
 		auto target = GetFullNodePath(m_Tree.GetSelectedItem());
@@ -739,10 +772,35 @@ LRESULT CMainFrame::OnEditPaste(WORD, WORD, HWND, BOOL&) {
 			}
 			return true;
 		};
-		auto cmd = std::make_shared<CopyKeyCommand>(m_Clipboard.Path, m_Clipboard.Name, target, cb);
+		auto cmd = std::make_shared<CopyKeyCommand>(item.Path, item.Name, target, cb);
 		if (!m_CmdMgr.AddCommand(cmd)) {
 			DisplayError(L"Failed to paste key");
 		}
+	}
+	else {
+		ATLASSERT(::GetFocus() == m_List);
+		ATLASSERT(!m_Clipboard.Items.empty());
+		auto cb = [this](auto& cmd, bool) {
+			UpdateList();
+			return true;
+		};
+
+		auto list = std::make_shared<AppCommandList>(nullptr, cb);
+		auto path = GetFullNodePath(m_Tree.GetSelectedItem());
+		for (auto& item : m_Clipboard.Items) {
+			std::shared_ptr<AppCommand> cmd;
+			if (item.Key)
+				cmd = std::make_shared<CopyKeyCommand>(item.Path, item.Name, path);
+			else
+				cmd = std::make_shared<CopyValueCommand>(item.Path, item.Name, path);
+			list->AddCommand(cmd);
+		}
+		if (list->GetCount() == 1)
+			list->SetCommandName(list->GetCommand(0)->GetCommandName());
+		else
+			list->SetCommandName(L"Paste");
+		if (!m_CmdMgr.AddCommand(list))
+			DisplayError(L"Paste failed");
 	}
 	return 0;
 }
@@ -795,6 +853,10 @@ LRESULT CMainFrame::OnEditDelete(WORD, WORD, HWND, BOOL&) {
 			index = m_List.GetNextItem(index, LVIS_SELECTED);
 			ATLASSERT(index >= 0);
 			auto& item = m_Items[index];
+			if (item.Type == REG_KEY_UP) {
+				count--;
+				continue;
+			}
 			std::shared_ptr<AppCommand> cmd;
 			if (item.Key) {
 				cmd = std::make_shared<DeleteKeyCommand>(path, item.Name);
@@ -804,6 +866,9 @@ LRESULT CMainFrame::OnEditDelete(WORD, WORD, HWND, BOOL&) {
 			}
 			list->AddCommand(cmd);
 		}
+		if (count == 0)	// only up key selected
+			return 0;
+
 		if (count == 1)
 			list->SetCommandName(list->GetCommand(0)->GetCommandName());
 		else
@@ -1545,7 +1610,7 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_EDIT_CUT, !m_ReadOnly && properKey);
 		UIEnable(ID_EDIT_RENAME, !m_ReadOnly && properKey);
 		UIEnable(ID_EDIT_COPY, properKey);
-		bool allowPaste = !m_ReadOnly && !m_Clipboard.Path.IsEmpty() && (node & NodeType::Key) == NodeType::Key;
+		bool allowPaste = !m_ReadOnly && !m_Clipboard.Items.empty() && (node & NodeType::Key) == NodeType::Key;
 		UIEnable(ID_EDIT_PASTE, allowPaste);
 		ATLTRACE(L"Allow paste: %d\n", (int)allowPaste);
 		UIEnable(ID_KEY_PERMISSIONS, properKey);
@@ -1556,6 +1621,7 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_EDIT_COPY, listItem >= 0);
 		UIEnable(ID_KEY_PERMISSIONS, listItem >= 0 && m_Items[listItem].Key && m_Items[listItem].Type != REG_KEY_UP);
 		UIEnable(ID_EDIT_RENAME, !m_ReadOnly && listItem >= 0);
+		UIEnable(ID_EDIT_PASTE, !m_Clipboard.Items.empty());
 	}
 	else {
 		UIEnable(ID_KEY_PERMISSIONS, FALSE);

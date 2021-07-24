@@ -65,6 +65,7 @@ struct AppCommandList final : AppCommandBase<AppCommandList> {
 	void AddCommand(std::shared_ptr<AppCommand> command);
 
 	std::shared_ptr<AppCommand> GetCommand(size_t i) const;
+	int GetCount() const;
 
 	bool Execute() override;
 	bool Undo() override;

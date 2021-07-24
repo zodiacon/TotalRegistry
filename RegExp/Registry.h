@@ -29,6 +29,7 @@ struct Registry abstract final {
 	static bool RenameKey(HKEY hKey, PCWSTR name, PCWSTR newName);
 	static bool RenameValue(HKEY hKey, PCWSTR path, PCWSTR oldName, PCWSTR newName);
 	static bool CopyKey(HKEY hKey, PCWSTR path, HKEY htarget);
+	static bool CopyValue(HKEY hSource, HKEY hTarget, PCWSTR sourceName, PCWSTR targetName);
 	static DWORD GetSubKeyCount(HKEY hKey, DWORD* values = 0, FILETIME* ft = nullptr);
 
 	static CRegKey OpenKey(const CString& path, DWORD access, bool* root = nullptr);

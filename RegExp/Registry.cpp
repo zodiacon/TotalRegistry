@@ -319,6 +319,31 @@ bool Registry::CopyKey(HKEY hKey, PCWSTR path, HKEY htarget) {
 	return ERROR_SUCCESS == error;
 }
 
+bool Registry::CopyValue(HKEY hSource, HKEY hTarget, PCWSTR sourceName, PCWSTR targetName) {
+	DWORD size = 0;
+	DWORD type;
+	auto error = ::RegQueryValueEx(hSource, sourceName, nullptr, &type, nullptr, &size);
+	::SetLastError(error);
+	if (error != ERROR_SUCCESS)
+		return false;
+
+	std::unique_ptr<BYTE[]> data;
+	if (size) {
+		data = std::make_unique<BYTE[]>(size);
+		if (!data) {
+			::SetLastError(ERROR_OUTOFMEMORY);
+			return false;
+		}
+		auto error = ::RegQueryValueEx(hSource, sourceName, nullptr, nullptr, data.get(), &size);
+		::SetLastError(error);
+		if (ERROR_SUCCESS != error)
+			return false;
+	}
+	error = ::RegSetValueEx(hTarget, targetName, 0, type, data.get(), size);
+	::SetLastError(error);
+	return ERROR_SUCCESS == error;
+}
+
 DWORD Registry::GetSubKeyCount(HKEY hKey, DWORD* values, FILETIME* ft) {
 	DWORD subkeys;
 	auto error = ::RegQueryInfoKey(hKey, nullptr, 0, nullptr, &subkeys, nullptr, nullptr, values, nullptr, nullptr, nullptr, ft);
