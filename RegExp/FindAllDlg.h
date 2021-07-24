@@ -15,6 +15,8 @@ class CFindAllDlg :
 public:
 	enum { IDD = IDD_FINDALL };
 
+	const UINT WM_SEARCH_COMPLETE = WM_APP + 1;
+
 	CFindAllDlg(IMainFrame* frame);
 
 	void UpdateUI();
@@ -28,6 +30,7 @@ public:
 
 	BEGIN_MSG_MAP(CFindAllDlg)
 		MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+		MESSAGE_HANDLER(WM_SEARCH_COMPLETE, OnSearchComplete)
 		COMMAND_ID_HANDLER(IDC_FIND, OnFind)
 		COMMAND_ID_HANDLER(IDCANCEL, OnCloseCmd)
 		COMMAND_ID_HANDLER(IDC_CANCEL, OnCancel)
@@ -60,6 +63,7 @@ private:
 	LRESULT OnCancel(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnTextChanged(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnClick(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnSearchComplete(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
 	IMainFrame* m_pFrame;
 	RegistrySearcher m_Searcher;

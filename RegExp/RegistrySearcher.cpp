@@ -191,10 +191,10 @@ DWORD RegistrySearcher::DoSearch() {
 				break;
 		}
 	}
-	if ((_options & (FindOptions::SearchRealRegistry | FindOptions::SearchSelected)) == FindOptions::SearchRealRegistry) {
+	if (!_cancel && (_options & (FindOptions::SearchRealRegistry | FindOptions::SearchSelected)) == FindOptions::SearchRealRegistry) {
 		FindNextWorker(Registry::OpenRealRegistryKey(), L"\\REGISTRY");
 	}
-	if ((_options & FindOptions::SearchSelected) == FindOptions::SearchSelected) {
+	if (!_cancel && (_options & FindOptions::SearchSelected) == FindOptions::SearchSelected) {
 		FindNextWorker(Registry::OpenKey(_startKey, KEY_READ), _startKey);
 	}
 

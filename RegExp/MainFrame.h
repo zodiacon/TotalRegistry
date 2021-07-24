@@ -106,6 +106,8 @@ public:
 		COMMAND_ID_HANDLER(ID_KEY_PROPERTIES, OnProperties)
 		COMMAND_ID_HANDLER(ID_FILE_EXPORT, OnExport)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAbout)
+		COMMAND_ID_HANDLER(ID_OPTIONS_REPLACEREGEDIT, OnReplaceRegEdit)
+		COMMAND_ID_HANDLER(ID_OPTIONS_DARKMODE, OnDarkMode)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
@@ -199,6 +201,8 @@ private:
 	LRESULT OnListBeginEdit(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnProperties(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnReplaceRegEdit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnDarkMode(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -219,10 +223,11 @@ private:
 	CString GetKeyDetails(const RegistryItem& item) const;
 	CString GetValueDetails(const RegistryItem& item) const;
 	bool RefreshItem(HTREEITEM hItem);
-	void DisplayError(PCWSTR msg);
+	void DisplayError(PCWSTR msg, DWORD error = ::GetLastError());
 	static CString GetErrorText(DWORD error);
 	int GetKeyImage(const RegistryItem& item) const;
 	INT_PTR ShowValueProperties(RegistryItem& item);
+	void SetDarkMode(bool dark);
 
 	void UpdateUI();
 	void UpdateList(bool force = false);

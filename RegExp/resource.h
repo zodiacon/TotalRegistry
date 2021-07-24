@@ -46,7 +46,7 @@
 #define IDI_NUM1                        155
 #define IDI_NUM2                        156
 #define IDI_NUM8_2                      157
-#define IDI_OPTIONS						158
+#define IDI_OPTIONS                     158
 #define IDD_FIND                        160
 #define IDD_FINDALL                     161
 #define IDD_STRINGVALUE                 162
@@ -92,6 +92,7 @@
 #define IDC_EXPORT_STD                  1036
 #define IDC_EXPORT_REAL                 1037
 #define IDC_RADIO3                      1038
+#define IDC_EXPORTKEY                   1038
 #define IDC_KEY                         1039
 #define IDC_PATH                        1040
 #define IDC_BROWSE                      1041
@@ -141,6 +142,9 @@
 #define ID_HEX_16BYTES                  32847
 #define ID_HEX_24BYTES                  32848
 #define ID_HEX_32BYTES                  32849
+#define ID_OPTIONS_REPLACEREGEDIT       32850
+#define ID_LOCATIONS_IMAGEFILEEXECUTIONOPTIONS 32851
+#define ID_OPTIONS_DARKMODE             32852
 
 // Next default values for new objects
 // 
@@ -148,7 +152,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        167
-#define _APS_NEXT_COMMAND_VALUE         32850
+#define _APS_NEXT_COMMAND_VALUE         32853
 #define _APS_NEXT_CONTROL_VALUE         1042
 #define _APS_NEXT_SYMED_VALUE           115
 #endif

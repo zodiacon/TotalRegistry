@@ -190,11 +190,7 @@ LRESULT CFindAllDlg::OnFind(WORD, WORD wID, HWND, BOOL&) {
     m_Searcher.SetStartKey(m_pFrame->GetCurrentKeyPath());
     m_Searcher.Find([&](auto path, auto name, auto data) {
         if (path == nullptr) {
-            GetDlgItem(IDC_FIND).EnableWindow();
-            GetDlgItem(IDC_CANCEL).EnableWindow(FALSE);
-            m_Progress.ShowWindow(SW_HIDE);
-            if(!m_Searcher.IsCancelled())
-                AtlMessageBox(m_hWnd, L"Search complete.", IDS_APP_TITLE, MB_ICONINFORMATION);
+            PostMessage(WM_SEARCH_COMPLETE, m_Searcher.IsCancelled());
         }
         else {
             ListItem item{ path, name, data };
@@ -226,5 +222,14 @@ LRESULT CFindAllDlg::OnClick(WORD, WORD wID, HWND, BOOL&) {
         if (IsDlgButtonChecked(IDC_SEARCH_STD) == BST_UNCHECKED && IsDlgButtonChecked(IDC_SEARCH_REAL) == BST_UNCHECKED)
             GetDlgItem(IDC_FIND).EnableWindow(FALSE);
     }
+    return 0;
+}
+
+LRESULT CFindAllDlg::OnSearchComplete(UINT msg, WPARAM cancelled, LPARAM, BOOL&) {
+    GetDlgItem(IDC_FIND).EnableWindow();
+    GetDlgItem(IDC_CANCEL).EnableWindow(FALSE);
+    m_Progress.ShowWindow(SW_HIDE);
+    if (cancelled)
+        AtlMessageBox(m_hWnd, L"Search complete.", IDS_APP_TITLE, MB_ICONINFORMATION);
     return 0;
 }

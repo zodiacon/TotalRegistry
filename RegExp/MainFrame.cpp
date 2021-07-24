@@ -23,6 +23,7 @@
 #include "RenameValueCommand.h"
 #include "DeleteValueCommand.h"
 #include "CopyValueCommand.h"
+#include "ExportDlg.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -291,16 +292,16 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	m_StatusBar.SubclassWindow(m_hWndStatusBar);
 	int panes[] = { 24, 1300 };
 	m_StatusBar.SetParts(_countof(panes), panes);
-	::SetWindowTheme(m_StatusBar, L"Explorer", nullptr);
 
-	m_hWndClient = m_MainSplitter.Create(m_hWnd, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, WS_EX_CLIENTEDGE);
+	m_hWndClient = m_MainSplitter.Create(m_hWnd, rcDefault, nullptr, 
+		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, WS_EX_CLIENTEDGE);
 
 	m_Tree.Create(m_MainSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN |
 		TVS_HASBUTTONS | TVS_LINESATROOT | TVS_HASLINES | TVS_SHOWSELALWAYS | TVS_EDITLABELS, 0, TreeId);
 	m_Tree.SetExtendedStyle(TVS_EX_DOUBLEBUFFER | TVS_EX_RICHTOOLTIP | TVS_EX_FADEINOUTEXPANDOS, 0);
 
 	CImageList images;
-	images.Create(16, 16, ILC_COLOR32, 8, 4);
+	images.Create(16, 16, ILC_COLOR32, 16, 4);
 	UINT icons[] = {
 		IDR_MAINFRAME, IDI_COMPUTER, IDI_FOLDER, IDI_FOLDER_CLOSED, IDI_FOLDER_LINK,
 		IDI_FOLDER_ACCESSDENIED, IDI_HIVE, IDI_HIVE_ACCESSDENIED, IDI_FOLDER_UP, IDI_BINARY,
@@ -309,13 +310,13 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	for (auto icon : icons)
 		images.AddIcon(AtlLoadIconImage(icon, 0, 16, 16));
 	m_Tree.SetImageList(images, TVSIL_NORMAL);
-	::SetWindowTheme(m_Tree, L"Explorer", nullptr);
+	//::SetWindowTheme(m_Tree, L"Explorer", nullptr);
 
 	m_List.Create(m_MainSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN
 		| LVS_OWNERDATA | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | LVS_EDITLABELS, 0);
 	m_List.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_INFOTIP);
 	m_List.SetImageList(images, LVSIL_SMALL);
-	::SetWindowTheme(m_List, L"Explorer", nullptr);
+	//::SetWindowTheme(m_List, L"Explorer", nullptr);
 
 	auto cm = GetColumnManager(m_List);
 	cm->AddColumn(L"Name", LVCFMT_LEFT, 220, ColumnType::Name);
@@ -343,6 +344,9 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	UISetCheck(ID_OPTIONS_SHOWEXTRAHIVES, m_Settings.ShowExtraHives());
 	UISetCheck(ID_VIEW_SHOWKEYSINLIST, m_Settings.ShowKeysInList());
 	UISetCheck(ID_OPTIONS_ALWAYSONTOP, m_Settings.AlwaysOnTop());
+	UISetCheck(ID_OPTIONS_REPLACEREGEDIT, m_Settings.ReplaceRegEdit());
+	UISetCheck(ID_OPTIONS_DARKMODE, m_Settings.DarkMode());
+	SetDarkMode(m_Settings.DarkMode());
 	if (m_Settings.AlwaysOnTop())
 		SetWindowPos(HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
@@ -415,6 +419,7 @@ LRESULT CMainFrame::OnAbout(WORD, WORD, HWND, BOOL&) {
 LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 	InitTree();
 	auto showExtra = m_Settings.ShowExtraHives();
+	m_Tree.LockWindowUpdate();
 
 	int i = 0;
 	for (auto& k : Registry::Keys) {
@@ -429,7 +434,9 @@ LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 	if (hKey) {
 		CRegKey key(hKey);
 		BuildTree(m_hRealReg, key);
+		m_Tree.Expand(m_hRealReg, TVE_EXPAND);
 	}
+	m_Tree.LockWindowUpdate(FALSE);
 	m_Tree.SetFocus();
 
 	return 0;
@@ -966,6 +973,88 @@ LRESULT CMainFrame::OnProperties(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
+	if (!SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true)) {
+		AtlMessageBox(m_hWnd, L"Exporting requires the Backup privilege. Running elevated will allow it.", IDS_APP_TITLE, MB_ICONERROR);
+		return 0;
+	}
+	CExportDlg dlg;
+	dlg.SetKeyPath(GetFullNodePath(m_Tree.GetSelectedItem()));
+	if (dlg.DoModal() == IDOK) {
+		auto path = dlg.GetSelectedKey();
+		HKEY hKey;
+		if (path.IsEmpty())
+			hKey = Registry::OpenRealRegistryKey();
+		else {
+			auto key = Registry::OpenKey(path, KEY_READ);
+			hKey = key.Detach();
+		}
+		if (!hKey)
+			DisplayError(L"Failed to open key to export");
+		else {
+			LSTATUS error;
+			CWaitCursor wait;
+			::DeleteFile(dlg.GetFileName());
+			if (path == "HKEY_CLASSES_ROOT")
+				error = ::RegSaveKey(hKey, dlg.GetFileName(), nullptr);
+			else
+				error = ::RegSaveKeyEx(hKey, dlg.GetFileName(), nullptr, REG_LATEST_FORMAT);
+			::SetLastError(error);
+			if (error != ERROR_SUCCESS)
+				DisplayError(L"Failed to export key");
+			else
+				AtlMessageBox(m_hWnd, L"Export successful.", IDS_APP_TITLE, MB_ICONINFORMATION);
+			SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
+			::RegCloseKey(hKey);
+		}
+	}
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnReplaceRegEdit(WORD, WORD, HWND, BOOL&) {
+	if (!SecurityHelper::IsRunningElevated()) {
+		AtlMessageBox(m_hWnd, L"Replacing RegEdit requires running elevated.", IDS_APP_TITLE, MB_ICONEXCLAMATION);
+		return 0;
+	}
+
+	auto& settings = AppSettings::Get();
+	CRegKey key;
+	auto error = key.Open(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options", KEY_WRITE | KEY_READ);
+	if (!key) {
+		DisplayError(L"Failed to open Image File Execution Options key", error);
+		return 0;
+	}
+	CRegKey regEditKey;
+	error = regEditKey.Create(key, L"regedit.exe", nullptr, 0, KEY_WRITE);
+	if(!regEditKey) {
+		DisplayError(L"Failed to create RegEdit key", error);
+		return 0;
+	}
+	settings.ReplaceRegEdit(!settings.ReplaceRegEdit());
+	if (settings.ReplaceRegEdit()) {
+		WCHAR path[MAX_PATH];
+		::GetModuleFileName(nullptr, path, _countof(path));
+		error = regEditKey.SetStringValue(L"Debugger", path);
+	}
+	else {
+		error = regEditKey.DeleteValue(L"Debugger");
+	}
+	if (ERROR_SUCCESS != error) {
+		DisplayError(L"Failed to replace RegEdit", error);
+	}
+	else {
+		UISetCheck(ID_OPTIONS_REPLACEREGEDIT, settings.ReplaceRegEdit());
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnDarkMode(WORD, WORD, HWND, BOOL&) {
+	auto& settings = AppSettings::Get();
+	bool dark = !settings.DarkMode();
+	settings.DarkMode(dark);
+	SetDarkMode(dark);
+	UISetCheck(ID_OPTIONS_DARKMODE, dark);
+
 	return 0;
 }
 
@@ -1088,8 +1177,8 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
 		{ 0 },
 		{ ID_EDIT_COPY, IDI_COPY },
-		{ ID_EDIT_CUT, IDI_CUT },
 		{ ID_EDIT_PASTE, IDI_PASTE },
+		{ 0 },
 		{ ID_EDIT_DELETE, IDI_DELETE },
 		{ 0 },
 		{ ID_EDIT_FIND, IDI_FIND },
@@ -1412,9 +1501,9 @@ bool CMainFrame::RefreshItem(HTREEITEM hItem) {
 	return true;
 }
 
-void CMainFrame::DisplayError(PCWSTR msg) {
+void CMainFrame::DisplayError(PCWSTR msg, DWORD error) {
 	CString text;
-	text.Format(L"%s (%s)", msg, (PCWSTR)GetErrorText(::GetLastError()));
+	text.Format(L"%s (%s)", msg, (PCWSTR)GetErrorText(error));
 	AtlMessageBox(m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_ICONERROR);
 }
 
@@ -1561,6 +1650,18 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 	return 0;
 }
 
+void CMainFrame::SetDarkMode(bool dark) {
+	m_List.SetBkColor(dark ? RGB(32, 32, 32) : ::GetSysColor(COLOR_WINDOW));
+	m_List.SetTextBkColor(dark ? RGB(32, 32, 32) : ::GetSysColor(COLOR_WINDOW));
+	m_List.SetTextColor(dark ? RGB(240, 240, 240) : ::GetSysColor(COLOR_WINDOWTEXT));
+
+	m_Tree.SetBkColor(dark ? RGB(32, 32, 32) : ::GetSysColor(COLOR_WINDOW));
+	m_Tree.SetTextColor(dark ? RGB(240, 240, 240) : ::GetSysColor(COLOR_WINDOWTEXT));
+
+	m_List.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
+	m_Tree.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
+}
+
 void CMainFrame::UpdateUI() {
 	UIEnable(ID_EDIT_UNDO, !m_ReadOnly && m_CmdMgr.CanUndo());
 	if (m_CmdMgr.CanUndo())
@@ -1597,6 +1698,8 @@ void CMainFrame::UpdateUI() {
 	else {
 		UIEnable(ID_KEY_PERMISSIONS, FALSE);
 	}
+	UIEnable(ID_EDIT_CUT, false);
+
 	for (auto id = ID_NEW_DWORDVALUE; id <= ID_NEW_BINARYVALUE; id++)
 		UIEnable(id, !m_ReadOnly);
 	UIEnable(ID_SEARCH_FINDNEXT, m_FindDlg.IsFindNextAvailable());

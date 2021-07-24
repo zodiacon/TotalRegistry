@@ -10,6 +10,8 @@ struct AppSettings : Settings {
 		SETTING(ShowKeysInList, 0, SettingType::Bool);
 		SETTING(AlwaysOnTop, 0, SettingType::Bool);
 		SETTING(ReadOnly, 0, SettingType::Bool);
+		SETTING(ReplaceRegEdit, 0, SettingType::Bool);
+		SETTING(DarkMode, 0, SettingType::Bool);
 		SETTING(Find, FindOptions::SearchKeys | FindOptions::SearchValues | FindOptions::SearchStdRegistry | FindOptions::SearchSelected, SettingType::Int32);
 	END_SETTINGS
 
@@ -19,4 +21,6 @@ struct AppSettings : Settings {
 	DEF_SETTING(ReadOnly, int)
 	DEF_SETTING(MainWindowPlacement, WINDOWPLACEMENT)
 	DEF_SETTING(Find, FindOptions)
+	DEF_SETTING(ReplaceRegEdit, int)
+	DEF_SETTING(DarkMode, int)
 };
