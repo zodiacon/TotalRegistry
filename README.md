@@ -5,7 +5,8 @@ Replacement for the Windows built-in *Regedit.exe* tool. Improvements over that 
 * Show real Registry (not just the standard one)
 * Sort list view by any column
 * Key icons for hives, inaccessible keys, and links
-* Key details: last write time and number of keys/values.
+* Key details: last write time and number of keys/values
+* Displays MUI values
 * Full search (Find All / Ctrl+Shift+F)
 * Enhanced hex editor for binary values
 * Undo/redo
