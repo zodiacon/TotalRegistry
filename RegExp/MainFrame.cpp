@@ -578,7 +578,7 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 				return true;
 			};
 			cmd->SetCallback(cb);
-			if(AppSettings::Get().ShowKeysInList())
+			if (AppSettings::Get().ShowKeysInList())
 				UpdateList();
 			return TRUE;
 		}
@@ -750,58 +750,29 @@ LRESULT CMainFrame::OnEditCut(WORD code, WORD id, HWND hWndCtl, BOOL& bHandled) 
 }
 
 LRESULT CMainFrame::OnEditPaste(WORD, WORD, HWND, BOOL&) {
-	if (::GetFocus() == m_Tree) {
-		ATLASSERT(m_Clipboard.Items.size() == 1);
-		auto& item = m_Clipboard.Items[0];
-		ATLASSERT(item.Key && !item.Path.IsEmpty());
-		if (TreeHelper(m_Tree).FindChild(m_Tree.GetSelectedItem(), item.Name)) {
-			AtlMessageBox(m_hWnd, (PCWSTR)(L"Key " + item.Name + L" already exists."), IDS_APP_TITLE, MB_ICONWARNING);
-			return 0;
-		}
-		auto target = GetFullNodePath(m_Tree.GetSelectedItem());
-		auto cb = [this](auto& cmd, bool execute) {
-			TreeHelper th(m_Tree);
-			auto real = cmd.GetTargetPath()[0] == L'\\';
-			auto hParent = th.FindItem(real ? m_hRealReg : m_hStdReg, cmd.GetTargetPath());
-			if (execute) {
-				ATLASSERT(hParent);
-				auto hItem = InsertKeyItem(hParent, cmd.GetName());
-			}
-			else {
-				m_Tree.DeleteItem(th.FindChild(hParent, cmd.GetName()));
-			}
-			return true;
-		};
-		auto cmd = std::make_shared<CopyKeyCommand>(item.Path, item.Name, target, cb);
-		if (!m_CmdMgr.AddCommand(cmd)) {
-			DisplayError(L"Failed to paste key");
-		}
-	}
-	else {
-		ATLASSERT(::GetFocus() == m_List);
-		ATLASSERT(!m_Clipboard.Items.empty());
-		auto cb = [this](auto& cmd, bool) {
-			UpdateList();
-			return true;
-		};
+	ATLASSERT(!m_Clipboard.Items.empty());
+	auto cb = [this](auto& cmd, bool) {
+		RefreshItem(m_Tree.GetSelectedItem());
+		UpdateList();
+		return true;
+	};
 
-		auto list = std::make_shared<AppCommandList>(nullptr, cb);
-		auto path = GetFullNodePath(m_Tree.GetSelectedItem());
-		for (auto& item : m_Clipboard.Items) {
-			std::shared_ptr<AppCommand> cmd;
-			if (item.Key)
-				cmd = std::make_shared<CopyKeyCommand>(item.Path, item.Name, path);
-			else
-				cmd = std::make_shared<CopyValueCommand>(item.Path, item.Name, path);
-			list->AddCommand(cmd);
-		}
-		if (list->GetCount() == 1)
-			list->SetCommandName(list->GetCommand(0)->GetCommandName());
+	auto list = std::make_shared<AppCommandList>(nullptr, cb);
+	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
+	for (auto& item : m_Clipboard.Items) {
+		std::shared_ptr<AppCommand> cmd;
+		if (item.Key)
+			cmd = std::make_shared<CopyKeyCommand>(item.Path, item.Name, path);
 		else
-			list->SetCommandName(L"Paste");
-		if (!m_CmdMgr.AddCommand(list))
-			DisplayError(L"Paste failed");
+			cmd = std::make_shared<CopyValueCommand>(item.Path, item.Name, path);
+		list->AddCommand(cmd);
 	}
+	if (list->GetCount() == 1)
+		list->SetCommandName(list->GetCommand(0)->GetCommandName());
+	else
+		list->SetCommandName(L"Paste");
+	if (!m_CmdMgr.AddCommand(list))
+		DisplayError(L"Paste failed");
 	return 0;
 }
 

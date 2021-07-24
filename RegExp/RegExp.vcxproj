@@ -236,6 +236,7 @@
     <Image Include="Icons\number-4.ico" />
     <Image Include="Icons\number-8-2.ico" />
     <Image Include="Icons\number-8.ico" />
+    <Image Include="Icons\options.ico" />
     <Image Include="Icons\paste.ico" />
     <Image Include="Icons\properties.ico" />
     <Image Include="Icons\quickfind.ico" />

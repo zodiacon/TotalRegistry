@@ -22,13 +22,13 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 	uint8_t data[512];
 	POLYTEXT poly[128] = { 0 };
 
-	int addrLength = m_AddressDigits = m_Buffer->GetSize() < 1LL << 16 ? 4 : 8;
+	int addrLength = m_AddressDigits;
 	const std::wstring addrFormat = L"%0" + std::to_wstring(addrLength) + L"X";
 	int x = (addrLength + 1) * m_CharWidth;
 
 	// data
 	m_Text.clear();
-	int lines = 0;
+	int lines = 1;
 	std::wstring format(L"%0" + std::to_wstring(m_DataSize * 2) + L"llX ");
 	int factor = m_CharWidth * (m_DataSize * 2 + 1);
 	for (int y = 0;; y++) {
@@ -40,7 +40,6 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 			// changed data
 			memcpy(data + m_CaretOffset - offset, &m_CurrentInput, m_DataSize);
 		}
-		lines++;
 		int jcount = std::min(m_BytesPerLine / m_DataSize, count);
 		for (int j = 0; j < jcount; j++) {
 			if (offset + j * m_DataSize >= m_EndOffset)
@@ -67,6 +66,7 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 		if (y * m_CharHeight > rect.bottom)
 			break;
 		i += m_BytesPerLine;
+		lines++;
 	}
 
 	// offsets
@@ -423,7 +423,7 @@ LRESULT CHexControl::OnVScroll(UINT, WPARAM wParam, LPARAM, BOOL&) {
 }
 
 void CHexControl::RecalcLayout() {
-	if (m_Buffer == nullptr || m_Buffer->GetSize() == 0) {
+	if (m_Buffer == nullptr) {
 		return;
 	}
 
@@ -435,6 +435,8 @@ void CHexControl::RecalcLayout() {
 		lines++;
 
 	m_Lines = rc.Height() / m_CharHeight;
+
+	m_AddressDigits = m_Buffer->GetSize() < 1LL << 16 ? 4 : 8;
 
 	SCROLLINFO si;
 	si.cbSize = sizeof(si);
