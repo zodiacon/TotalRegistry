@@ -6,11 +6,12 @@ Replacement for the Windows built-in *Regedit.exe* tool. Improvements over that 
 * Sort list view by any column
 * Key icons for hives, inaccessible keys, and links
 * Key details: last write time and number of keys/values
-* Displays MUI values
+* Displays MUI and REG_EXPAND_SZ expanded values
 * Full search (Find All / Ctrl+Shift+F)
 * Enhanced hex editor for binary values
 * Undo/redo
 * Copy/paste of keys/values
+* Optionally replace RegEdit
 * more to come!
 
 ## Build instructions
