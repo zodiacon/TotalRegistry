@@ -753,9 +753,11 @@ LRESULT CMainFrame::OnEditCopy(WORD, WORD, HWND, BOOL&) {
 		int index = -1;
 		auto path = GetFullNodePath(m_Tree.GetSelectedItem());
 		m_Clipboard.Items.clear();
+		CString text;		// for standard clipboard
 		for (UINT i = 0; i < count; i++) {
 			index = m_List.GetNextItem(index, LVIS_SELECTED);
 			ATLASSERT(index >= 0);
+			text += ListViewHelper::GetRowAsString(m_List, index, L'\t') + L"\n";
 			ClipboardItem ci;
 			ci.Path = path;
 			auto& item = m_Items[index];
@@ -763,6 +765,7 @@ LRESULT CMainFrame::OnEditCopy(WORD, WORD, HWND, BOOL&) {
 			ci.Name = item.Name;
 			m_Clipboard.Items.push_back(ci);
 		}
+		ClipboardHelper::CopyText(m_hWnd, text);
 		m_Clipboard.Operation = ClipboardOperation::Copy;
 	}
 	UpdateUI();
@@ -903,6 +906,7 @@ LRESULT CMainFrame::OnKnownLocation(WORD, WORD id, HWND, BOOL&) {
 		{ ID_LOCATIONS_HARDWARE, L"HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Enum" },
 		{ ID_LOCATIONS_CLASS, L"HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Class" },
 		{ ID_LOCATIONS_HIVELIST, L"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\hivelist" },
+		{ ID_LOCATIONS_IMAGEFILEEXECUTIONOPTIONS, L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options" },
 	};
 
 	for (auto& loc : locations) {
@@ -1036,6 +1040,28 @@ LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnImport(WORD, WORD, HWND, BOOL&) {
+	if (!SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true) || !SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, true)) {
+		DisplayBackupRestorePrivilegeError();
+		return 0;
+	}
+	CSimpleFileDialog dlg(TRUE, L"dat", nullptr, OFN_FILEMUSTEXIST | OFN_ENABLESIZING | OFN_EXPLORER,
+		L"All Files\0*.*\0", m_hWnd);
+	if (dlg.DoModal() == IDOK) {
+		auto error = ::RegRestoreKey(m_CurrentKey, dlg.m_szFileName, REG_FORCE_RESTORE);
+		if (ERROR_SUCCESS != error)
+			DisplayError(L"Failed to import file", error);
+		else {
+			RefreshItem(m_Tree.GetSelectedItem());
+		}
+	}
+
+	SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
+	SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, false);
+
+	return 0;
+}
+
 LRESULT CMainFrame::OnLoadHive(WORD, WORD, HWND, BOOL&) {
 	if (!SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true) || !SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, true)) {
 		DisplayBackupRestorePrivilegeError();
@@ -1064,6 +1090,7 @@ LRESULT CMainFrame::OnLoadHive(WORD, WORD, HWND, BOOL&) {
 	}
 	SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
 	SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, false);
+	
 	return 0;
 }
 

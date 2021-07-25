@@ -105,6 +105,7 @@ public:
 		COMMAND_ID_HANDLER(ID_KEY_PERMISSIONS, OnKeyPermissions)
 		COMMAND_ID_HANDLER(ID_KEY_PROPERTIES, OnProperties)
 		COMMAND_ID_HANDLER(ID_FILE_EXPORT, OnExport)
+		COMMAND_ID_HANDLER(ID_FILE_IMPORT, OnImport)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAbout)
 		COMMAND_ID_HANDLER(ID_OPTIONS_REPLACEREGEDIT, OnReplaceRegEdit)
 		COMMAND_ID_HANDLER(ID_OPTIONS_DARKMODE, OnDarkMode)
@@ -204,6 +205,7 @@ private:
 	LRESULT OnListBeginEdit(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnProperties(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnImport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnLoadHive(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnUnloadHive(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnReplaceRegEdit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
