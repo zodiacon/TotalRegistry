@@ -5,6 +5,7 @@
 
 LRESULT CAboutDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/) {
 	CenterWindow(GetParent());
+	SetDialogIcon(IDR_MAINFRAME);
 
 	WCHAR path[MAX_PATH];
 	::GetModuleFileName(nullptr, path, _countof(path));

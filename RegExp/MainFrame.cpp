@@ -1808,6 +1808,7 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_EDIT_PASTE, allowPaste);
 		ATLTRACE(L"Allow paste: %d\n", (int)allowPaste);
 		UIEnable(ID_KEY_PERMISSIONS, (node & NodeType::Key) == NodeType::Key);
+		UIEnable(ID_KEY_PROPERTIES, false);
 	}
 	else if (listFocus) {
 		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && listItem >= 0);
@@ -1816,9 +1817,11 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_KEY_PERMISSIONS, listItem >= 0 && m_Items[listItem].Key && m_Items[listItem].Type != REG_KEY_UP);
 		UIEnable(ID_EDIT_RENAME, !m_ReadOnly && listItem >= 0);
 		UIEnable(ID_EDIT_PASTE, !m_Clipboard.Items.empty());
+		UIEnable(ID_KEY_PROPERTIES, listItem >= 0 && !m_Items[listItem].Key);
 	}
 	else {
 		UIEnable(ID_KEY_PERMISSIONS, FALSE);
+		UIEnable(ID_KEY_PROPERTIES, FALSE);
 	}
 	UIEnable(ID_EDIT_CUT, false);
 

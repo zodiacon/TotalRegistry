@@ -100,7 +100,6 @@
 #define IDC_BROWSE                      1041
 #define IDC_MACHINE                     1042
 #define IDC_USERS                       1043
-#define IDC_SYSLINK1                    1045
 #define IDC_LINK                        1045
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
@@ -160,7 +159,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        168
-#define _APS_NEXT_COMMAND_VALUE         32855
+#define _APS_NEXT_COMMAND_VALUE         32857
 #define _APS_NEXT_CONTROL_VALUE         1046
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
