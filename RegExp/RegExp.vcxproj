@@ -149,6 +149,7 @@
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="HexControl.h" />
     <ClInclude Include="IMainFrame.h" />
+    <ClInclude Include="LoadHiveDlg.h" />
     <ClInclude Include="MainFrame.h" />
     <ClInclude Include="MemoryBuffer.h" />
     <ClInclude Include="MultiStringValueDlg.h" />
@@ -186,6 +187,7 @@
     <ClCompile Include="FindDlg.cpp" />
     <ClCompile Include="Helpers.cpp" />
     <ClCompile Include="HexControl.cpp" />
+    <ClCompile Include="LoadHiveDlg.cpp" />
     <ClCompile Include="MainFrame.cpp" />
     <ClCompile Include="MemoryBuffer.cpp" />
     <ClCompile Include="MultiStringValueDlg.cpp" />
@@ -222,6 +224,7 @@
     <Image Include="Icons\folderup.ico" />
     <Image Include="Icons\folder_accessdenied.ico" />
     <Image Include="Icons\folder_closed.ico" />
+    <Image Include="Icons\folder_into.ico" />
     <Image Include="Icons\folder_new.ico" />
     <Image Include="Icons\folder_view.ico" />
     <Image Include="Icons\forward.ico" />

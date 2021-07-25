@@ -141,6 +141,9 @@
     <ClInclude Include="CopyValueCommand.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="LoadHiveDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -235,6 +238,9 @@
     </ClCompile>
     <ClCompile Include="CopyValueCommand.cpp">
       <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadHiveDlg.cpp">
+      <Filter>Dialogs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -368,6 +374,9 @@
       <Filter>Resource Files\Icons</Filter>
     </Image>
     <Image Include="Icons\options.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\folder_into.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
   </ItemGroup>

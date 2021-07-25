@@ -6,11 +6,11 @@ void CExportDlg::SetKeyPath(PCWSTR path) {
     m_Key = path;
 }
 
-CString CExportDlg::GetSelectedKey() const {
+const CString& CExportDlg::GetSelectedKey() const {
     return m_Key;
 }
 
-CString CExportDlg::GetFileName() const {
+const CString& CExportDlg::GetFileName() const {
     return m_FileName;
 }
 

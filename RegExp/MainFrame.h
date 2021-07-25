@@ -109,6 +109,8 @@ public:
 		COMMAND_ID_HANDLER(ID_OPTIONS_REPLACEREGEDIT, OnReplaceRegEdit)
 		COMMAND_ID_HANDLER(ID_OPTIONS_DARKMODE, OnDarkMode)
 		COMMAND_ID_HANDLER(ID_OPTIONS_ALLOWSINGLEINSTANCE, OnSingleInstance)
+		COMMAND_ID_HANDLER(ID_FILE_LOADHIVE, OnLoadHive)
+		COMMAND_ID_HANDLER(ID_FILE_UNLOADHIVE, OnUnloadHive)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
@@ -202,6 +204,8 @@ private:
 	LRESULT OnListBeginEdit(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnProperties(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnLoadHive(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnUnloadHive(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnReplaceRegEdit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnDarkMode(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnSingleInstance(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
@@ -226,6 +230,7 @@ private:
 	CString GetValueDetails(const RegistryItem& item) const;
 	bool RefreshItem(HTREEITEM hItem);
 	void DisplayError(PCWSTR msg, DWORD error = ::GetLastError());
+	void DisplayBackupRestorePrivilegeError();
 	static CString GetErrorText(DWORD error);
 	int GetKeyImage(const RegistryItem& item) const;
 	INT_PTR ShowValueProperties(RegistryItem& item);

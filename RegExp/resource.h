@@ -47,6 +47,7 @@
 #define IDI_NUM2                        156
 #define IDI_NUM8_2                      157
 #define IDI_OPTIONS                     158
+#define IDI_FOLDER_LOAD					159
 #define IDD_FIND                        160
 #define IDD_FINDALL                     161
 #define IDD_STRINGVALUE                 162
@@ -54,6 +55,7 @@
 #define IDD_NUMBERVALUE                 164
 #define IDD_BINVALUE                    165
 #define IDD_EXPORT                      166
+#define IDD_LOADHIVE                    167
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
@@ -96,6 +98,8 @@
 #define IDC_KEY                         1039
 #define IDC_PATH                        1040
 #define IDC_BROWSE                      1041
+#define IDC_MACHINE                     1042
+#define IDC_USERS                       1043
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -146,15 +150,16 @@
 #define ID_LOCATIONS_IMAGEFILEEXECUTIONOPTIONS 32851
 #define ID_OPTIONS_DARKMODE             32852
 #define ID_OPTIONS_ALLOWSINGLEINSTANCE  32853
+#define ID_FILE_UNLOADHIVE              32854
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        167
-#define _APS_NEXT_COMMAND_VALUE         32854
-#define _APS_NEXT_CONTROL_VALUE         1042
+#define _APS_NEXT_RESOURCE_VALUE        168
+#define _APS_NEXT_COMMAND_VALUE         32855
+#define _APS_NEXT_CONTROL_VALUE         1045
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

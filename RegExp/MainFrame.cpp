@@ -24,6 +24,7 @@
 #include "DeleteValueCommand.h"
 #include "CopyValueCommand.h"
 #include "ExportDlg.h"
+#include "LoadHiveDlg.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -475,9 +476,11 @@ LRESULT CMainFrame::OnTreeSelChanged(int, LPNMHDR, BOOL&) {
 }
 
 LRESULT CMainFrame::OnRunAsAdmin(WORD, WORD, HWND, BOOL&) {
+	::CloseHandle(m_hSingleInstMutex);
 	if (SecurityHelper::RunElevated())
 		PostMessage(WM_CLOSE);
-
+	else
+		m_hSingleInstMutex = ::CreateMutex(nullptr, FALSE, L"RegExpSingleInstanceMutex");
 	return 0;
 }
 
@@ -989,9 +992,14 @@ LRESULT CMainFrame::OnProperties(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+void CMainFrame::DisplayBackupRestorePrivilegeError() {
+	AtlMessageBox(m_hWnd, L"Exporting, importing, and loading hives require the Backup/Restore privileges. Running elevated will allow it.", 
+		IDS_APP_TITLE, MB_ICONERROR);
+}
+
 LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
 	if (!SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true)) {
-		AtlMessageBox(m_hWnd, L"Exporting requires the Backup privilege. Running elevated will allow it.", IDS_APP_TITLE, MB_ICONERROR);
+		DisplayBackupRestorePrivilegeError();
 		return 0;
 	}
 	CExportDlg dlg;
@@ -1024,6 +1032,63 @@ LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
 			::RegCloseKey(hKey);
 		}
 	}
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnLoadHive(WORD, WORD, HWND, BOOL&) {
+	if (!SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true) || !SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, true)) {
+		DisplayBackupRestorePrivilegeError();
+		return 0;
+	}
+
+	CLoadHiveDlg dlg;
+	if (dlg.DoModal() == IDOK) {
+		auto hKey = dlg.GetSelectedKey();
+		auto error = ::RegLoadKey(hKey, dlg.GetName(), dlg.GetFileName());
+		if (error != ERROR_SUCCESS)
+			DisplayError(L"Failed to load hive", error);
+		else {
+			AtlMessageBox(m_hWnd, L"Hive loaded successfully.", IDS_APP_TITLE, MB_ICONINFORMATION);
+			TreeHelper th(m_Tree);
+			auto hItem = th.FindChild(m_hStdReg, hKey == HKEY_LOCAL_MACHINE ? L"HKEY_LOCAL_MACHINE" : L"HKEY_USERS");
+			RefreshItem(hItem);
+			hItem = th.FindChild(hItem, dlg.GetName());
+			ATLASSERT(hItem);
+			if (hItem) {
+				SetNodeData(hItem, GetNodeData(hItem) | NodeType::Hive | NodeType::Loaded);
+				m_Tree.SelectItem(hItem);
+				m_Tree.EnsureVisible(hItem);
+			}
+		}
+	}
+	SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
+	SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, false);
+	return 0;
+}
+
+LRESULT CMainFrame::OnUnloadHive(WORD, WORD, HWND, BOOL&) {
+	auto hItem = m_Tree.GetSelectedItem();
+	if ((GetNodeData(hItem) & (NodeType::Hive | NodeType::Loaded)) == NodeType::None) {
+		AtlMessageBox(m_hWnd, L"Selected key is not a manually-loaded hive", IDS_APP_TITLE, MB_ICONERROR);
+		return 0;
+	}
+	if (!SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true) || !SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, true)) {
+		DisplayBackupRestorePrivilegeError();
+		return 0;
+	}
+	CString name;
+	m_Tree.GetItemText(hItem, name);
+	m_CurrentKey.Close();
+	auto error = ::RegUnLoadKey(GetKeyFromNode(m_Tree.GetParentItem(hItem)), name);
+	if (error != ERROR_SUCCESS) {
+		DisplayError(L"Failed to unload hive", error);
+		m_CurrentKey.Attach(Registry::OpenKey(GetFullNodePath(hItem), KEY_READ).Detach());
+	}
+	else
+		m_Tree.DeleteItem(hItem);
+	SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
+	SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, false);
 
 	return 0;
 }
@@ -1177,6 +1242,7 @@ void CMainFrame::InitCommandBar() {
 		{ ID_FILE_EXPORT, IDI_EXPORT },
 		{ ID_FILE_IMPORT, IDI_IMPORT },
 		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
+		{ ID_FILE_LOADHIVE, IDI_FOLDER_LOAD },
 	};
 	for (auto& cmd : cmds) {
 		HICON hIcon = cmd.hIcon;
@@ -1204,6 +1270,7 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 		{ ID_VIEW_SHOWKEYSINLIST, IDI_FOLDER_VIEW },
 		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
 		{ 0 },
+		{ ID_EDIT_UNDO, IDI_UNDO },
 		{ ID_EDIT_COPY, IDI_COPY },
 		{ ID_EDIT_PASTE, IDI_PASTE },
 		{ 0 },
@@ -1713,7 +1780,7 @@ void CMainFrame::UpdateUI() {
 		bool allowPaste = !m_ReadOnly && !m_Clipboard.Items.empty() && (node & NodeType::Key) == NodeType::Key;
 		UIEnable(ID_EDIT_PASTE, allowPaste);
 		ATLTRACE(L"Allow paste: %d\n", (int)allowPaste);
-		UIEnable(ID_KEY_PERMISSIONS, properKey);
+		UIEnable(ID_KEY_PERMISSIONS, (node & NodeType::Key) == NodeType::Key);
 	}
 	else if (listFocus) {
 		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && listItem >= 0);
@@ -1829,3 +1896,4 @@ void CMainFrame::UpdateList(bool force) {
 	DoSort(GetSortInfo(m_List));
 	m_List.RedrawItems(m_List.GetTopIndex(), m_List.GetTopIndex() + m_List.GetCountPerPage());
 }
+
