@@ -256,6 +256,21 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp"))
 		m_ReadOnly = m_Settings.ReadOnly();
 
+	m_hSingleInstMutex = ::CreateMutex(nullptr, FALSE, L"RegExpSingleInstanceMutex");
+	if (m_Settings.SingleInstance() && m_hSingleInstMutex) {
+		if (::GetLastError() == ERROR_ALREADY_EXISTS) {
+			//
+			// not first instance
+			//
+			auto hMainWnd = ::FindWindow(GetWndClassName(), nullptr);
+			if (hMainWnd) {
+				::SetActiveWindow(hMainWnd);
+				::SetForegroundWindow(hMainWnd);
+				return -1;
+			}
+		}
+	}
+
 	CMenuHandle menu = GetMenu();
 	if (SecurityHelper::IsRunningElevated()) {
 		auto fileMenu = menu.GetSubMenu(0);
@@ -346,6 +361,8 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	UISetCheck(ID_OPTIONS_ALWAYSONTOP, m_Settings.AlwaysOnTop());
 	UISetCheck(ID_OPTIONS_REPLACEREGEDIT, m_Settings.ReplaceRegEdit());
 	UISetCheck(ID_OPTIONS_DARKMODE, m_Settings.DarkMode());
+	UISetCheck(ID_OPTIONS_ALLOWSINGLEINSTANCE, m_Settings.SingleInstance());
+
 	SetDarkMode(m_Settings.DarkMode());
 	if (m_Settings.AlwaysOnTop())
 		SetWindowPos(HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
@@ -1048,12 +1065,23 @@ LRESULT CMainFrame::OnReplaceRegEdit(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
-LRESULT CMainFrame::OnDarkMode(WORD, WORD, HWND, BOOL&) {
+LRESULT CMainFrame::OnDarkMode(WORD, WORD id, HWND, BOOL&) {
 	auto& settings = AppSettings::Get();
 	bool dark = !settings.DarkMode();
 	settings.DarkMode(dark);
+	settings.Save();
 	SetDarkMode(dark);
-	UISetCheck(ID_OPTIONS_DARKMODE, dark);
+	UISetCheck(id, dark);
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnSingleInstance(WORD, WORD id, HWND, BOOL&) {
+	auto& settings = AppSettings::Get();
+	bool single = !settings.SingleInstance();
+	settings.SingleInstance(single);
+	UISetCheck(id, single);
+	settings.Save();
 
 	return 0;
 }

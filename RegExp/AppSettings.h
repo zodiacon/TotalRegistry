@@ -12,6 +12,7 @@ struct AppSettings : Settings {
 		SETTING(ReadOnly, 0, SettingType::Bool);
 		SETTING(ReplaceRegEdit, 0, SettingType::Bool);
 		SETTING(DarkMode, 0, SettingType::Bool);
+		SETTING(SingleInstance, 0, SettingType::Bool);
 		SETTING(Find, FindOptions::SearchKeys | FindOptions::SearchValues | FindOptions::SearchStdRegistry | FindOptions::SearchSelected, SettingType::Int32);
 	END_SETTINGS
 
@@ -23,4 +24,5 @@ struct AppSettings : Settings {
 	DEF_SETTING(Find, FindOptions)
 	DEF_SETTING(ReplaceRegEdit, int)
 	DEF_SETTING(DarkMode, int)
+	DEF_SETTING(SingleInstance, int)
 };

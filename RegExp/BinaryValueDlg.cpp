@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "resource.h"
 #include "BinaryValueDlg.h"
+#include "Helpers.h"
 
 CBinaryValueDlg::CBinaryValueDlg(CRegKey& key, PCWSTR name, bool readOnly, IMainFrame* frame)
 	: m_Key(key), m_Name(name), m_ReadOnly(readOnly), m_pFrame(frame) {
@@ -93,7 +94,14 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	m_Hex.SetFocus();
 
 	SetDlgItemText(IDC_NAME, m_Name);
+	Helpers::RestoreWindowPosition(m_hWnd, L"BinaryValueDialog");
 
+	return 0;
+}
+
+LRESULT CBinaryValueDlg::OnDestroy(UINT, WPARAM, LPARAM, BOOL& handled) {
+	Helpers::SaveWindowPosition(m_hWnd, L"BinaryValueDialog");
+	handled = FALSE;
 	return 0;
 }
 

@@ -108,6 +108,7 @@ public:
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAbout)
 		COMMAND_ID_HANDLER(ID_OPTIONS_REPLACEREGEDIT, OnReplaceRegEdit)
 		COMMAND_ID_HANDLER(ID_OPTIONS_DARKMODE, OnDarkMode)
+		COMMAND_ID_HANDLER(ID_OPTIONS_ALLOWSINGLEINSTANCE, OnSingleInstance)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
@@ -203,6 +204,7 @@ private:
 	LRESULT OnExport(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnReplaceRegEdit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnDarkMode(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnSingleInstance(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -249,6 +251,7 @@ private:
 	AppSettings m_Settings;
 	Operation m_CurrentOperation{ Operation::None };
 	CFindDlg m_FindDlg;
+	HANDLE m_hSingleInstMutex{ nullptr };
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };

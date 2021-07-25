@@ -145,6 +145,7 @@
 #define ID_OPTIONS_REPLACEREGEDIT       32850
 #define ID_LOCATIONS_IMAGEFILEEXECUTIONOPTIONS 32851
 #define ID_OPTIONS_DARKMODE             32852
+#define ID_OPTIONS_ALLOWSINGLEINSTANCE  32853
 
 // Next default values for new objects
 // 
@@ -152,7 +153,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        167
-#define _APS_NEXT_COMMAND_VALUE         32853
+#define _APS_NEXT_COMMAND_VALUE         32854
 #define _APS_NEXT_CONTROL_VALUE         1042
 #define _APS_NEXT_SYMED_VALUE           115
 #endif

@@ -152,6 +152,7 @@ LRESULT CFindAllDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
     cm->AddColumn(L"Key", 0, 350);
     cm->AddColumn(L"Value Name", 0, 150);
     cm->AddColumn(L"Data", 0, 250);
+    cm->UpdateColumns();
 
     UpdateUI();
 
