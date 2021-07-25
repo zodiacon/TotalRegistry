@@ -22,7 +22,12 @@ LRESULT CAboutDlg::OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, 
 	return 0;
 }
 
-LRESULT CAboutDlg::OnClickSyslink(int, LPNMHDR, BOOL&) const {
-	::ShellExecute(nullptr, L"open", L"https://github.com/zodiacon/tasksched", nullptr, nullptr, SW_SHOWDEFAULT);
+LRESULT CAboutDlg::OnClickSyslink(int, LPNMHDR hdr, BOOL&) const {
+	CString text;
+	GetDlgItem(IDC_LINK).GetWindowText(text);
+	text.Replace(L"<a>", L"");
+	text.Replace(L"</a>", L"");
+	::ShellExecute(nullptr, L"open", text, nullptr, nullptr, SW_SHOWDEFAULT);
 	return 0;
 }
+

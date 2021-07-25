@@ -47,7 +47,7 @@
 #define IDI_NUM2                        156
 #define IDI_NUM8_2                      157
 #define IDI_OPTIONS                     158
-#define IDI_FOLDER_LOAD					159
+#define IDI_FOLDER_LOAD                 159
 #define IDD_FIND                        160
 #define IDD_FINDALL                     161
 #define IDD_STRINGVALUE                 162
@@ -100,6 +100,8 @@
 #define IDC_BROWSE                      1041
 #define IDC_MACHINE                     1042
 #define IDC_USERS                       1043
+#define IDC_SYSLINK1                    1045
+#define IDC_LINK                        1045
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -159,7 +161,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        168
 #define _APS_NEXT_COMMAND_VALUE         32855
-#define _APS_NEXT_CONTROL_VALUE         1045
+#define _APS_NEXT_CONTROL_VALUE         1046
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

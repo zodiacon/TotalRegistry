@@ -75,6 +75,9 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	rc.OffsetRect(0, -30);
 	BuildToolBar(rc);
 
+	Helpers::RestoreWindowPosition(m_hWnd, L"BinaryValueDialog");
+	SendMessage(WM_SIZE);
+
 	ULONG bytes = 0;
 	m_Key.QueryBinaryValue(m_Name, nullptr, &bytes);
 	m_Value.resize(bytes);
@@ -94,7 +97,6 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	m_Hex.SetFocus();
 
 	SetDlgItemText(IDC_NAME, m_Name);
-	Helpers::RestoreWindowPosition(m_hWnd, L"BinaryValueDialog");
 
 	return 0;
 }
