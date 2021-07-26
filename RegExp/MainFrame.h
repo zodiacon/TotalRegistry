@@ -42,6 +42,7 @@ public:
 	virtual BOOL OnIdle();
 
 	void RunOnUiThread(std::function<void()> f);
+	void SetStartKey(const CString& key);
 
 	// IMainFrame
 	AppSettings& GetSettings() override;
@@ -104,6 +105,7 @@ public:
 		COMMAND_RANGE_HANDLER(ID_LOCATIONS_SERVICES, ID_LOCATIONS_SERVICES + 15, OnKnownLocation)
 		COMMAND_ID_HANDLER(ID_KEY_PERMISSIONS, OnKeyPermissions)
 		COMMAND_ID_HANDLER(ID_KEY_PROPERTIES, OnProperties)
+		COMMAND_ID_HANDLER(ID_KEY_GOTO, OnGotoKey)
 		COMMAND_ID_HANDLER(ID_FILE_EXPORT, OnExport)
 		COMMAND_ID_HANDLER(ID_FILE_IMPORT, OnImport)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAbout)
@@ -211,6 +213,7 @@ private:
 	LRESULT OnReplaceRegEdit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnDarkMode(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnSingleInstance(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnGotoKey(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -237,6 +240,7 @@ private:
 	int GetKeyImage(const RegistryItem& item) const;
 	INT_PTR ShowValueProperties(RegistryItem& item);
 	void SetDarkMode(bool dark);
+	HTREEITEM GotoKey(const CString& path);
 
 	void UpdateUI();
 	void UpdateList(bool force = false);
@@ -259,6 +263,7 @@ private:
 	Operation m_CurrentOperation{ Operation::None };
 	CFindDlg m_FindDlg;
 	HANDLE m_hSingleInstMutex{ nullptr };
+	CString m_StartKey;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };

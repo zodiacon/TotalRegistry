@@ -25,6 +25,7 @@
 #include "CopyValueCommand.h"
 #include "ExportDlg.h"
 #include "LoadHiveDlg.h"
+#include "GotoKeyDlg.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -43,6 +44,10 @@ BOOL CMainFrame::OnIdle() {
 
 void CMainFrame::RunOnUiThread(std::function<void()> f) {
 	SendMessage(WM_RUN, 0, reinterpret_cast<LPARAM>(&f));
+}
+
+void CMainFrame::SetStartKey(const CString& key) {
+	m_StartKey = key;
 }
 
 AppSettings& CMainFrame::GetSettings() {
@@ -455,6 +460,13 @@ LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 		m_Tree.Expand(m_hRealReg, TVE_EXPAND);
 	}
 	m_Tree.LockWindowUpdate(FALSE);
+
+	if (!m_StartKey.IsEmpty()) {
+		auto hItem = GotoKey(m_StartKey);
+		if(!hItem) {
+			AtlMessageBox(m_hWnd, (PCWSTR)(L"Failed to locate key " + m_StartKey), IDS_APP_TITLE, MB_ICONWARNING);
+		}
+	}
 	m_Tree.SetFocus();
 
 	return 0;
@@ -1178,6 +1190,16 @@ LRESULT CMainFrame::OnSingleInstance(WORD, WORD id, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnGotoKey(WORD, WORD, HWND, BOOL&) {
+	CGotoKeyDlg dlg;
+	if (dlg.DoModal() == IDOK) {
+		auto hItem = GotoKey(dlg.GetKey());
+		if (!hItem)
+			AtlMessageBox(m_hWnd, L"Failed to locate key", IDS_APP_TITLE, MB_ICONERROR);
+	}
+	return 0;
+}
+
 LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/) {
 	auto lv = (NMLVDISPINFO*)pnmh;
 	if (lv->item.pszText == nullptr) {
@@ -1270,6 +1292,7 @@ void CMainFrame::InitCommandBar() {
 		{ ID_FILE_IMPORT, IDI_IMPORT },
 		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
 		{ ID_FILE_LOADHIVE, IDI_FOLDER_LOAD },
+		{ ID_KEY_GOTO, IDI_GOTO },
 	};
 	for (auto& cmd : cmds) {
 		HICON hIcon = cmd.hIcon;
@@ -1306,6 +1329,8 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 		{ ID_EDIT_FIND, IDI_FIND },
 		{ ID_SEARCH_FINDNEXT, IDI_FIND_NEXT },
 		{ ID_SEARCH_FINDALL, IDI_FINDALL },
+		{ 0 },
+		{ ID_KEY_GOTO, IDI_GOTO },
 	};
 	for (auto& b : buttons) {
 		if (b.id == 0)
@@ -1782,6 +1807,26 @@ void CMainFrame::SetDarkMode(bool dark) {
 
 	m_List.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
 	m_Tree.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
+}
+
+HTREEITEM CMainFrame::GotoKey(const CString& path) {
+	CString spath(path);
+	spath.MakeUpper();
+	if (spath != L'\\') {
+		if (spath.Find(L'\\') < 0)
+			spath += L"\\";
+		spath.Replace(L"HKLM\\", L"HKEY_LOCAL_MACHINE\\");
+		spath.Replace(L"HKCU\\", L"HKEY_CURRENT_USER\\");
+		spath.Replace(L"HKCR\\", L"HKEY_CLASSES_ROOT\\");
+		spath.Replace(L"HKU\\", L"HKEY_USERS\\");
+		spath.Replace(L"HKCC\\", L"HKEY_CURRENT_CONFIG");
+	}
+	auto hItem = TreeHelper(m_Tree).FindItem(spath[0] == L'\\' ? m_hRealReg : m_hStdReg, spath);
+	if (hItem) {
+		m_Tree.SelectItem(hItem);
+		m_Tree.EnsureVisible(hItem);
+	}
+	return hItem;
 }
 
 void CMainFrame::UpdateUI() {

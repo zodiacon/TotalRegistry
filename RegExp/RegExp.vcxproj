@@ -146,6 +146,7 @@
     <ClInclude Include="FindAllDlg.h" />
     <ClInclude Include="FindDlg.h" />
     <ClInclude Include="FindOptions.h" />
+    <ClInclude Include="GotoKeyDlg.h" />
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="HexControl.h" />
     <ClInclude Include="IMainFrame.h" />
@@ -185,6 +186,7 @@
     <ClCompile Include="ExportDlg.cpp" />
     <ClCompile Include="FindAllDlg.cpp" />
     <ClCompile Include="FindDlg.cpp" />
+    <ClCompile Include="GotoKeyDlg.cpp" />
     <ClCompile Include="Helpers.cpp" />
     <ClCompile Include="HexControl.cpp" />
     <ClCompile Include="LoadHiveDlg.cpp" />
@@ -228,6 +230,7 @@
     <Image Include="Icons\folder_new.ico" />
     <Image Include="Icons\folder_view.ico" />
     <Image Include="Icons\forward.ico" />
+    <Image Include="Icons\goto.ico" />
     <Image Include="Icons\hive-accessdenied.ico" />
     <Image Include="Icons\hive.ico" />
     <Image Include="Icons\import.ico" />

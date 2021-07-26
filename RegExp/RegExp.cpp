@@ -5,11 +5,15 @@
 
 CAppModule _Module;
 
-int Run(LPTSTR /*lpstrCmdLine*/ = nullptr, int nCmdShow = SW_SHOWDEFAULT) {
+int Run(LPTSTR lpstrCmdLine = nullptr, int nCmdShow = SW_SHOWDEFAULT) {
 	CMessageLoop theLoop;
 	_Module.AddMessageLoop(&theLoop);
 
 	CMainFrame wndMain;
+
+	CString cmdline(lpstrCmdLine);
+	if (!cmdline.IsEmpty())
+		wndMain.SetStartKey(cmdline);
 
 	if (wndMain.CreateEx() == nullptr) {
 		ATLTRACE(_T("Main window creation failed!\n"));
