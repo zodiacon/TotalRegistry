@@ -74,6 +74,7 @@ public:
 		NOTIFY_HANDLER(TreeId, NM_RCLICK, OnTreeContextMenu)
 		NOTIFY_CODE_HANDLER(TVN_KEYDOWN, OnTreeKeyDown)
 		NOTIFY_CODE_HANDLER(LVN_KEYDOWN, OnListKeyDown)
+		MESSAGE_HANDLER(WM_COPYDATA, OnGoToKeyExternal)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		MESSAGE_HANDLER(WM_BUILD_TREE, OnBuildTree)
@@ -214,6 +215,7 @@ private:
 	LRESULT OnDarkMode(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnSingleInstance(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnGotoKey(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnGoToKeyExternal(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);

@@ -130,6 +130,7 @@ FindOptions CFindAllDlg::UpdateOptions() {
 
 LRESULT CFindAllDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
     InitDynamicLayout();
+    CenterWindow(GetParent());
 
     SetDialogIcon(IDI_FINDALL);
     AddIconToButton(IDC_CANCEL, IDI_DELETE);

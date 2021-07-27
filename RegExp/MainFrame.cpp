@@ -259,6 +259,8 @@ BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
 LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	::RegDeleteTree(HKEY_CURRENT_USER, DeletedPathBackup.Left(DeletedPathBackup.GetLength() - 1));
 
+	::ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
+
 	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp"))
 		m_ReadOnly = m_Settings.ReadOnly();
 
@@ -268,10 +270,15 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 			//
 			// not first instance
 			//
-			auto hMainWnd = ::FindWindow(GetWndClassName(), nullptr);
+			auto hMainWnd = ::FindWindowEx(GetParent(), m_hWnd, L"RegExpWndClass", nullptr);
 			if (hMainWnd) {
-				::SetActiveWindow(hMainWnd);
-				::SetForegroundWindow(hMainWnd);
+				COPYDATASTRUCT cds = { 0 };
+				cds.dwData = 0x1000;
+				if (!m_StartKey.IsEmpty()) {
+					cds.lpData = (PVOID)(PCWSTR)m_StartKey;
+					cds.cbData = (m_StartKey.GetLength() + 1) * sizeof(WCHAR);
+				}
+				::SendMessage(hMainWnd, WM_COPYDATA, reinterpret_cast<WPARAM>(m_hWnd), reinterpret_cast<LPARAM>(&cds));
 				return -1;
 			}
 		}
@@ -1197,6 +1204,19 @@ LRESULT CMainFrame::OnGotoKey(WORD, WORD, HWND, BOOL&) {
 		if (!hItem)
 			AtlMessageBox(m_hWnd, L"Failed to locate key", IDS_APP_TITLE, MB_ICONERROR);
 	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnGoToKeyExternal(UINT, WPARAM, LPARAM lp, BOOL&) {
+	auto cds = reinterpret_cast<COPYDATASTRUCT*>(lp);
+	if (cds->dwData == 0x1000) {
+		::SetForegroundWindow(m_hWnd);
+		SetActiveWindow();
+		if(cds->lpData)
+			GotoKey((PCWSTR)cds->lpData);
+		return 1;
+	}
+
 	return 0;
 }
 

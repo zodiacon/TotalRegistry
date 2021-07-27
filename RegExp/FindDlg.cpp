@@ -63,10 +63,12 @@ FindOptions CFindDlg::UpdateOptions() {
 }
 
 LRESULT CFindDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
+    CenterWindow(GetParent());
     SetDialogIcon(IDI_FIND);
     AddIconToButton(IDC_CANCEL, IDI_DELETE);
     AddIconToButton(IDC_FIND, IDI_FIND_NEXT);
     AddIconToButton(IDC_NEW, IDI_FIND);
+
     m_Progress.Attach(GetDlgItem(IDC_PROGRESS));
     ::SetWindowTheme(m_Progress, L"Explorer", L"");
     m_Progress.SetMarquee(TRUE);
