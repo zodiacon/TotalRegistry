@@ -9,6 +9,9 @@ struct AppSettings : Settings {
 		SETTING(ShowExtraHives, 0, SettingType::Bool);
 		SETTING(ShowKeysInList, 0, SettingType::Bool);
 		SETTING(AlwaysOnTop, 0, SettingType::Bool);
+		SETTING(ViewAddressBar, 1, SettingType::Bool);
+		SETTING(ViewToolBar, 1, SettingType::Bool);
+		SETTING(ViewStatusBar, 1, SettingType::Bool);
 		SETTING(ReadOnly, 0, SettingType::Bool);
 		SETTING(ReplaceRegEdit, 0, SettingType::Bool);
 		SETTING(DarkMode, 0, SettingType::Bool);
@@ -25,4 +28,7 @@ struct AppSettings : Settings {
 	DEF_SETTING(ReplaceRegEdit, int)
 	DEF_SETTING(DarkMode, int)
 	DEF_SETTING(SingleInstance, int)
+	DEF_SETTING(ViewAddressBar, int)
+	DEF_SETTING(ViewToolBar, int)
+	DEF_SETTING(ViewStatusBar, int)
 };

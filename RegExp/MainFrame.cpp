@@ -31,6 +31,9 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
 		return TRUE;
 
+	if (::GetFocus() == m_AddressBar)
+		return FALSE;
+
 	if (CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg))
 		return TRUE;
 
@@ -313,6 +316,26 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	AddSimpleReBarBand(hWndCmdBar);
 	AddSimpleReBarBand(tb, nullptr, TRUE);
 
+	CComPtr<IAutoComplete> spAC;
+	auto hr = spAC.CoCreateInstance(CLSID_AutoComplete);
+	if (SUCCEEDED(hr)) {
+		m_AutoCompleteStrings->CreateInstance(&m_AutoCompleteStrings);
+		CRect r(0, 0, 400, 20);
+		auto hEdit = m_AddressBar.Create(m_hWnd, &r, nullptr, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_WANTRETURN);
+		hr = spAC->Init(hEdit, m_AutoCompleteStrings->GetUnknown(), nullptr, nullptr);
+		if (SUCCEEDED(hr)) {
+			spAC->Enable(TRUE);
+			CComQIPtr<IAutoComplete2> spAC2(spAC);
+			if (spAC2) {
+				spAC2->SetOptions(ACO_AUTOSUGGEST | ACO_USETAB | ACO_AUTOAPPEND);
+			}
+			AddSimpleReBarBand(hEdit, nullptr, true, 0, true);
+		}
+		else {
+			m_AddressBar.DestroyWindow();
+		}
+	}
+
 	CReBarCtrl rb(m_hWndToolBar);
 	rb.LockBands(true);
 
@@ -361,6 +384,8 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	m_FindDlg.Create(m_hWnd);
 
+	m_AddressBar.SetFont(m_Tree.GetFont());
+
 	auto pLoop = _Module.GetMessageLoop();
 	ATLASSERT(pLoop != NULL);
 	pLoop->AddMessageFilter(this);
@@ -375,6 +400,9 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	UISetCheck(ID_OPTIONS_REPLACEREGEDIT, m_Settings.ReplaceRegEdit());
 	UISetCheck(ID_OPTIONS_DARKMODE, m_Settings.DarkMode());
 	UISetCheck(ID_OPTIONS_ALLOWSINGLEINSTANCE, m_Settings.SingleInstance());
+	UISetCheck(ID_VIEW_ADDRESSBAR, m_Settings.ViewAddressBar());
+	UISetCheck(ID_VIEW_TOOLBAR, m_Settings.ViewToolBar());
+	UISetCheck(ID_VIEW_STATUSBAR, m_Settings.ViewStatusBar());
 
 	SetDarkMode(m_Settings.DarkMode());
 	if (m_Settings.AlwaysOnTop())
@@ -853,8 +881,7 @@ LRESULT CMainFrame::OnEditDelete(WORD, WORD, HWND, BOOL&) {
 		if (!m_CmdMgr.AddCommand(cmd))
 			DisplayError(L"Failed to delete key");
 	}
-	else {
-		ATLASSERT(::GetFocus() == m_List);
+	else if(::GetFocus() == m_List) {
 		auto count = m_List.GetSelectedCount();
 		ATLASSERT(count >= 1);
 		int index = -1;
@@ -1216,6 +1243,61 @@ LRESULT CMainFrame::OnGoToKeyExternal(UINT, WPARAM, LPARAM lp, BOOL&) {
 			GotoKey((PCWSTR)cds->lpData);
 		return 1;
 	}
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnEditKeyDown(UINT, WPARAM wp, LPARAM, BOOL& handled) {
+	if (wp == VK_RETURN) {
+		CString path;
+		m_AddressBar.GetWindowText(path);
+		GotoKey(path);
+	}
+	else if (wp == VK_ESCAPE) {
+		m_List.SetFocus();
+	}
+	else {
+		handled = FALSE;
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnEditAddressBar(WORD, WORD, HWND, BOOL&) {
+	if (!AppSettings::Get().ViewAddressBar())
+		return 0;
+
+	if (::GetFocus() != m_AddressBar) {
+		m_AddressBar.SetSelAll(FALSE);
+		m_AddressBar.SetFocus();
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnViewAddressBar(WORD, WORD id, HWND, BOOL&) {
+	auto& s = AppSettings::Get();
+	auto view = !s.ViewAddressBar();
+	s.ViewAddressBar(view);
+	UISetCheck(id, view);
+	ShowBand(2, view);
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnViewToolBar(WORD, WORD id, HWND, BOOL&) {
+	bool show;
+	m_Settings.ViewToolBar(show = !m_Settings.ViewToolBar());
+	ShowBand(1, show);
+	UISetCheck(id, show);
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnViewStatusBar(WORD, WORD id, HWND, BOOL&) {
+	bool show;
+	m_Settings.ViewStatusBar(show = !m_Settings.ViewStatusBar());
+	UISetCheck(id, show);
+	m_StatusBar.ShowWindow(show ? SW_SHOW : SW_HIDE);
+	UpdateLayout();
 
 	return 0;
 }
@@ -1788,7 +1870,7 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		case REG_RESOURCE_LIST:
 		{
 			CBinaryValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly, this);
-			result = dlg.DoModal() == IDOK && dlg.IsModified();
+			result = dlg.DoModal(m_hWnd) == IDOK && dlg.IsModified();
 			if (result) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto cmd = std::make_shared<ChangeValueCommand>(
@@ -1845,8 +1927,15 @@ HTREEITEM CMainFrame::GotoKey(const CString& path) {
 	if (hItem) {
 		m_Tree.SelectItem(hItem);
 		m_Tree.EnsureVisible(hItem);
+		m_Tree.SetFocus();
 	}
 	return hItem;
+}
+
+void CMainFrame::ShowBand(int index, bool show) {
+	CReBarCtrl rb(m_hWndToolBar);
+	rb.ShowBand(index, show);
+	UpdateLayout();
 }
 
 void CMainFrame::UpdateUI() {
@@ -1902,7 +1991,9 @@ void CMainFrame::UpdateList(bool force) {
 	HKEY hKey;
 	auto hItem = m_Tree.GetSelectedItem();
 	m_CurrentPath = GetNodePath(hItem, &hKey);
-	m_StatusBar.SetText((int)StatusPane::Key, GetFullNodePath(m_Tree.GetSelectedItem()));
+	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
+	m_StatusBar.SetText((int)StatusPane::Key, path);
+	m_AddressBar.SetWindowText(path);
 	int image;
 	m_Tree.GetItemImage(hItem, image, image);
 	m_StatusBar.SetIcon((int)StatusPane::Icon, m_Tree.GetImageList(TVSIL_NORMAL).GetIcon(image));

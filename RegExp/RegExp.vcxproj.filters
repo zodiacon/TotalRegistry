@@ -147,6 +147,9 @@
     <ClInclude Include="GotoKeyDlg.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="EnumStrings.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -247,6 +250,9 @@
     </ClCompile>
     <ClCompile Include="GotoKeyDlg.cpp">
       <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="EnumStrings.cpp">
+      <Filter>Helpers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
