@@ -6,6 +6,7 @@
 #include "CommandManager.h"
 #include "FindDlg.h"
 #include "IMainFrame.h"
+#include "EnumStrings.h"
 
 enum class NodeType {
 	None = 0,
@@ -31,7 +32,7 @@ class CMainFrame :
 public:
 	DECLARE_FRAME_WND_CLASS(L"RegExpWndClass", IDR_MAINFRAME)
 
-	CMainFrame() : m_FindDlg(this) {}
+	CMainFrame() : m_FindDlg(this), m_AddressBar(this, 2) {}
 
 	const UINT WM_BUILD_TREE = WM_APP + 11;
 	const UINT WM_FIND_UPDATE = WM_APP + 12;
@@ -74,9 +75,9 @@ public:
 		NOTIFY_HANDLER(TreeId, NM_RCLICK, OnTreeContextMenu)
 		NOTIFY_CODE_HANDLER(TVN_KEYDOWN, OnTreeKeyDown)
 		NOTIFY_CODE_HANDLER(LVN_KEYDOWN, OnListKeyDown)
-		MESSAGE_HANDLER(WM_COPYDATA, OnGoToKeyExternal)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
+		MESSAGE_HANDLER(WM_COPYDATA, OnGoToKeyExternal)
 		MESSAGE_HANDLER(WM_BUILD_TREE, OnBuildTree)
 		MESSAGE_HANDLER(WM_FIND_UPDATE, OnFindUpdate)
 		MESSAGE_HANDLER(WM_RUN, OnRunOnUIThread)
@@ -107,6 +108,7 @@ public:
 		COMMAND_ID_HANDLER(ID_KEY_PERMISSIONS, OnKeyPermissions)
 		COMMAND_ID_HANDLER(ID_KEY_PROPERTIES, OnProperties)
 		COMMAND_ID_HANDLER(ID_KEY_GOTO, OnGotoKey)
+		COMMAND_ID_HANDLER(ID_EDIT_ADDRESSBAR, OnEditAddressBar)
 		COMMAND_ID_HANDLER(ID_FILE_EXPORT, OnExport)
 		COMMAND_ID_HANDLER(ID_FILE_IMPORT, OnImport)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAbout)
@@ -115,11 +117,16 @@ public:
 		COMMAND_ID_HANDLER(ID_OPTIONS_ALLOWSINGLEINSTANCE, OnSingleInstance)
 		COMMAND_ID_HANDLER(ID_FILE_LOADHIVE, OnLoadHive)
 		COMMAND_ID_HANDLER(ID_FILE_UNLOADHIVE, OnUnloadHive)
+		COMMAND_ID_HANDLER(ID_VIEW_ADDRESSBAR, OnViewAddressBar)
+		COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
+		COMMAND_ID_HANDLER(ID_VIEW_STATUSBAR, OnViewStatusBar)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
 		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
 		REFLECT_NOTIFICATIONS_EX()
+	ALT_MSG_MAP(2)
+		MESSAGE_HANDLER(WM_KEYDOWN, OnEditKeyDown)
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):
@@ -216,6 +223,11 @@ private:
 	LRESULT OnSingleInstance(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnGotoKey(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnGoToKeyExternal(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnEditKeyDown(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnEditAddressBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnViewAddressBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnViewToolBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnViewStatusBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -243,6 +255,7 @@ private:
 	INT_PTR ShowValueProperties(RegistryItem& item);
 	void SetDarkMode(bool dark);
 	HTREEITEM GotoKey(const CString& path);
+	void ShowBand(int index, bool show);
 
 	void UpdateUI();
 	void UpdateList(bool force = false);
@@ -255,6 +268,7 @@ private:
 	CSplitterWindow m_MainSplitter;
 	CMultiPaneStatusBarCtrl m_StatusBar;
 	CListViewCtrl m_List;
+	CContainedWindowT<CEdit> m_AddressBar;
 	mutable CTreeViewCtrlEx m_Tree;
 	CListViewCtrl m_Details;
 	std::vector<RegistryItem> m_Items;
@@ -266,6 +280,7 @@ private:
 	CFindDlg m_FindDlg;
 	HANDLE m_hSingleInstMutex{ nullptr };
 	CString m_StartKey;
+	CComObject<CEnumStrings>* m_AutoCompleteStrings{ nullptr };
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };

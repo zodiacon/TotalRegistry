@@ -57,8 +57,8 @@
 #define IDD_EXPORT                      166
 #define IDD_LOADHIVE                    167
 #define IDD_GOTOKEY                     168
-#define IDI_ICON1                       169
 #define IDI_GOTO                        169
+#define IDD_TEST                        170
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
@@ -156,15 +156,18 @@
 #define ID_OPTIONS_ALLOWSINGLEINSTANCE  32853
 #define ID_FILE_UNLOADHIVE              32854
 #define ID_KEY_GOTO                     32857
+#define ID_HELP_TEST                    32859
+#define ID_VIEW_ADDRESSBAR              32860
+#define ID_EDIT_ADDRESSBAR              32861
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        170
-#define _APS_NEXT_COMMAND_VALUE         32859
-#define _APS_NEXT_CONTROL_VALUE         1047
+#define _APS_NEXT_RESOURCE_VALUE        171
+#define _APS_NEXT_COMMAND_VALUE         32864
+#define _APS_NEXT_CONTROL_VALUE         1048
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

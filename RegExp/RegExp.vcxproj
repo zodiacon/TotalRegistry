@@ -142,6 +142,7 @@
     <ClInclude Include="CreateKeyCommand.h" />
     <ClInclude Include="DeleteKeyCommand.h" />
     <ClInclude Include="DeleteValueCommand.h" />
+    <ClInclude Include="EnumStrings.h" />
     <ClInclude Include="ExportDlg.h" />
     <ClInclude Include="FindAllDlg.h" />
     <ClInclude Include="FindDlg.h" />
@@ -183,6 +184,7 @@
     <ClCompile Include="CreateValueCommand.cpp" />
     <ClCompile Include="DeleteKeyCommand.cpp" />
     <ClCompile Include="DeleteValueCommand.cpp" />
+    <ClCompile Include="EnumStrings.cpp" />
     <ClCompile Include="ExportDlg.cpp" />
     <ClCompile Include="FindAllDlg.cpp" />
     <ClCompile Include="FindDlg.cpp" />
