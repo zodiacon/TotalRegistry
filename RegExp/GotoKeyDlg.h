@@ -9,6 +9,7 @@ public:
 	enum { IDD = IDD_GOTOKEY };
 
 	const CString& GetKey() const;
+	void SetKey(const CString& key);
 
 	BEGIN_MSG_MAP(CGotoKeyDlg)
 		MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
@@ -27,5 +28,5 @@ private:
 	LRESULT OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnChangeText(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
-	inline static CString m_Key;
+	CString m_Key;
 };

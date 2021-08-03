@@ -159,6 +159,7 @@
 #define ID_HELP_TEST                    32859
 #define ID_VIEW_ADDRESSBAR              32860
 #define ID_EDIT_ADDRESSBAR              32861
+#define ID_BOOKMARKS_BOOKMARKS          32864
 
 // Next default values for new objects
 // 
@@ -166,7 +167,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        171
-#define _APS_NEXT_COMMAND_VALUE         32864
+#define _APS_NEXT_COMMAND_VALUE         32865
 #define _APS_NEXT_CONTROL_VALUE         1048
 #define _APS_NEXT_SYMED_VALUE           115
 #endif

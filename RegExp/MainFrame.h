@@ -7,6 +7,8 @@
 #include "FindDlg.h"
 #include "IMainFrame.h"
 #include "EnumStrings.h"
+#include "DeleteKeyCommand.h"
+#include "DeleteValueCommand.h"
 
 enum class NodeType {
 	None = 0,
@@ -256,6 +258,8 @@ private:
 	void SetDarkMode(bool dark);
 	HTREEITEM GotoKey(const CString& path);
 	void ShowBand(int index, bool show);
+
+	AppCommandCallback<DeleteKeyCommand> GetDeleteKeyCommandCallback();
 
 	void UpdateUI();
 	void UpdateList(bool force = false);

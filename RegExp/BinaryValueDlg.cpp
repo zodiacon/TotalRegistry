@@ -76,7 +76,7 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	BuildToolBar(rc);
 
 	Helpers::RestoreWindowPosition(m_hWnd, L"BinaryValueDialog");
-	SendMessage(WM_SIZE);
+	PostMessage(WM_SIZE);
 
 	ULONG bytes = 0;
 	m_Key.QueryBinaryValue(m_Name, nullptr, &bytes);

@@ -61,7 +61,7 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 			dc.SetTextColor(selected ? m_Colors.SelectionText : m_Colors.Text);
 			dc.SetBkColor(selected ? m_Colors.SelectionBackground : back);
 
-			dc.TextOut(x + xstart + j * factor, y * m_CharHeight, str, ds * 2 + 1);
+			dc.TextOut(x + xstart + j * factor, y * m_CharHeight, str, ds * 2);
 		}
 		if (y * m_CharHeight > rect.bottom)
 			break;

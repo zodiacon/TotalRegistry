@@ -11,7 +11,6 @@
 #include "RenameKeyCommand.h"
 #include "CopyKeyCommand.h"
 #include "ClipboardHelper.h"
-#include "DeleteKeyCommand.h"
 #include "StringValueDlg.h"
 #include "ChangeValueCommand.h"
 #include "MultiStringValueDlg.h"
@@ -21,7 +20,6 @@
 #include "SecurityInformation.h"
 #include "CreateValueCommand.h"
 #include "RenameValueCommand.h"
-#include "DeleteValueCommand.h"
 #include "CopyValueCommand.h"
 #include "ExportDlg.h"
 #include "LoadHiveDlg.h"
@@ -343,6 +341,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	m_StatusBar.SubclassWindow(m_hWndStatusBar);
 	int panes[] = { 24, 1300 };
 	m_StatusBar.SetParts(_countof(panes), panes);
+	::SetWindowTheme(m_StatusBar, L" ", L"");
 
 	m_hWndClient = m_MainSplitter.Create(m_hWnd, rcDefault, nullptr, 
 		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, WS_EX_CLIENTEDGE);
@@ -843,6 +842,13 @@ LRESULT CMainFrame::OnEditPaste(WORD, WORD, HWND, BOOL&) {
 		else
 			cmd = std::make_shared<CopyValueCommand>(item.Path, item.Name, path);
 		list->AddCommand(cmd);
+		if (m_Clipboard.Operation == ClipboardOperation::Cut) {
+			if (item.Key)
+				cmd = std::make_shared<DeleteKeyCommand>(item.Path, item.Name, GetDeleteKeyCommandCallback());
+			else
+				cmd = std::make_shared<DeleteValueCommand>(item.Path, item.Name);
+			list->AddCommand(cmd);
+		}
 	}
 	if (list->GetCount() == 1)
 		list->SetCommandName(list->GetCommand(0)->GetCommandName());
@@ -859,25 +865,7 @@ LRESULT CMainFrame::OnEditDelete(WORD, WORD, HWND, BOOL&) {
 		auto path = GetFullParentNodePath(hItem);
 		CString name;
 		m_Tree.GetItemText(hItem, name);
-		auto cb = [this](auto& cmd, bool execute) {
-			TreeHelper th(m_Tree);
-			auto real = cmd.GetPath()[0] == L'\\';
-			auto hParent = th.FindItem(real ? m_hRealReg : m_hStdReg, cmd.GetPath());
-			ATLASSERT(hParent);
-			if (execute) {
-				auto hItem = th.FindChild(hParent, cmd.GetName());
-				ATLASSERT(hItem);
-				m_Tree.DeleteItem(hItem);
-			}
-			else {
-				//
-				// create the item
-				//
-				auto hItem = InsertKeyItem(hParent, cmd.GetName());
-			}
-			return true;
-		};
-		auto cmd = std::make_shared<DeleteKeyCommand>(path, name, cb);
+		auto cmd = std::make_shared<DeleteKeyCommand>(path, name, GetDeleteKeyCommandCallback());
 		if (!m_CmdMgr.AddCommand(cmd))
 			DisplayError(L"Failed to delete key");
 	}
@@ -1226,7 +1214,9 @@ LRESULT CMainFrame::OnSingleInstance(WORD, WORD id, HWND, BOOL&) {
 
 LRESULT CMainFrame::OnGotoKey(WORD, WORD, HWND, BOOL&) {
 	CGotoKeyDlg dlg;
+	dlg.SetKey(GetFullNodePath(m_Tree.GetSelectedItem()));
 	if (dlg.DoModal() == IDOK) {
+		CWaitCursor wait;
 		auto hItem = GotoKey(dlg.GetKey());
 		if (!hItem)
 			AtlMessageBox(m_hWnd, L"Failed to locate key", IDS_APP_TITLE, MB_ICONERROR);
@@ -1870,7 +1860,7 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 		case REG_RESOURCE_LIST:
 		{
 			CBinaryValueDlg dlg(m_CurrentKey, item.Name, m_ReadOnly, this);
-			result = dlg.DoModal(m_hWnd) == IDOK && dlg.IsModified();
+			result = dlg.DoModal() == IDOK && dlg.IsModified();
 			if (result) {
 				auto hItem = m_Tree.GetSelectedItem();
 				auto cmd = std::make_shared<ChangeValueCommand>(
@@ -1909,6 +1899,8 @@ void CMainFrame::SetDarkMode(bool dark) {
 
 	m_List.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
 	m_Tree.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
+
+//	m_StatusBar.SetBkColor(dark ? RGB(32, 32, 32) : CLR_INVALID);
 }
 
 HTREEITEM CMainFrame::GotoKey(const CString& path) {
@@ -1936,6 +1928,29 @@ void CMainFrame::ShowBand(int index, bool show) {
 	CReBarCtrl rb(m_hWndToolBar);
 	rb.ShowBand(index, show);
 	UpdateLayout();
+}
+
+AppCommandCallback<DeleteKeyCommand> CMainFrame::GetDeleteKeyCommandCallback() {
+	static const auto cb = [this](auto& cmd, bool execute) {
+		TreeHelper th(m_Tree);
+		auto real = cmd.GetPath()[0] == L'\\';
+		auto hParent = th.FindItem(real ? m_hRealReg : m_hStdReg, cmd.GetPath());
+		ATLASSERT(hParent);
+		if (execute) {
+			auto hItem = th.FindChild(hParent, cmd.GetName());
+			ATLASSERT(hItem);
+			m_Tree.DeleteItem(hItem);
+		}
+		else {
+			//
+			// create the item
+			//
+			auto hItem = InsertKeyItem(hParent, cmd.GetName());
+		}
+		return true;
+	};
+
+	return cb;
 }
 
 void CMainFrame::UpdateUI() {
@@ -1977,7 +1992,6 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_KEY_PERMISSIONS, FALSE);
 		UIEnable(ID_KEY_PROPERTIES, FALSE);
 	}
-	UIEnable(ID_EDIT_CUT, false);
 
 	for (auto id = ID_NEW_DWORDVALUE; id <= ID_NEW_BINARYVALUE; id++)
 		UIEnable(id, !m_ReadOnly);
@@ -1992,10 +2006,12 @@ void CMainFrame::UpdateList(bool force) {
 	auto hItem = m_Tree.GetSelectedItem();
 	m_CurrentPath = GetNodePath(hItem, &hKey);
 	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
-	m_StatusBar.SetText((int)StatusPane::Key, path);
+	m_StatusBar.SetText((int)StatusPane::Key, path, SBT_NOBORDERS);
+
 	m_AddressBar.SetWindowText(path);
 	int image;
 	m_Tree.GetItemImage(hItem, image, image);
+	m_StatusBar.SetText((int)StatusPane::Icon, L"", SBT_NOBORDERS);
 	m_StatusBar.SetIcon((int)StatusPane::Icon, m_Tree.GetImageList(TVSIL_NORMAL).GetIcon(image));
 
 	if (hItem == m_hStdReg && m_Settings.ShowKeysInList()) {

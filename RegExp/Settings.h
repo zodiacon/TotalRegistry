@@ -6,6 +6,7 @@ enum class SettingType {
 	Int64 = REG_QWORD,
 	Binary = REG_BINARY,
 	Bool = REG_DWORD,
+	MultiString = REG_MULTI_SZ,
 };
 
 struct Setting {

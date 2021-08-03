@@ -17,6 +17,7 @@ struct AppSettings : Settings {
 		SETTING(DarkMode, 0, SettingType::Bool);
 		SETTING(SingleInstance, 0, SettingType::Bool);
 		SETTING(Find, FindOptions::SearchKeys | FindOptions::SearchValues | FindOptions::SearchStdRegistry | FindOptions::SearchSelected, SettingType::Int32);
+		SETTING(Bookmarks, std::vector<CString>(), SettingType::MultiString);
 	END_SETTINGS
 
 	DEF_SETTING(ShowExtraHives, int)
