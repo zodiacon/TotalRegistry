@@ -394,6 +394,9 @@
     <Image Include="Icons\goto.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
+    <Image Include="Icons\check.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="manifest.xml" />

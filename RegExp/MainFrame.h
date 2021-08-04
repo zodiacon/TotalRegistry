@@ -9,6 +9,7 @@
 #include "EnumStrings.h"
 #include "DeleteKeyCommand.h"
 #include "DeleteValueCommand.h"
+#include "OwnerDrawnMenu.h"
 
 enum class NodeType {
 	None = 0,
@@ -34,7 +35,7 @@ class CMainFrame :
 public:
 	DECLARE_FRAME_WND_CLASS(L"RegExpWndClass", IDR_MAINFRAME)
 
-	CMainFrame() : m_FindDlg(this), m_AddressBar(this, 2) {}
+	CMainFrame() : m_FindDlg(this), m_AddressBar(this, 2), m_Menu(this) {}
 
 	const UINT WM_BUILD_TREE = WM_APP + 11;
 	const UINT WM_FIND_UPDATE = WM_APP + 12;
@@ -123,6 +124,7 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
 		COMMAND_ID_HANDLER(ID_VIEW_STATUSBAR, OnViewStatusBar)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
+		CHAIN_MSG_MAP_MEMBER(m_Menu)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
 		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
@@ -268,11 +270,11 @@ private:
 	LocalClipboard m_Clipboard;
 	mutable CRegKey m_CurrentKey;
 	CString m_CurrentPath;
-	CCommandBarCtrl m_CmdBar;
 	CSplitterWindow m_MainSplitter;
 	CMultiPaneStatusBarCtrl m_StatusBar;
 	CListViewCtrl m_List;
 	CContainedWindowT<CEdit> m_AddressBar;
+	COwnerDrawnMenu<CMainFrame> m_Menu;
 	mutable CTreeViewCtrlEx m_Tree;
 	CListViewCtrl m_Details;
 	std::vector<RegistryItem> m_Items;

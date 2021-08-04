@@ -218,6 +218,7 @@
   <ItemGroup>
     <Image Include="Icons\back.ico" />
     <Image Include="Icons\binary.ico" />
+    <Image Include="Icons\check.ico" />
     <Image Include="Icons\copy.ico" />
     <Image Include="Icons\cut.ico" />
     <Image Include="Icons\delete.ico" />

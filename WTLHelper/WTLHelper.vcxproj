@@ -93,6 +93,7 @@
     <ClInclude Include="IconHelper.h" />
     <ClInclude Include="IniFile.h" />
     <ClInclude Include="ListViewhelper.h" />
+    <ClInclude Include="OwnerDrawnMenu.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="SortHelper.h" />
     <ClInclude Include="StringHelper.h" />
