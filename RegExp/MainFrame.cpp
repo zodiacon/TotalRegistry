@@ -125,7 +125,7 @@ bool CMainFrame::GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) {
 }
 
 BOOL CMainFrame::TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y) {
-	return m_CmdBar.TrackPopupMenu(hMenu, flags, x, y);
+	return m_Menu.TrackPopupMenu(hMenu, flags, x, y);
 }
 
 CString CMainFrame::GetCurrentKeyPath() {
@@ -225,7 +225,7 @@ BOOL CMainFrame::OnRightClickList(HWND h, int row, int col, const POINT& pt) {
 		if (m_Items[row].Type == REG_KEY_UP)
 			return FALSE;
 	}
-	return m_CmdBar.TrackPopupMenu(menu.GetSubMenu(index), 0, pt.x, pt.y);
+	return m_Menu.TrackPopupMenu(menu.GetSubMenu(index), 0, pt.x, pt.y);
 }
 
 BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
@@ -296,22 +296,21 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 		SetWindowText(text);
 	}
 
-	HWND hWndCmdBar = m_CmdBar.Create(m_hWnd, rcDefault, nullptr, ATL_SIMPLE_CMDBAR_PANE_STYLE);
-
-	m_CmdBar.SetAlphaImages(true);
-	m_CmdBar.AttachMenu(menu);
 	InitCommandBar();
-
 	UIAddMenu(menu);
-	SetMenu(nullptr);
 
 	CToolBarCtrl tb;
 	tb.Create(m_hWnd, nullptr, nullptr, ATL_SIMPLE_TOOLBAR_PANE_STYLE, 0, ATL_IDW_TOOLBAR);
+	::SetWindowTheme(tb, L" ", L"");
+	COLORSCHEME cs = { sizeof(cs) };
+	cs.clrBtnHighlight = RGB(200, 200, 200);
+	cs.clrBtnShadow = RGB(0, 0, 255);
+	tb.SetColorScheme(&cs);
+
 	InitToolBar(tb, 24);
 	UIAddToolBar(tb);
 
 	CreateSimpleReBar(ATL_SIMPLE_REBAR_NOBORDER_STYLE);
-	AddSimpleReBarBand(hWndCmdBar);
 	AddSimpleReBarBand(tb, nullptr, TRUE);
 
 	CComPtr<IAutoComplete> spAC;
@@ -542,6 +541,7 @@ LRESULT CMainFrame::OnListItemChanged(int, LPNMHDR, BOOL&) {
 LRESULT CMainFrame::OnViewRefresh(WORD, WORD, HWND, BOOL&) {
 	RefreshFull(m_hStdReg);
 	RefreshFull(m_hRealReg);
+	UpdateList();
 	return 0;
 }
 
@@ -552,7 +552,7 @@ LRESULT CMainFrame::OnTreeItemExpanding(int, LPNMHDR hdr, BOOL&) {
 	m_Tree.GetItemText(m_Tree.GetChildItem(h), text);
 	if (text == L"\\\\") {
 		m_Tree.DeleteItem(m_Tree.GetChildItem(h));
-		//CWaitCursor wait;
+		CWaitCursor wait;
 		ExpandItem(h);
 	}
 	return FALSE;
@@ -709,7 +709,7 @@ LRESULT CMainFrame::OnTreeContextMenu(int, LPNMHDR hdr, BOOL&) {
 		CMenu menu;
 		menu.LoadMenu(IDR_CONTEXT);
 		UpdateUI();
-		m_CmdBar.TrackPopupMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
+		m_Menu.TrackPopupMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
 	}
 	return 0;
 }
@@ -972,18 +972,18 @@ LRESULT CMainFrame::OnFindAll(WORD, WORD, HWND, BOOL&) {
 LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
 	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
 	CRegKey key;
-	if (::GetFocus() == m_Tree) {
-		auto key2 = Registry::OpenKey(path, KEY_READ | (m_ReadOnly ? 0 : KEY_WRITE));
-		key.Attach(key2.Detach());
-	}
-	else {
-		ATLASSERT(::GetFocus() == m_List);
+	if(::GetFocus() == m_List) {
 		auto& item = m_Items[m_List.GetSelectionMark()];
 		ATLASSERT(item.Key);
 		path += L"\\" + item.Name;
 		auto key2 = Registry::OpenKey(path, KEY_READ | (m_ReadOnly ? 0 : KEY_WRITE));
 		key.Attach(key2.Detach());
 	}
+	else {
+		auto key2 = Registry::OpenKey(path, KEY_READ | (m_ReadOnly ? 0 : KEY_WRITE));
+		key.Attach(key2.Detach());
+	}
+
 	if (!key) {
 		DisplayError(L"Failed to open key");
 	}
@@ -1268,7 +1268,7 @@ LRESULT CMainFrame::OnViewAddressBar(WORD, WORD id, HWND, BOOL&) {
 	auto view = !s.ViewAddressBar();
 	s.ViewAddressBar(view);
 	UISetCheck(id, view);
-	ShowBand(2, view);
+	ShowBand(1, view);
 
 	return 0;
 }
@@ -1276,7 +1276,7 @@ LRESULT CMainFrame::OnViewAddressBar(WORD, WORD id, HWND, BOOL&) {
 LRESULT CMainFrame::OnViewToolBar(WORD, WORD id, HWND, BOOL&) {
 	bool show;
 	m_Settings.ViewToolBar(show = !m_Settings.ViewToolBar());
-	ShowBand(1, show);
+	ShowBand(0, show);
 	UISetCheck(id, show);
 
 	return 0;
@@ -1359,6 +1359,8 @@ LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled
 }
 
 void CMainFrame::InitCommandBar() {
+	m_Menu.AddMenu(GetMenu());
+
 	struct {
 		UINT id, icon;
 		HICON hIcon = nullptr;
@@ -1387,12 +1389,16 @@ void CMainFrame::InitCommandBar() {
 		{ ID_KEY_GOTO, IDI_GOTO },
 	};
 	for (auto& cmd : cmds) {
-		HICON hIcon = cmd.hIcon;
-		if (!hIcon) {
-			hIcon = AtlLoadIconImage(cmd.icon, 0, 16, 16);
-			ATLASSERT(hIcon);
-		}
-		m_CmdBar.AddIcon(cmd.icon ? hIcon : cmd.hIcon, cmd.id);
+		//HICON hIcon = cmd.hIcon;
+		//if (!hIcon) {
+		//	hIcon = AtlLoadIconImage(cmd.icon, 0, 16, 16);
+		//	ATLASSERT(hIcon);
+		//}
+		//m_CmdBar.AddIcon(cmd.icon ? hIcon : cmd.hIcon, cmd.id);
+		if (cmd.icon)
+			m_Menu.AddCommand(cmd.id, cmd.icon);
+		else
+			m_Menu.AddCommand(cmd.id, cmd.hIcon);
 	}
 }
 
@@ -1687,7 +1693,7 @@ void CMainFrame::InvokeTreeContextMenu(const CPoint& pt) {
 	CMenu menu;
 	menu.LoadMenu(IDR_CONTEXT);
 	UpdateUI();
-	m_CmdBar.TrackPopupMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
+	m_Menu.TrackPopupMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
 }
 
 CString CMainFrame::GetKeyDetails(const RegistryItem& item) const {
@@ -1899,6 +1905,33 @@ void CMainFrame::SetDarkMode(bool dark) {
 
 	m_List.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
 	m_Tree.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
+
+	CReBarCtrl rb(m_hWndToolBar);
+	::SetWindowTheme(rb, dark ? L" " : nullptr, dark ? L"" : nullptr);
+	rb.SetBkColor(dark ? RGB(32, 32, 32) : CLR_INVALID);
+	REBARBANDINFO rbi = { sizeof(rbi) };
+	rbi.fMask = RBBIM_COLORS | RBBIM_CHILD;
+	for (UINT i = 0; i < rb.GetBandCount(); i++) {
+		if (rb.GetBandInfo(i, &rbi)) {
+			ATLASSERT(rbi.hwndChild);
+			::SetWindowTheme(rbi.hwndChild, dark ? L" " : nullptr, dark ? L"" : nullptr);
+			rbi.clrBack = RGB(32, 32, 32);
+			rbi.clrFore = RGB(240, 240, 240);
+			rb.SetBandInfo(i, &rbi);
+		}
+	}
+	rb.RedrawWindow();
+
+	//
+	// customize menu colors
+	//
+	m_Menu.SetBackColor(dark ? RGB(32, 32, 32) : RGB(248, 248, 248));
+	m_Menu.SetTextColor(dark ? RGB(240, 240, 240) : RGB(0, 0, 0));
+	m_Menu.SetSelectionTextColor(dark ? RGB(240, 240, 240) : RGB(248, 248, 248));
+	m_Menu.SetSelectionBackColor(dark ? RGB(0, 64, 240) : RGB(0, 48, 160));
+	m_Menu.SetSeparatorColor(dark ? RGB(160, 160, 160) : RGB(64, 64, 64));
+	m_Menu.UpdateMenu(GetMenu(), true);
+	DrawMenuBar();
 
 //	m_StatusBar.SetBkColor(dark ? RGB(32, 32, 32) : CLR_INVALID);
 }
