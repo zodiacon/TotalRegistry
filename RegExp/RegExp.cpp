@@ -13,7 +13,8 @@ int Run(LPTSTR lpstrCmdLine = nullptr, int nCmdShow = SW_SHOWDEFAULT) {
 	CMainFrame wndMain;
 
 	CString cmdline(lpstrCmdLine);
-	if (!cmdline.IsEmpty())
+	cmdline.Trim(L" \"");
+	if (!cmdline.IsEmpty() && cmdline.Right(11).CompareNoCase(L"regedit.exe") != 0) 
 		wndMain.SetStartKey(cmdline);
 
 	if (wndMain.CreateEx() == nullptr) {
