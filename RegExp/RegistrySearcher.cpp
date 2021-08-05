@@ -90,6 +90,11 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 
 	if (searchValues || searchData) {
 		Registry::EnumKeyValues(hKey, [&](auto type, auto name, auto size) {
+			if (WAIT_OBJECT_0 == ::WaitForSingleObject(_hCancelEvent.get(), 0)) {
+				_cancel = true;
+				return false;
+			}
+
 			if (searchValues) {
 				CString text(name);
 				if (!caseSensitive)
@@ -102,8 +107,11 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 			}
 			if (searchData) {
 				if (type == REG_SZ || type == REG_EXPAND_SZ) {
+					size += 4 + (size % 2);	// just in case the value is not stored properly in the Registry
+					ATLASSERT(size % 2 == 0);
 					auto buffer = std::make_unique<WCHAR[]>(size / sizeof(WCHAR));
 					if (buffer) {
+						::ZeroMemory(buffer.get(), size);
 						DWORD bytes = size;
 						if (ERROR_SUCCESS == ::RegQueryValueEx(hKey, name, nullptr, nullptr, (BYTE*)buffer.get(), &bytes)) {
 							CString text(buffer.get());
@@ -117,8 +125,11 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 					}
 				}
 				else if (type == REG_MULTI_SZ) {
+					size += 4 + (size % 2);	// just in case the value is not stored properly in the Registry
+					ATLASSERT(size % 2 == 0);
 					auto buffer = std::make_unique<WCHAR[]>(size / sizeof(WCHAR));
 					if (buffer) {
+						::ZeroMemory(buffer.get(), size);
 						DWORD bytes = size;
 						if (ERROR_SUCCESS == ::RegQueryValueEx(hKey, name, nullptr, nullptr, (BYTE*)buffer.get(), &bytes)) {
 							for (auto p = buffer.get(); *p; p += wcslen(p) + 1) {

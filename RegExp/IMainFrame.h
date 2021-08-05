@@ -10,4 +10,5 @@ struct IMainFrame abstract {
 	virtual bool GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) = 0;
 	virtual CString GetCurrentKeyPath() = 0;
 	virtual BOOL TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y) = 0;
+	virtual HWND GetHwnd() const = 0;
 };

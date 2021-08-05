@@ -24,6 +24,7 @@
 #include "ExportDlg.h"
 #include "LoadHiveDlg.h"
 #include "GotoKeyDlg.h"
+#include "ThemeHelper.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -49,6 +50,10 @@ void CMainFrame::RunOnUiThread(std::function<void()> f) {
 
 void CMainFrame::SetStartKey(const CString& key) {
 	m_StartKey = key;
+}
+
+HWND CMainFrame::GetHwnd() const {
+	return m_hWnd;
 }
 
 AppSettings& CMainFrame::GetSettings() {
@@ -265,6 +270,9 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp"))
 		m_ReadOnly = m_Settings.ReadOnly();
 
+	InitDarkTheme();
+	ThemeHelper::SetCurrentTheme(m_Settings.DarkMode() ? m_DarkTheme : m_DefaultTheme);
+
 	m_hSingleInstMutex = ::CreateMutex(nullptr, FALSE, L"RegExpSingleInstanceMutex");
 	if (m_Settings.SingleInstance() && m_hSingleInstMutex) {
 		if (::GetLastError() == ERROR_ALREADY_EXISTS) {
@@ -340,7 +348,6 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	m_StatusBar.SubclassWindow(m_hWndStatusBar);
 	int panes[] = { 24, 1300 };
 	m_StatusBar.SetParts(_countof(panes), panes);
-	::SetWindowTheme(m_StatusBar, L" ", L"");
 
 	m_hWndClient = m_MainSplitter.Create(m_hWnd, rcDefault, nullptr, 
 		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, WS_EX_CLIENTEDGE);
@@ -359,13 +366,11 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	for (auto icon : icons)
 		images.AddIcon(AtlLoadIconImage(icon, 0, 16, 16));
 	m_Tree.SetImageList(images, TVSIL_NORMAL);
-	//::SetWindowTheme(m_Tree, L"Explorer", nullptr);
 
 	m_List.Create(m_MainSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN
 		| LVS_OWNERDATA | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | LVS_EDITLABELS, 0);
 	m_List.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_INFOTIP);
 	m_List.SetImageList(images, LVSIL_SMALL);
-	//::SetWindowTheme(m_List, L"Explorer", nullptr);
 
 	auto cm = GetColumnManager(m_List);
 	cm->AddColumn(L"Name", LVCFMT_LEFT, 220, ColumnType::Name);
@@ -1355,6 +1360,7 @@ LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled
 			rv = TRUE;
 		}
 	}
+	UpdateUI();
 	return rv;
 }
 
@@ -1896,15 +1902,15 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 }
 
 void CMainFrame::SetDarkMode(bool dark) {
-	m_List.SetBkColor(dark ? RGB(32, 32, 32) : ::GetSysColor(COLOR_WINDOW));
-	m_List.SetTextBkColor(dark ? RGB(32, 32, 32) : ::GetSysColor(COLOR_WINDOW));
-	m_List.SetTextColor(dark ? RGB(240, 240, 240) : ::GetSysColor(COLOR_WINDOWTEXT));
+	ThemeHelper::SetCurrentTheme(dark ? m_DarkTheme : m_DefaultTheme);
 
-	m_Tree.SetBkColor(dark ? RGB(32, 32, 32) : ::GetSysColor(COLOR_WINDOW));
-	m_Tree.SetTextColor(dark ? RGB(240, 240, 240) : ::GetSysColor(COLOR_WINDOWTEXT));
+	auto& theme = *ThemeHelper::GetCurrentTheme();
+	m_List.SetBkColor(theme.BackColor);
+	m_List.SetTextBkColor(theme.BackColor);
+	m_List.SetTextColor(theme.TextColor);
 
-	m_List.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
-	m_Tree.RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
+	m_Tree.SetBkColor(theme.BackColor);
+	m_Tree.SetTextColor(theme.TextColor);
 
 	CReBarCtrl rb(m_hWndToolBar);
 	::SetWindowTheme(rb, dark ? L" " : nullptr, dark ? L"" : nullptr);
@@ -1920,20 +1926,21 @@ void CMainFrame::SetDarkMode(bool dark) {
 			rb.SetBandInfo(i, &rbi);
 		}
 	}
-	rb.RedrawWindow();
+
+	RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE | RDW_ALLCHILDREN);
 
 	//
 	// customize menu colors
 	//
-	m_Menu.SetBackColor(dark ? RGB(32, 32, 32) : RGB(248, 248, 248));
-	m_Menu.SetTextColor(dark ? RGB(240, 240, 240) : RGB(0, 0, 0));
+	m_Menu.SetBackColor(theme.Menu.BackColor);
+	m_Menu.SetTextColor(theme.Menu.TextColor);
 	m_Menu.SetSelectionTextColor(dark ? RGB(240, 240, 240) : RGB(248, 248, 248));
 	m_Menu.SetSelectionBackColor(dark ? RGB(0, 64, 240) : RGB(0, 48, 160));
 	m_Menu.SetSeparatorColor(dark ? RGB(160, 160, 160) : RGB(64, 64, 64));
 	m_Menu.UpdateMenu(GetMenu(), true);
 	DrawMenuBar();
 
-//	m_StatusBar.SetBkColor(dark ? RGB(32, 32, 32) : CLR_INVALID);
+	m_StatusBar.SetBkColor(theme.BackColor);
 }
 
 HTREEITEM CMainFrame::GotoKey(const CString& path) {
@@ -1961,6 +1968,18 @@ void CMainFrame::ShowBand(int index, bool show) {
 	CReBarCtrl rb(m_hWndToolBar);
 	rb.ShowBand(index, show);
 	UpdateLayout();
+}
+
+void CMainFrame::InitDarkTheme() {
+	m_DarkTheme.BackColor = m_DarkTheme.SysColors[COLOR_WINDOW] = RGB(32, 32, 32);
+	m_DarkTheme.TextColor = m_DarkTheme.SysColors[COLOR_WINDOWTEXT] = RGB(248, 248, 248);
+	m_DarkTheme.SysColors[COLOR_BTNFACE] = m_DarkTheme.BackColor;
+	m_DarkTheme.SysColors[COLOR_BTNTEXT] = m_DarkTheme.TextColor;
+	m_DarkTheme.SysColors[COLOR_CAPTIONTEXT] = m_DarkTheme.TextColor;
+	m_DarkTheme.SysColors[COLOR_3DSHADOW] = m_DarkTheme.TextColor;
+	m_DarkTheme.Name = L"Dark";
+	m_DarkTheme.Menu.BackColor = m_DarkTheme.BackColor;
+	m_DarkTheme.Menu.TextColor = m_DarkTheme.TextColor;
 }
 
 AppCommandCallback<DeleteKeyCommand> CMainFrame::GetDeleteKeyCommandCallback() {

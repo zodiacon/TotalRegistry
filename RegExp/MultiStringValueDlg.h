@@ -19,6 +19,7 @@ public:
 		COMMAND_ID_HANDLER(IDOK, OnCloseCmd)
 		COMMAND_ID_HANDLER(IDCANCEL, OnCloseCmd)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CMultiStringValueDlg>)
+		REFLECT_NOTIFICATIONS_EX()
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):

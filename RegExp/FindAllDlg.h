@@ -39,6 +39,7 @@ public:
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		CHAIN_MSG_MAP(CVirtualListView<CFindAllDlg>)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CFindAllDlg>)
+		REFLECT_NOTIFICATIONS_EX()
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):

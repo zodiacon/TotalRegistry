@@ -16,6 +16,8 @@ void CFindDlg::UpdateUI() {
     CheckButton(IDC_SEARCH_CASE, options, FindOptions::MatchCase);
     CheckButton(IDC_SEARCH_STD, options, FindOptions::SearchStdRegistry);
     CheckButton(IDC_SEARCH_REAL, options, FindOptions::SearchRealRegistry);
+    GetDlgItem(IDC_CANCEL).EnableWindow(m_Searcher.IsRunning());
+
 }
 
 void CFindDlg::Cancel() {
@@ -63,7 +65,7 @@ FindOptions CFindDlg::UpdateOptions() {
 }
 
 LRESULT CFindDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
-    CenterWindow(GetParent());
+    CenterWindow(m_pFrame->GetHwnd());
     SetDialogIcon(IDI_FIND);
     AddIconToButton(IDC_CANCEL, IDI_DELETE);
     AddIconToButton(IDC_FIND, IDI_FIND_NEXT);

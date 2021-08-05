@@ -14,6 +14,7 @@ public:
 		COMMAND_ID_HANDLER(IDCANCEL, OnCloseCmd)
 		NOTIFY_CODE_HANDLER(NM_CLICK, OnClickSyslink)
 		NOTIFY_CODE_HANDLER(NM_RETURN, OnClickSyslink)
+		REFLECT_NOTIFICATIONS_EX()
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):

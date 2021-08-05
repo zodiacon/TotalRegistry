@@ -10,6 +10,7 @@
 #include "DeleteKeyCommand.h"
 #include "DeleteValueCommand.h"
 #include "OwnerDrawnMenu.h"
+#include "Theme.h"
 
 enum class NodeType {
 	None = 0,
@@ -49,6 +50,7 @@ public:
 	void SetStartKey(const CString& key);
 
 	// IMainFrame
+	HWND GetHwnd() const override;
 	AppSettings& GetSettings() override;
 	void OnFindNext(PCWSTR path, PCWSTR name, PCWSTR data) override;
 	void OnFindStart();
@@ -124,10 +126,10 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
 		COMMAND_ID_HANDLER(ID_VIEW_STATUSBAR, OnViewStatusBar)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
-		CHAIN_MSG_MAP_MEMBER(m_Menu)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
 		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
+		CHAIN_MSG_MAP_MEMBER(m_Menu)
 		REFLECT_NOTIFICATIONS_EX()
 	ALT_MSG_MAP(2)
 		MESSAGE_HANDLER(WM_KEYDOWN, OnEditKeyDown)
@@ -260,6 +262,7 @@ private:
 	void SetDarkMode(bool dark);
 	HTREEITEM GotoKey(const CString& path);
 	void ShowBand(int index, bool show);
+	void InitDarkTheme();
 
 	AppCommandCallback<DeleteKeyCommand> GetDeleteKeyCommandCallback();
 
@@ -287,6 +290,7 @@ private:
 	HANDLE m_hSingleInstMutex{ nullptr };
 	CString m_StartKey;
 	CComObject<CEnumStrings>* m_AutoCompleteStrings{ nullptr };
+	Theme m_DarkTheme, m_DefaultTheme{ true };
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };

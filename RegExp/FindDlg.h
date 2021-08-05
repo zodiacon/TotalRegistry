@@ -27,6 +27,7 @@ public:
 		COMMAND_ID_HANDLER(IDC_NEW, OnNewSearch)
 		COMMAND_CODE_HANDLER(EN_CHANGE, OnTextChanged)
 		COMMAND_CODE_HANDLER(BN_CLICKED, OnClick)
+		REFLECT_NOTIFICATIONS_EX()
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):

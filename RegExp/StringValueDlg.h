@@ -22,6 +22,7 @@ public:
 		COMMAND_ID_HANDLER(IDC_FILE, OnBrowseFile)
 		COMMAND_ID_HANDLER(IDC_FOLDER, OnBrowseFolder)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CStringValueDlg>)
+		REFLECT_NOTIFICATIONS_EX()
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):

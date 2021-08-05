@@ -6,26 +6,9 @@ public:
 	BEGIN_MSG_MAP(COwnerDrawnMenu)
 		MESSAGE_HANDLER(WM_DRAWITEM, OnDrawItem)
 		MESSAGE_HANDLER(WM_MEASUREITEM, OnMeasureItem)
-		//MESSAGE_HANDLER(WM_INITMENUPOPUP, OnInitMenuPopup)
 	END_MSG_MAP()
 
 	enum { TopLevelMenu = 111, Separator = 100 };
-
-	LRESULT OnInitMenuPopup(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
-		if (HIWORD(lParam))
-			return 0;
-
-		CRect r;
-		::GetMenuItemRect(nullptr, (HMENU)wParam, 0, &r);
-		auto h = ::WindowFromPoint(r.CenterPoint());
-		if (h) {
-			CWindowDC dc(h);
-			r.OffsetRect(-r.left, -r.top);
-			dc.FillSolidRect(&r, 255);
-		}
-
-		return 0;
-	}
 
 	LRESULT OnDrawItem(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& bHandled) {
 		m_pT->SetMsgHandled(TRUE);
@@ -185,8 +168,16 @@ public:
 		MENUITEMINFO mii = { sizeof(mii) };
 		mii.fMask = MIIM_FTYPE | MIIM_STRING;
 		mii.fType = MFT_STRING;
-		WCHAR text[64];
-		if (menu.GetMenuString(dis->itemID, text, _countof(text), MF_BYCOMMAND)) {
+		WCHAR mtext[64];
+		auto text = m_pT->UIGetText(dis->itemID);
+		if (text == nullptr)
+			if (menu.GetMenuString(dis->itemID, mtext, _countof(mtext), MF_BYCOMMAND))
+				text = mtext;
+
+		if (text && text[0]) {
+			if (it != m_Items.end()) {
+				it->second.Text = text;
+			}
 			rc = dis->rcItem;
 			if (dis->itemData != TopLevelMenu) {
 				rc.left += 24;
@@ -201,12 +192,13 @@ public:
 				dc.DrawText(text, -1, &rc, DT_VCENTER | DT_SINGLELINE | DT_CENTER);
 			}
 			else {
-				auto tab = wcschr(text, L'\t');
-				if (tab)
-					*tab = 0;
-				dc.DrawText(text, -1, &rc, DT_VCENTER | DT_SINGLELINE);
-				if (tab)
-					dc.DrawText(tab + 1, -1, &rc, DT_VCENTER | DT_SINGLELINE | DT_RIGHT);
+				CString stext(text);
+				auto tab = stext.Find(L'\t');
+				if (tab >= 0)
+					stext.SetAt(tab, 0);
+				dc.DrawText(stext, -1, &rc, DT_VCENTER | DT_SINGLELINE);
+				if (tab >= 0)
+					dc.DrawText(stext.Mid(tab + 1), -1, &rc, DT_VCENTER | DT_SINGLELINE | DT_RIGHT);
 			}
 		}
 	}
@@ -222,18 +214,24 @@ public:
 		if (mis->itemData == Separator)	// separator
 			mis->itemHeight = 10;
 		else if (mis->itemID) {
-			if (auto it = m_Items.find(mis->itemID); it != m_Items.end()) {
-				CClientDC dc(m_pT->m_hWnd);
-				CSize size;
-				CString text(it->second.Text);
-				text.Remove(L'&');
-				if (dc.GetTextExtent(text, text.GetLength(), &size)) {
-					mis->itemWidth = size.cx + (mis->itemData == TopLevelMenu ? -5 : 25);
-					m_LastHeight = mis->itemHeight = size.cy + (mis->itemData == TopLevelMenu ? 10 : 6);
+			auto text = m_pT->UIGetText(mis->itemID);
+			CString stext;
+			if (text == nullptr) {
+				if (auto it = m_Items.find(mis->itemID); it != m_Items.end()) {
+					stext = (it->second.Text);
 				}
-				else {
-					ATLASSERT(false);
-				}
+			}
+			else {
+				stext = text;
+			}
+			CClientDC dc(m_pT->m_hWnd);
+			CSize size;
+			stext.Remove(L'&');
+			if (stext.IsEmpty())
+				stext = L"M";
+			if (dc.GetTextExtent(stext, stext.GetLength(), &size)) {
+				mis->itemWidth = size.cx + (mis->itemData == TopLevelMenu ? -5 : 25);
+				m_LastHeight = mis->itemHeight = size.cy + (mis->itemData == TopLevelMenu ? 10 : 6);
 			}
 		}
 

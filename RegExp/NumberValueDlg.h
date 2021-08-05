@@ -22,6 +22,7 @@ public:
 		COMMAND_ID_HANDLER(IDC_HEX, OnClickBase)
 		COMMAND_ID_HANDLER(IDC_BINARY, OnClickBase)
 		COMMAND_ID_HANDLER(IDC_COLOR, OnClickColor)
+		REFLECT_NOTIFICATIONS_EX()
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):

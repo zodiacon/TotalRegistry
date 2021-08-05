@@ -14,6 +14,7 @@
 #include <atlctrls.h>
 #include <atlctrlw.h>
 #include <atlctrlx.h>
+#include <atltypes.h>
 
 #include <vector>
 #include <memory>

@@ -54,6 +54,24 @@
     <ClInclude Include="OwnerDrawnMenu.h">
       <Filter>Controls</Filter>
     </ClInclude>
+    <ClInclude Include="CustomEdit.h">
+      <Filter>Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Theme.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThemeHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SizeGrip.h">
+      <Filter>Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomStatusBar.h">
+      <Filter>Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomButton.h">
+      <Filter>Controls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WTLHelper.cpp">
@@ -84,6 +102,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VersionResourceHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ThemeHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Theme.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
