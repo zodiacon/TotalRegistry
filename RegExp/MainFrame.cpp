@@ -25,6 +25,7 @@
 #include "LoadHiveDlg.h"
 #include "GotoKeyDlg.h"
 #include "ThemeHelper.h"
+#include "ConnectRegistryDlg.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -257,7 +258,7 @@ BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
 		return TRUE;
 	}
 	else {
-		auto ret = ShowValueProperties(item);
+		auto ret = ShowValueProperties(item, row);
 	}
 	return FALSE;
 }
@@ -349,7 +350,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	int panes[] = { 24, 1300 };
 	m_StatusBar.SetParts(_countof(panes), panes);
 
-	m_hWndClient = m_MainSplitter.Create(m_hWnd, rcDefault, nullptr, 
+	m_hWndClient = m_MainSplitter.Create(m_hWnd, rcDefault, nullptr,
 		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, WS_EX_CLIENTEDGE);
 
 	m_Tree.Create(m_MainSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN |
@@ -361,7 +362,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	UINT icons[] = {
 		IDR_MAINFRAME, IDI_COMPUTER, IDI_FOLDER, IDI_FOLDER_CLOSED, IDI_FOLDER_LINK,
 		IDI_FOLDER_ACCESSDENIED, IDI_HIVE, IDI_HIVE_ACCESSDENIED, IDI_FOLDER_UP, IDI_BINARY,
-		IDI_TEXT, IDI_REAL_REG, IDI_NUM4, IDI_NUM8
+		IDI_TEXT, IDI_REAL_REG, IDI_NUM4, IDI_NUM8, IDI_REGREMOTE
 	};
 	for (auto icon : icons)
 		images.AddIcon(AtlLoadIconImage(icon, 0, 16, 16));
@@ -501,7 +502,7 @@ LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 
 	if (!m_StartKey.IsEmpty()) {
 		auto hItem = GotoKey(m_StartKey);
-		if(!hItem) {
+		if (!hItem) {
 			AtlMessageBox(m_hWnd, (PCWSTR)(L"Failed to locate key " + m_StartKey), IDS_APP_TITLE, MB_ICONWARNING);
 		}
 	}
@@ -711,10 +712,14 @@ LRESULT CMainFrame::OnTreeContextMenu(int, LPNMHDR hdr, BOOL&) {
 	auto hItem = m_Tree.HitTest(pt, &flags);
 	if (hItem) {
 		m_Tree.SelectItem(hItem);
+		if (hItem == m_hStdReg || hItem == m_hLocalRoot)
+			return 0;
+
 		CMenu menu;
 		menu.LoadMenu(IDR_CONTEXT);
 		UpdateUI();
-		m_Menu.TrackPopupMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
+		auto type = GetNodeData(hItem);
+		m_Menu.TrackPopupMenu(menu.GetSubMenu((type & NodeType::RemoteRegistry) == NodeType::RemoteRegistry ? 5 : 0), 0, pt2.x, pt2.y);
 	}
 	return 0;
 }
@@ -874,7 +879,7 @@ LRESULT CMainFrame::OnEditDelete(WORD, WORD, HWND, BOOL&) {
 		if (!m_CmdMgr.AddCommand(cmd))
 			DisplayError(L"Failed to delete key");
 	}
-	else if(::GetFocus() == m_List) {
+	else if (::GetFocus() == m_List) {
 		auto count = m_List.GetSelectedCount();
 		ATLASSERT(count >= 1);
 		int index = -1;
@@ -977,7 +982,7 @@ LRESULT CMainFrame::OnFindAll(WORD, WORD, HWND, BOOL&) {
 LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
 	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
 	CRegKey key;
-	if(::GetFocus() == m_List) {
+	if (::GetFocus() == m_List) {
 		auto& item = m_Items[m_List.GetSelectionMark()];
 		ATLASSERT(item.Key);
 		path += L"\\" + item.Name;
@@ -1030,13 +1035,13 @@ LRESULT CMainFrame::OnProperties(WORD, WORD, HWND, BOOL&) {
 	if (::GetFocus() == m_List) {
 		auto index = m_List.GetSelectionMark();
 		if (index >= 0 && !m_Items[index].Key)
-			return (LRESULT)ShowValueProperties(m_Items[index]);
+			return (LRESULT)ShowValueProperties(m_Items[index], index);
 	}
 	return 0;
 }
 
 void CMainFrame::DisplayBackupRestorePrivilegeError() {
-	AtlMessageBox(m_hWnd, L"Exporting, importing, and loading hives require the Backup/Restore privileges. Running elevated will allow it.", 
+	AtlMessageBox(m_hWnd, L"Exporting, importing, and loading hives require the Backup/Restore privileges. Running elevated will allow it.",
 		IDS_APP_TITLE, MB_ICONERROR);
 }
 
@@ -1087,7 +1092,7 @@ LRESULT CMainFrame::OnImport(WORD, WORD, HWND, BOOL&) {
 	CSimpleFileDialog dlg(TRUE, L"dat", nullptr, OFN_FILEMUSTEXIST | OFN_ENABLESIZING | OFN_EXPLORER,
 		L"All Files\0*.*\0", m_hWnd);
 	if (dlg.DoModal() == IDOK) {
-		auto error = ::RegRestoreKey(m_CurrentKey, dlg.m_szFileName, REG_FORCE_RESTORE);
+		auto error = ::RegRestoreKey(m_CurrentKey.Get(), dlg.m_szFileName, REG_FORCE_RESTORE);
 		if (ERROR_SUCCESS != error)
 			DisplayError(L"Failed to import file", error);
 		else {
@@ -1129,7 +1134,7 @@ LRESULT CMainFrame::OnLoadHive(WORD, WORD, HWND, BOOL&) {
 	}
 	SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
 	SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, false);
-	
+
 	return 0;
 }
 
@@ -1174,7 +1179,7 @@ LRESULT CMainFrame::OnReplaceRegEdit(WORD, WORD, HWND, BOOL&) {
 	}
 	CRegKey regEditKey;
 	error = regEditKey.Create(key, L"regedit.exe", nullptr, 0, KEY_WRITE);
-	if(!regEditKey) {
+	if (!regEditKey) {
 		DisplayError(L"Failed to create RegEdit key", error);
 		return 0;
 	}
@@ -1234,7 +1239,7 @@ LRESULT CMainFrame::OnGoToKeyExternal(UINT, WPARAM, LPARAM lp, BOOL&) {
 	if (cds->dwData == 0x1000) {
 		::SetForegroundWindow(m_hWnd);
 		SetActiveWindow();
-		if(cds->lpData)
+		if (cds->lpData)
 			GotoKey((PCWSTR)cds->lpData);
 		return 1;
 	}
@@ -1294,6 +1299,43 @@ LRESULT CMainFrame::OnViewStatusBar(WORD, WORD id, HWND, BOOL&) {
 	m_StatusBar.ShowWindow(show ? SW_SHOW : SW_HIDE);
 	UpdateLayout();
 
+	return 0;
+}
+
+LRESULT CMainFrame::OnConnectRemote(WORD, WORD, HWND, BOOL&) {
+	CConnectRegistryDlg dlg(this);
+	if (dlg.DoModal() == IDOK) {
+		if (TreeHelper(m_Tree).FindChild(m_Tree.GetRootItem(), dlg.GetComputerName())) {
+			AtlMessageBox(m_hWnd, (PCWSTR)(L"Already connected to computer '" + dlg.GetComputerName() + L"'. Disconnect first if you'd like to reconnect."),
+				IDS_APP_TITLE, MB_ICONWARNING);
+			return 0;
+		}
+		CWaitCursor wait;
+		if (!Registry::ConnectRegistry(dlg.GetComputerName())) {
+			DisplayError(L"Failed to connect to remote computer");
+			return 0;
+		}
+
+		auto hComputer = m_Tree.InsertItem(dlg.GetComputerName(), 14, 14, TVI_ROOT, TVI_LAST);
+		SetNodeData(hComputer, NodeType::RemoteRegistry);
+		auto Item = InsertKeyItem(hComputer, L"HKEY_LOCAL_MACHINE", NodeType::Predefined | NodeType::Key);
+		Item = InsertKeyItem(hComputer, L"HKEY_USERS", NodeType::Predefined | NodeType::Key);
+		m_Tree.Expand(hComputer, TVE_EXPAND);
+		m_Tree.SelectItem(hComputer);
+		m_Tree.EnsureVisible(hComputer);
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnDisconnectRemote(WORD, WORD, HWND, BOOL&) {
+	auto hItem = m_Tree.GetSelectedItem();
+	if (GetNodeData(hItem) != NodeType::RemoteRegistry)
+		return 0;
+
+	CString name;
+	m_Tree.GetItemText(hItem, name);
+	if (Registry::Disconnect(name))
+		m_Tree.DeleteItem(hItem);
 	return 0;
 }
 
@@ -1393,6 +1435,7 @@ void CMainFrame::InitCommandBar() {
 		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
 		{ ID_FILE_LOADHIVE, IDI_FOLDER_LOAD },
 		{ ID_KEY_GOTO, IDI_GOTO },
+		{ ID_FILE_CONNECTREMOTEREGISTRY, IDI_REGREMOTE },
 	};
 	for (auto& cmd : cmds) {
 		//HICON hIcon = cmd.hIcon;
@@ -1512,29 +1555,6 @@ void CMainFrame::InitTree() {
 	m_Tree.SelectItem(m_hStdReg);
 }
 
-CString CMainFrame::GetNodePath(HTREEITEM hItem, HKEY* pKey) const {
-	CString path;
-	CString text;
-	while (hItem && ((GetNodeData(hItem) & (NodeType::Key | NodeType::Predefined)) == NodeType::Key || GetNodeData(hItem) == NodeType::None)) {
-		ATLVERIFY(m_Tree.GetItemText(hItem, text));
-		path = text + L"\\" + path;
-		hItem = m_Tree.GetParentItem(hItem);
-	}
-	if (pKey)
-		*pKey = GetKeyFromNode(hItem);
-	path.TrimRight(L"\\");
-	return path;
-}
-
-CString CMainFrame::GetParentNodePath(HTREEITEM hItem, HKEY* pKey) const {
-	auto path = GetNodePath(hItem, pKey);
-	auto index = path.ReverseFind(L'\\');
-	if (index < 0)
-		return L"";
-
-	return path.Left(index);
-}
-
 CString CMainFrame::GetFullNodePath(HTREEITEM hItem) const {
 	CString path;
 	auto hPrev = hItem;
@@ -1548,6 +1568,11 @@ CString CMainFrame::GetFullNodePath(HTREEITEM hItem) const {
 	path.TrimRight(L"\\");
 	if (path.Left(8) == L"REGISTRY")
 		path = L"\\" + path;
+	if ((GetNodeData(hItem) & NodeType::RemoteRegistry) == NodeType::RemoteRegistry) {
+		CString name;
+		m_Tree.GetItemText(hItem, name);
+		path = L"\\\\" + name + (path.IsEmpty() ? L"" : L"\\") + path;
+	}
 	return path;
 }
 
@@ -1569,16 +1594,12 @@ void CMainFrame::SetNodeData(HTREEITEM hItem, NodeType type) {
 }
 
 void CMainFrame::ExpandItem(HTREEITEM hItem) {
-	CRegKey key;
-	auto path = GetNodePath(hItem, &key.m_hKey);
-	if (!key)
-		return;
+	auto path = GetFullNodePath(hItem);
+	auto key = Registry::OpenKey(path, KEY_ENUMERATE_SUB_KEYS);
 
-	CRegKey subkey;
-	subkey.Open(key, path, KEY_READ);
-	if (subkey) {
+	if (key) {
 		m_Tree.SetRedraw(FALSE);
-		BuildTree(hItem, subkey);
+		BuildTree(hItem, key.Get());
 		m_Tree.SetRedraw(TRUE);
 	}
 }
@@ -1603,7 +1624,7 @@ void CMainFrame::RefreshFull(HTREEITEM hItem) {
 				auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_READ);
 				if (key) {
 					auto keys = th.GetChildItems(hItem);
-					Registry::EnumSubKeys(key, [&](auto name, const auto&) {
+					Registry::EnumSubKeys(key.Get(), [&](auto name, const auto&) {
 						if (!th.FindChild(hItem, name)) {
 							// new sub key
 							auto hChild = InsertKeyItem(hItem, name);
@@ -1633,7 +1654,7 @@ void CMainFrame::RefreshFull(HTREEITEM hItem) {
 		else if (m_Tree.GetChildItem(hItem) == nullptr && (GetNodeData(hItem) & NodeType::AccessDenied) == NodeType::None) {
 			// no children - check if new exist
 			auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_READ);
-			if (Registry::GetSubKeyCount(key) > 0) {
+			if (Registry::GetSubKeyCount(key.Get()) > 0) {
 				m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
 				TVITEM tvi;
 				tvi.hItem = hItem;
@@ -1663,10 +1684,12 @@ HKEY CMainFrame::GetKeyFromNode(HTREEITEM hItem) const {
 CTreeItem CMainFrame::InsertKeyItem(HTREEITEM hParent, PCWSTR name, NodeType type) {
 	auto item = m_Tree.InsertItem(name, 3, 2, hParent, TVI_LAST);
 	SetNodeData(item, type);
-	auto key = Registry::OpenKey(GetFullNodePath(item), KEY_READ);
-	if (key) {
-		if (Registry::GetSubKeyCount(key) > 0)
-			m_Tree.InsertItem(L"\\\\", item, TVI_LAST);
+	if ((type & NodeType::Key) == NodeType::Key) {
+		auto key = Registry::OpenKey(GetFullNodePath(item), KEY_READ);
+		if (key) {
+			if (Registry::GetSubKeyCount(key.Get()) > 0)
+				m_Tree.InsertItem(L"\\\\", item, TVI_LAST);
+		}
 	}
 	return item;
 }
@@ -1703,11 +1726,14 @@ void CMainFrame::InvokeTreeContextMenu(const CPoint& pt) {
 }
 
 CString CMainFrame::GetKeyDetails(const RegistryItem& item) const {
-	CRegKey key;
-	if (m_CurrentKey == nullptr)
-		key.Attach(Registry::OpenKey(item.Name, KEY_QUERY_VALUE).Detach());
+	if (item.Type == REG_KEY_UP)
+		return L"";
+
+	RegistryKey key;
+	if (!m_CurrentKey)
+		key = Registry::OpenKey(m_CurrentPath + (m_CurrentPath.IsEmpty() ? L"" : L"\\") + item.Name, KEY_QUERY_VALUE);
 	else
-		key.Open(m_CurrentKey, item.Name, KEY_QUERY_VALUE);
+		key.Open(m_CurrentKey.Get(), item.Name, KEY_QUERY_VALUE);
 	CString text;
 	if (key) {
 		DWORD values = 0;
@@ -1731,7 +1757,7 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 
 		case REG_SZ:
 			if (item.Value[0] == L'@') {
-				::RegLoadMUIString(m_CurrentKey, item.Name, text.GetBufferSetLength(512), 512, nullptr, REG_MUI_STRING_TRUNCATE, nullptr);
+				::RegLoadMUIString(m_CurrentKey.Get(), item.Name, text.GetBufferSetLength(512), 512, nullptr, REG_MUI_STRING_TRUNCATE, nullptr);
 			}
 			break;
 	}
@@ -1752,7 +1778,7 @@ bool CMainFrame::RefreshItem(HTREEITEM hItem) {
 	return true;
 }
 
-void CMainFrame::DisplayError(PCWSTR msg, DWORD error) {
+void CMainFrame::DisplayError(PCWSTR msg, DWORD error) const {
 	CString text;
 	text.Format(L"%s (%s)", msg, (PCWSTR)GetErrorText(error));
 	AtlMessageBox(m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_ICONERROR);
@@ -1773,15 +1799,15 @@ CString CMainFrame::GetErrorText(DWORD error) {
 
 int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 	int image = 3;
-	if (m_CurrentKey == nullptr)
+	if (!m_CurrentKey)
 		return image;
 
 	CString linkPath;
-	if (Registry::IsKeyLink(m_CurrentKey, item.Name, linkPath))
+	if (Registry::IsKeyLink(m_CurrentKey.Get(), item.Name, linkPath))
 		return 4;
 
-	CRegKey key;
-	auto error = key.Open(m_CurrentKey, item.Name, KEY_READ);
+	RegistryKey key;
+	auto error = key.Open(m_CurrentKey.Get(), item.Name, KEY_READ);
 	if (Registry::IsHiveKey(GetFullNodePath(m_Tree.GetSelectedItem()) + L"\\" + item.Name))
 		image = error == ERROR_ACCESS_DENIED ? 7 : 6;
 	else if (error == ERROR_ACCESS_DENIED)
@@ -1790,7 +1816,7 @@ int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 	return image;
 }
 
-INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
+INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item, int index) {
 	auto cb = [this](auto& cmd, bool) {
 		if (GetFullNodePath(m_Tree.GetSelectedItem()) == cmd.GetPath()) {
 			int index = m_List.FindItem(cmd.GetName(), false);
@@ -1822,8 +1848,12 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item) {
 				auto cmd = std::make_shared<ChangeValueCommand>(
 					GetFullNodePath(hItem), item.Name, dlg.GetType(), (PVOID)(PCWSTR)dlg.GetValue(), (1 + dlg.GetValue().GetLength()) * (LONG)sizeof(WCHAR));
 				success = m_CmdMgr.AddCommand(cmd);
-				if (success)
+				if (success) {
 					cmd->SetCallback(cb);
+					item.Value.Empty();
+					item.Size = -1;
+					m_List.RedrawItems(index, index);
+				}
 			}
 			break;
 		}
@@ -2044,6 +2074,7 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_KEY_PERMISSIONS, FALSE);
 		UIEnable(ID_KEY_PROPERTIES, FALSE);
 	}
+	UIEnable(ID_FILE_DISCONNECT, node == NodeType::RemoteRegistry);
 
 	for (auto id = ID_NEW_DWORDVALUE; id <= ID_NEW_BINARYVALUE; id++)
 		UIEnable(id, !m_ReadOnly);
@@ -2054,10 +2085,10 @@ void CMainFrame::UpdateList(bool force) {
 	m_Items.clear();
 	m_List.SetItemCount(0);
 
-	HKEY hKey;
 	auto hItem = m_Tree.GetSelectedItem();
-	m_CurrentPath = GetNodePath(hItem, &hKey);
-	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
+	m_CurrentPath = GetFullNodePath(hItem);
+	auto& path = m_CurrentPath;
+
 	m_StatusBar.SetText((int)StatusPane::Key, path, SBT_NOBORDERS);
 
 	m_AddressBar.SetWindowText(path);
@@ -2066,16 +2097,26 @@ void CMainFrame::UpdateList(bool force) {
 	m_StatusBar.SetText((int)StatusPane::Icon, L"", SBT_NOBORDERS);
 	m_StatusBar.SetIcon((int)StatusPane::Icon, m_Tree.GetImageList(TVSIL_NORMAL).GetIcon(image));
 
-	if (hItem == m_hStdReg && m_Settings.ShowKeysInList()) {
+	m_CurrentKey.Close();
+
+	if (hItem == m_hLocalRoot)
+		return;
+
+	if (hItem == m_hRealReg)
+		m_CurrentKey.Attach(Registry::OpenRealRegistryKey());
+
+	if (m_Settings.ShowKeysInList() && (hItem == m_hStdReg || hItem == m_hRealReg || (GetNodeData(hItem) & NodeType::RemoteRegistry) == NodeType::RemoteRegistry)) {
 		// special case for root of registry
 		for (hItem = m_Tree.GetChildItem(hItem); hItem; hItem = m_Tree.GetNextSiblingItem(hItem)) {
 			RegistryItem item;
 			CString name;
 			m_Tree.GetItemText(hItem, name);
 			item.Name = name;
-			auto key = Registry::OpenKey(item.Name, KEY_READ);
+			if (m_CurrentPath[0] == L'\\')
+				name = m_CurrentPath + L"\\" + name;
+			auto key = Registry::OpenKey(name, KEY_READ);
 			if (key) {
-				Registry::GetSubKeyCount(key, nullptr, &item.TimeStamp);
+				Registry::GetSubKeyCount(key.Get(), nullptr, &item.TimeStamp);
 			}
 			item.Key = true;
 			item.Type = REG_KEY;
@@ -2087,8 +2128,10 @@ void CMainFrame::UpdateList(bool force) {
 		return;
 	}
 
-	if (!hKey)
-		return;
+	if (!m_CurrentPath.IsEmpty()) {
+		m_CurrentKey = Registry::OpenKey(m_CurrentPath, KEY_QUERY_VALUE | (m_Settings.ShowKeysInList() ? KEY_ENUMERATE_SUB_KEYS : 0));
+		ATLASSERT(m_CurrentKey.IsValid());
+	}
 
 	if (m_Settings.ShowKeysInList()) {
 		//
@@ -2100,10 +2143,8 @@ void CMainFrame::UpdateList(bool force) {
 		up.Key = true;
 		m_Items.push_back(up);
 
-		CRegKey subKey;
-		subKey.Open(hKey, m_CurrentPath, KEY_ENUMERATE_SUB_KEYS);
-		if (subKey) {
-			Registry::EnumSubKeys(subKey, [&](auto name, const auto& ft) {
+		if (m_CurrentKey) {
+			Registry::EnumSubKeys(m_CurrentKey.Get(), [&](auto name, const auto& ft) {
 				RegistryItem item;
 				item.Name = name;
 				item.TimeStamp = ft;
@@ -2115,19 +2156,16 @@ void CMainFrame::UpdateList(bool force) {
 		}
 	}
 
-	m_CurrentKey.Close();
-	m_CurrentKey.Open(hKey, m_CurrentPath, KEY_QUERY_VALUE);
-	if (!m_CurrentKey)
-		return;
-
-	Registry::EnumKeyValues(m_CurrentKey, [&](auto type, auto name, auto size) {
-		RegistryItem item;
-		item.Name = name;
-		item.Type = type;
-		item.Size = size;
-		m_Items.push_back(item);
-		return true;
-		});
+	if (m_CurrentKey) {
+		Registry::EnumKeyValues(m_CurrentKey.Get(), [&](auto type, auto name, auto size) {
+			RegistryItem item;
+			item.Name = name;
+			item.Type = type;
+			item.Size = size;
+			m_Items.push_back(item);
+			return true;
+			});
+	}
 
 	auto parentPath = GetFullParentNodePath(hItem);
 	if (!parentPath.IsEmpty()) {
@@ -2135,7 +2173,7 @@ void CMainFrame::UpdateList(bool force) {
 		if (temp) {
 			CString name, linkPath;
 			m_Tree.GetItemText(hItem, name);
-			if (Registry::IsKeyLink(temp, name, linkPath)) {
+			if (Registry::IsKeyLink(temp.Get(), name, linkPath)) {
 				RegistryItem item;
 				item.Name = L"SymbolicLinkName";
 				item.Type = REG_LINK;

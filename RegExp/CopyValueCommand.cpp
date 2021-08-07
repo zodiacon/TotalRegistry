@@ -32,7 +32,7 @@ bool CopyValueCommand::Execute() {
 	}
 	_targetName = tname;
 
-	if (!Registry::CopyValue(key, target, GetName(), _targetName))
+	if (!Registry::CopyValue(key.Get(), target.Get(), GetName(), _targetName))
 		return false;
 
 	return InvokeCallback(true);

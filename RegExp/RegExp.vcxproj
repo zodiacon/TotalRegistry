@@ -138,6 +138,7 @@
     <ClInclude Include="BinaryValueDlg.h" />
     <ClInclude Include="ChangeValueCommand.h" />
     <ClInclude Include="CommandManager.h" />
+    <ClInclude Include="ConnectRegistryDlg.h" />
     <ClInclude Include="CopyKeyCommand.h" />
     <ClInclude Include="CopyValueCommand.h" />
     <ClInclude Include="CreateKeyCommand.h" />
@@ -162,6 +163,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="RegExp.h" />
     <ClInclude Include="Registry.h" />
+    <ClInclude Include="RegistryKey.h" />
     <ClInclude Include="RegistrySearcher.h" />
     <ClInclude Include="RenameKeyCommand.h" />
     <ClInclude Include="RenameValueCommand.h" />
@@ -179,6 +181,7 @@
     <ClCompile Include="BinaryValueDlg.cpp" />
     <ClCompile Include="ChangeValueCommand.cpp" />
     <ClCompile Include="CommandManager.cpp" />
+    <ClCompile Include="ConnectRegistryDlg.cpp" />
     <ClCompile Include="CopyKeyCommand.cpp" />
     <ClCompile Include="CopyValueCommand.cpp" />
     <ClCompile Include="CreateKeyCommand.cpp" />
@@ -203,6 +206,7 @@
     </ClCompile>
     <ClCompile Include="RegExp.cpp" />
     <ClCompile Include="Registry.cpp" />
+    <ClCompile Include="RegistryKey.cpp" />
     <ClCompile Include="RegistrySearcher.cpp" />
     <ClCompile Include="RenameKeyCommand.cpp" />
     <ClCompile Include="RenameValueCommand.cpp" />
@@ -255,6 +259,7 @@
     <Image Include="Icons\RegExp.ico" />
     <Image Include="Icons\registry.ico" />
     <Image Include="Icons\registrysearch.ico" />
+    <Image Include="Icons\regremote.ico" />
     <Image Include="Icons\rename.ico" />
     <Image Include="Icons\shield.ico" />
     <Image Include="Icons\text.ico" />

@@ -8,7 +8,7 @@ DeleteKeyCommand::DeleteKeyCommand(PCWSTR path, PCWSTR name, AppCommandCallback<
 }
 
 bool DeleteKeyCommand::Execute() {
-    CRegKey key = Registry::OpenKey(_path, KEY_ENUMERATE_SUB_KEYS | DELETE | KEY_QUERY_VALUE);
+    auto key = Registry::OpenKey(_path, KEY_ENUMERATE_SUB_KEYS | DELETE | KEY_QUERY_VALUE);
     if (!key)
         return false;
 
@@ -22,11 +22,11 @@ bool DeleteKeyCommand::Execute() {
     ::SetLastError(error);
     if (!keyBackup)
         return false;
-    ::SetLastError(error = ::RegCopyTree(key, _name, keyBackup));
+    ::SetLastError(error = ::RegCopyTree(key.Get(), _name, keyBackup));
     if (ERROR_SUCCESS != error)
         return false;
 
-    ::SetLastError(error = ::RegDeleteTree(key, _name));
+    ::SetLastError(error = ::RegDeleteTree(key.Get(), _name));
     if (ERROR_SUCCESS != error) {
         return false;
     }
@@ -46,7 +46,7 @@ bool DeleteKeyCommand::Undo() {
 
     CRegKey newKey;
     DWORD disp;
-    error = newKey.Create(key, _name, nullptr, 0, KEY_ALL_ACCESS, nullptr, &disp);
+    error = newKey.Create(key.Get(), _name, nullptr, 0, KEY_ALL_ACCESS, nullptr, &disp);
     ::SetLastError(error);
     if (error != ERROR_SUCCESS)
         return false;

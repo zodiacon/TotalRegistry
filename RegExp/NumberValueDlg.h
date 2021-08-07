@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DialogHelper.h"
+#include "RegistryKey.h"
 
 class CNumberValueDlg :
 	public CDialogImpl<CNumberValueDlg>,
@@ -8,7 +9,7 @@ class CNumberValueDlg :
 public:
 	enum { IDD = IDD_NUMBERVALUE };
 
-	CNumberValueDlg(CRegKey& key, PCWSTR name, DWORD type, bool readOnly);
+	CNumberValueDlg(RegistryKey& key, PCWSTR name, DWORD type, bool readOnly);
 
 	DWORD64 GetValue() const;
 	DWORD GetType() const;
@@ -41,7 +42,7 @@ private:
 	LRESULT OnClickBase(WORD /*wNotifyCode*/, WORD id, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnClickColor(WORD /*wNotifyCode*/, WORD id, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
-	CRegKey& m_Key;
+	RegistryKey& m_Key;
 	CString m_Name;
 	DWORD64 m_Value;
 	DWORD m_Type;

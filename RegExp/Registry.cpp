@@ -22,17 +22,21 @@ extern "C" NTSYSCALLAPI NTSTATUS NTAPI NtCreateKey(
 #pragma comment(lib, "ntdll")
 
 DWORD Registry::EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&)> handler) {
+	ATLASSERT(IsKeyValid(key));
 	WCHAR name[512];
 	FILETIME lastWrite;
+	LSTATUS error;
 	for (DWORD i = 0;; ++i) {
 		DWORD len = _countof(name);
-		if (ERROR_SUCCESS != ::RegEnumKeyEx(key, i, name, &len, nullptr, nullptr, nullptr, &lastWrite))
+		error = ::RegEnumKeyEx(key, i, name, &len, nullptr, nullptr, nullptr, &lastWrite);
+		if (ERROR_SUCCESS != error)
 			break;
 
 		if (!handler(name, lastWrite))
 			break;
 	}
-	return ERROR_SUCCESS;
+
+	return ERROR_NO_MORE_ITEMS == error ? ERROR_SUCCESS : error;
 }
 
 HKEY Registry::OpenRealRegistryKey(PCWSTR path, DWORD access) {
@@ -58,6 +62,7 @@ HKEY Registry::CreateRealRegistryKey(PCWSTR path, DWORD access) {
 }
 
 DWORD Registry::EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler) {
+	ATLASSERT(IsKeyValid(key));
 	WCHAR name[256];
 	DWORD type;
 	int i;
@@ -72,6 +77,7 @@ DWORD Registry::EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, 
 			break;
 		handler(type, name, size);
 	}
+
 	if (error != ERROR_NO_MORE_ITEMS)
 		::SetLastError(error);
 	return i;
@@ -93,11 +99,35 @@ CString Registry::StdRegPathToRealPath(const CString& path) {
 	return result;
 }
 
-CRegKey Registry::OpenKey(const CString& path, DWORD access, bool* root) {
+RegistryKey Registry::OpenKey(const CString& path, DWORD access, bool* root) {
 	if (root)
 		*root = false;
 
-	CRegKey key;
+	RegistryKey key;
+	if (path.Left(2) == L"\\\\") {
+		// remote registry
+		auto index = path.Find(L"\\", 2);
+		if (index < 0)
+			return key;
+
+		auto name = path.Mid(2, index - 2);
+		auto& rr = _remotes[name];
+		index = path.Find(L"\\HKEY_LOCAL_MACHINE");
+		HKEY hRoot = index >= 0 ? rr.hLocal : rr.hUsers;
+		if (index < 0)
+			index = path.Find(L"\\HKEY_USERS");
+		ATLASSERT(index >= 0);
+		index = path.Find(L"\\", index + 1);
+		if (index < 0) {
+			key.Attach(hRoot, false);
+		}
+		else {
+			auto subpath = path.Mid(index + 1);
+			auto error = key.Open(hRoot, subpath, access);
+			::SetLastError(error);
+		}
+		return key;
+	}
 	if (path[0] == L'\\') {
 		// real registry
 		key.Attach(OpenRealRegistryKey(path, access));
@@ -116,12 +146,11 @@ CRegKey Registry::OpenKey(const CString& path, DWORD access, bool* root) {
 			::SetLastError(error);
 		}
 		else {
-			key.Attach(pair->hKey);
+			key.Attach(pair->hKey, false);
 			if(root)
 				*root = true;
 		}
 	}
-	ATLASSERT(key.m_hKey == nullptr || (DWORD_PTR)key.m_hKey > 0x80000000 || ((DWORD_PTR)key.m_hKey & 3) == 0);
 	return key;
 }
 
@@ -188,6 +217,40 @@ CString Registry::ExpandStrings(const CString& text) {
 	return buffer;
 }
 
+bool Registry::ConnectRegistry(PCWSTR computerName) {
+	HKEY hLocal{ nullptr }, hUsers{ nullptr };
+	auto error = ::RegConnectRegistry(CString(L"\\\\") + computerName, HKEY_LOCAL_MACHINE, &hLocal);
+	if (error == ERROR_SUCCESS)
+		error = ::RegConnectRegistry(CString(L"\\\\") + computerName, HKEY_USERS, &hUsers);
+
+	if (error) {
+		::RegCloseKey(hLocal);
+		::SetLastError(error);
+		return false;
+	}
+	RemoteRegistry rr;
+	rr.hLocal = hLocal;
+	rr.hUsers = hUsers;
+	rr.ComputerName = computerName;
+	_remotes.insert({ computerName, rr });
+	ATLASSERT(IsKeyValid(rr.hLocal));
+	ATLASSERT(IsKeyValid(rr.hUsers));
+
+	return true;
+}
+
+bool Registry::Disconnect(PCWSTR computerName) {
+	auto it = _remotes.find(computerName);
+	if (it == _remotes.end())
+		return false;
+
+	auto& rr = it->second;
+	::RegCloseKey(rr.hLocal);
+	::RegCloseKey(rr.hUsers);
+	_remotes.erase(it);
+	return true;
+}
+
 PCWSTR Registry::GetRegTypeAsString(DWORD type) {
 	switch (type) {
 		case REG_KEY: return L"Key";
@@ -206,7 +269,7 @@ PCWSTR Registry::GetRegTypeAsString(DWORD type) {
 	return L"";
 }
 
-CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
+CString Registry::GetDataAsString(RegistryKey& key, const RegistryItem& item) {
 	ULONG realsize = item.Size;
 	ULONG size = (realsize > (1 << 10) ? (1 << 10) : realsize) / sizeof(WCHAR);
 	LSTATUS status;
@@ -225,7 +288,7 @@ CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
 
 		case REG_MULTI_SZ:
 			size *= 2;
-			status = ::RegQueryValueEx(key, item.Name, nullptr, &type, (PBYTE)text.GetBufferSetLength(size / 2), &size);
+			status = ::RegQueryValueEx(key.Get(), item.Name, nullptr, &type, (PBYTE)text.GetBufferSetLength(size / 2), &size);
 			if (status == ERROR_SUCCESS) {
 				auto p = text.GetBuffer();
 				while (*p) {
@@ -275,13 +338,14 @@ CString Registry::GetDataAsString(CRegKey& key, const RegistryItem& item) {
 }
 
 bool Registry::IsKeyLink(HKEY hKey, PCWSTR path, CString& link) {
-	CRegKey hLinkKey;
-	auto error = ::RegOpenKeyExW(hKey, path, REG_OPTION_OPEN_LINK, KEY_READ, &hLinkKey.m_hKey);
+	HKEY hLinkKey;
+	auto error = ::RegOpenKeyExW(hKey, path, REG_OPTION_OPEN_LINK, KEY_READ, &hLinkKey);
 	if (ERROR_SUCCESS == error) {
 		DWORD type = 0;
 		WCHAR linkPath[512] = { 0 };
 		DWORD size = sizeof(linkPath) - sizeof(WCHAR);
 		auto error = ::RegQueryValueEx(hLinkKey, L"SymbolicLinkValue", nullptr, &type, (BYTE*)linkPath, &size);
+		::RegCloseKey(hLinkKey);
 		if (type == REG_LINK) {
 			// link
 			link = linkPath;
@@ -345,9 +409,17 @@ bool Registry::CopyValue(HKEY hSource, HKEY hTarget, PCWSTR sourceName, PCWSTR t
 }
 
 DWORD Registry::GetSubKeyCount(HKEY hKey, DWORD* values, FILETIME* ft) {
-	DWORD subkeys;
+	DWORD subkeys = 0;
 	auto error = ::RegQueryInfoKey(hKey, nullptr, 0, nullptr, &subkeys, nullptr, nullptr, values, nullptr, nullptr, nullptr, ft);
 	::SetLastError(error);
 	return subkeys;
 }
 
+bool Registry::IsKeyValid(HKEY h) {
+	if (h == nullptr)
+		return true;
+
+	WCHAR name[16];
+	DWORD type, lname = _countof(name);
+	return ::RegEnumValue(h, 0, name, &lname, nullptr, &type, nullptr, nullptr) != ERROR_INVALID_HANDLE;
+}

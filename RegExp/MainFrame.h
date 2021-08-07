@@ -23,6 +23,7 @@ enum class NodeType {
 	Loaded = 0x100,
 	Machine = 0x200,
 	AccessDenied = 0x400,
+	RemoteRegistry = 0x800,
 };
 DEFINE_ENUM_FLAG_OPERATORS(NodeType);
 
@@ -58,6 +59,7 @@ public:
 	bool GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) override;
 	BOOL TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y) override;
 	CString GetCurrentKeyPath() override;
+	void DisplayError(PCWSTR msg, DWORD error = ::GetLastError()) const;
 
 	CString GetColumnText(HWND, int row, int col) const;
 
@@ -116,6 +118,8 @@ public:
 		COMMAND_ID_HANDLER(ID_EDIT_ADDRESSBAR, OnEditAddressBar)
 		COMMAND_ID_HANDLER(ID_FILE_EXPORT, OnExport)
 		COMMAND_ID_HANDLER(ID_FILE_IMPORT, OnImport)
+		COMMAND_ID_HANDLER(ID_FILE_CONNECTREMOTEREGISTRY, OnConnectRemote)
+		COMMAND_ID_HANDLER(ID_FILE_DISCONNECT, OnDisconnectRemote)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAbout)
 		COMMAND_ID_HANDLER(ID_OPTIONS_REPLACEREGEDIT, OnReplaceRegEdit)
 		COMMAND_ID_HANDLER(ID_OPTIONS_DARKMODE, OnDarkMode)
@@ -234,13 +238,13 @@ private:
 	LRESULT OnViewAddressBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnViewToolBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnViewStatusBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnConnectRemote(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnDisconnectRemote(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
 	HTREEITEM BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name = nullptr);
 	void InitTree();
-	CString GetNodePath(HTREEITEM hItem, HKEY* pKey = nullptr) const;
-	CString GetParentNodePath(HTREEITEM hItem, HKEY* pKey = nullptr) const;
 	CString GetFullNodePath(HTREEITEM hItem) const;
 	CString GetFullParentNodePath(HTREEITEM hItem) const;
 	NodeType GetNodeData(HTREEITEM hItem) const;
@@ -254,11 +258,10 @@ private:
 	CString GetKeyDetails(const RegistryItem& item) const;
 	CString GetValueDetails(const RegistryItem& item) const;
 	bool RefreshItem(HTREEITEM hItem);
-	void DisplayError(PCWSTR msg, DWORD error = ::GetLastError());
 	void DisplayBackupRestorePrivilegeError();
 	static CString GetErrorText(DWORD error);
 	int GetKeyImage(const RegistryItem& item) const;
-	INT_PTR ShowValueProperties(RegistryItem& item);
+	INT_PTR ShowValueProperties(RegistryItem& item, int index);
 	void SetDarkMode(bool dark);
 	HTREEITEM GotoKey(const CString& path);
 	void ShowBand(int index, bool show);
@@ -271,7 +274,7 @@ private:
 
 	CommandManager m_CmdMgr;
 	LocalClipboard m_Clipboard;
-	mutable CRegKey m_CurrentKey;
+	mutable RegistryKey m_CurrentKey;
 	CString m_CurrentPath;
 	CSplitterWindow m_MainSplitter;
 	CMultiPaneStatusBarCtrl m_StatusBar;

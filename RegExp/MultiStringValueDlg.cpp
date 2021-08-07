@@ -2,7 +2,7 @@
 #include "resource.h"
 #include "MultiStringValueDlg.h"
 
-CMultiStringValueDlg::CMultiStringValueDlg(CRegKey& key, PCWSTR name, bool readOnly) : m_Key(key), m_Name(name), m_ReadOnly(readOnly) {
+CMultiStringValueDlg::CMultiStringValueDlg(RegistryKey& key, PCWSTR name, bool readOnly) : m_Key(key), m_Name(name), m_ReadOnly(readOnly) {
 }
 
 const CString& CMultiStringValueDlg::GetValue() const {
@@ -25,7 +25,7 @@ LRESULT CMultiStringValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 		ZeroMemory(buffer.get(), chars * sizeof(WCHAR));
 		DWORD type;
 		auto len = chars * 2;
-		if (ERROR_SUCCESS != ::RegQueryValueEx(m_Key, m_Name, nullptr, &type, (PBYTE)buffer.get(), &len)) {
+		if (ERROR_SUCCESS != ::RegQueryValueEx(m_Key.Get(), m_Name, nullptr, &type, (PBYTE)buffer.get(), &len)) {
 			EndDialog(IDRETRY);
 			return 0;
 		}

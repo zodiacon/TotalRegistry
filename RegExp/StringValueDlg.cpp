@@ -2,7 +2,7 @@
 #include "resource.h"
 #include "StringValueDlg.h"
 
-CStringValueDlg::CStringValueDlg(CRegKey& key, PCWSTR name, bool readOnly) : m_Key(key), m_Name(name), m_ReadOnly(readOnly) {
+CStringValueDlg::CStringValueDlg(RegistryKey& key, PCWSTR name, bool readOnly) : m_Key(key), m_Name(name), m_ReadOnly(readOnly) {
 }
 
 const CString& CStringValueDlg::GetValue() const {

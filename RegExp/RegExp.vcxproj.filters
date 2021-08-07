@@ -150,6 +150,12 @@
     <ClInclude Include="EnumStrings.h">
       <Filter>Helpers</Filter>
     </ClInclude>
+    <ClInclude Include="ConnectRegistryDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="RegistryKey.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -252,6 +258,12 @@
       <Filter>Dialogs</Filter>
     </ClCompile>
     <ClCompile Include="EnumStrings.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="ConnectRegistryDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="RegistryKey.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
   </ItemGroup>
@@ -395,6 +407,9 @@
       <Filter>Resource Files\Icons</Filter>
     </Image>
     <Image Include="Icons\check.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\regremote.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
   </ItemGroup>

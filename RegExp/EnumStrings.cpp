@@ -22,7 +22,7 @@ bool CEnumStrings::GenerateStrings(const CString& path) {
     auto key = Registry::OpenKey(path, KEY_READ);
     if (!key)
         return false;
-    Registry::EnumSubKeys(key, [&](auto name, const auto&) {
+    Registry::EnumSubKeys(key.Get(), [&](auto name, const auto&) {
         _strings.push_back(path + name);
         return TRUE;
         });

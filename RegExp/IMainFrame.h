@@ -11,4 +11,5 @@ struct IMainFrame abstract {
 	virtual CString GetCurrentKeyPath() = 0;
 	virtual BOOL TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y) = 0;
 	virtual HWND GetHwnd() const = 0;
+	virtual void DisplayError(PCWSTR text, DWORD err = ::GetLastError()) const = 0;
 };

@@ -11,7 +11,7 @@ bool RenameValueCommand::Execute() {
 	if (!key)
 		return false;
 
-	if (Registry::RenameValue(key, nullptr, _name, _newName)) {
+	if (Registry::RenameValue(key.Get(), nullptr, _name, _newName)) {
 		if (!InvokeCallback(true))
 			return false;
 		std::swap(_name, _newName);

@@ -4,6 +4,7 @@
 #include "HexControl.h"
 #include "MemoryBuffer.h"
 #include "IMainFrame.h"
+#include "RegistryKey.h"
 
 class CBinaryValueDlg :
 	public CDialogImpl<CBinaryValueDlg>,
@@ -14,7 +15,7 @@ public:
 	enum { IDD = IDD_BINVALUE };
 	enum { ID_DATA_BYTE = 500, ID_LINE = 520 };
 
-	CBinaryValueDlg(CRegKey& key, PCWSTR name, bool readOnly, IMainFrame* frame);
+	CBinaryValueDlg(RegistryKey& key, PCWSTR name, bool readOnly, IMainFrame* frame);
 
 	const std::vector<BYTE>& GetValue() const;
 	bool IsModified() const;
@@ -52,7 +53,7 @@ private:
 	LRESULT OnToolBarDropdown(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnBytesPerLine(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
-	CRegKey& m_Key;
+	RegistryKey& m_Key;
 	CString m_Name;
 	CHexControl m_Hex;
 	MemoryBuffer m_Buffer;

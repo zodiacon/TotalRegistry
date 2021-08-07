@@ -3,7 +3,7 @@
 #include "BinaryValueDlg.h"
 #include "Helpers.h"
 
-CBinaryValueDlg::CBinaryValueDlg(CRegKey& key, PCWSTR name, bool readOnly, IMainFrame* frame)
+CBinaryValueDlg::CBinaryValueDlg(RegistryKey& key, PCWSTR name, bool readOnly, IMainFrame* frame)
 	: m_Key(key), m_Name(name), m_ReadOnly(readOnly), m_pFrame(frame) {
 }
 

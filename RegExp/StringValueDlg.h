@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DialogHelper.h"
+#include "RegistryKey.h"
 
 class CStringValueDlg :
 	public CDialogImpl<CStringValueDlg>,
@@ -9,7 +10,7 @@ class CStringValueDlg :
 public:
 	enum { IDD = IDD_STRINGVALUE };
 
-	CStringValueDlg(CRegKey& key, PCWSTR name, bool readOnly);
+	CStringValueDlg(RegistryKey& key, PCWSTR name, bool readOnly);
 
 	const CString& GetValue() const;
 	DWORD GetType() const;
@@ -36,7 +37,7 @@ private:
 	LRESULT OnBrowseFile(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnBrowseFolder(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
-	CRegKey& m_Key;
+	RegistryKey& m_Key;
 	CString m_Name;
 	CString m_Value;
 	DWORD m_Type{ 0 };

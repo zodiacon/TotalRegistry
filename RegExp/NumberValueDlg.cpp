@@ -3,7 +3,7 @@
 #include "NumberValueDlg.h"
 #include "Helpers.h"
 
-CNumberValueDlg::CNumberValueDlg(CRegKey& key, PCWSTR name, DWORD type, bool readOnly) 
+CNumberValueDlg::CNumberValueDlg(RegistryKey& key, PCWSTR name, DWORD type, bool readOnly) 
 	: m_Key(key), m_Name(name), m_Type(type), m_ReadOnly(readOnly) {
 }
 

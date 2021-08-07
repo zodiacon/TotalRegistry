@@ -1,25 +1,24 @@
 #pragma once
 
 #include "DialogHelper.h"
-#include "RegistryKey.h"
+#include "IMainFrame.h"
 
-class CMultiStringValueDlg :
-	public CDialogImpl<CMultiStringValueDlg>,
-	public CDialogHelper<CMultiStringValueDlg>,
-	public CDynamicDialogLayout<CMultiStringValueDlg> {
+class CConnectRegistryDlg :
+	public CDialogImpl<CConnectRegistryDlg>,
+	public CDialogHelper<CConnectRegistryDlg> {
 public:
-	enum { IDD = IDD_MULTISTRVALUE };
+	enum { IDD = IDD_CONNECTREG };
 
-	CMultiStringValueDlg(RegistryKey& key, PCWSTR name, bool readOnly);
+	CConnectRegistryDlg(IMainFrame* frame) : m_pFrame(frame) {}
 
-	const CString& GetValue() const;
-	bool IsModified() const;
+	const CString& GetComputerName() const;
 
-	BEGIN_MSG_MAP(CMultiStringValueDlg)
+	BEGIN_MSG_MAP(CConnectRegistryDlg)
 		MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
 		COMMAND_ID_HANDLER(IDOK, OnCloseCmd)
 		COMMAND_ID_HANDLER(IDCANCEL, OnCloseCmd)
-		CHAIN_MSG_MAP(CDynamicDialogLayout<CMultiStringValueDlg>)
+		COMMAND_CODE_HANDLER(EN_CHANGE, OnTextChanged)
+		COMMAND_ID_HANDLER(IDC_BROWSE, OnBrowse)
 		REFLECT_NOTIFICATIONS_EX()
 	END_MSG_MAP()
 
@@ -31,10 +30,9 @@ public:
 private:
 	LRESULT OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnCloseCmd(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnTextChanged(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnBrowse(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
-	RegistryKey& m_Key;
 	CString m_Name;
-	CString m_Value;
-	bool m_ReadOnly;
-	bool m_Modified{ false };
+	IMainFrame* m_pFrame;
 };

@@ -165,10 +165,10 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 					return false;
 			}
 		}
-		CRegKey subKey;
+		RegistryKey subKey;
 		subKey.Open(hKey, name, KEY_READ);
 		if (subKey)
-			FindNextWorker(subKey, path + (path.IsEmpty() ? L"" : L"\\") + name);
+			FindNextWorker(subKey.Get(), path + (path.IsEmpty() ? L"" : L"\\") + name);
 		if (_cancel)
 			return false;
 		return true;
@@ -206,7 +206,7 @@ DWORD RegistrySearcher::DoSearch() {
 		FindNextWorker(Registry::OpenRealRegistryKey(), L"\\REGISTRY");
 	}
 	if (!_cancel && (_options & FindOptions::SearchSelected) == FindOptions::SearchSelected) {
-		FindNextWorker(Registry::OpenKey(_startKey, KEY_READ), _startKey);
+		FindNextWorker(Registry::OpenKey(_startKey, KEY_READ).Get(), _startKey);
 	}
 
 	_cb(nullptr, nullptr, nullptr);

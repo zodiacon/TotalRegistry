@@ -19,7 +19,7 @@ bool CopyKeyCommand::Execute() {
 	if (!targetKey)
 		return false;
 
-	if (!Registry::CopyKey(key, nullptr, targetKey))
+	if (!Registry::CopyKey(key.Get(), nullptr, targetKey))
 		return false;
 
 	return InvokeCallback(true);
@@ -31,7 +31,7 @@ bool CopyKeyCommand::Undo() {
 		return false;
 
 	LSTATUS error;
-	if (ERROR_SUCCESS != (error = ::RegDeleteTree(key, _name))) {
+	if (ERROR_SUCCESS != (error = ::RegDeleteTree(key.Get(), _name))) {
 		::SetLastError(error);
 		return false;
 	}

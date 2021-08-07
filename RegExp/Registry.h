@@ -1,5 +1,7 @@
 #pragma once
 
+#include "RegistryKey.h"
+
 struct Hive {
 	std::wstring Key;
 	std::wstring Path;
@@ -14,6 +16,11 @@ struct RegistryItem {
 	bool Key : 1 { false };
 };
 
+struct RemoteRegistry {
+	HKEY hLocal, hUsers;
+	CString ComputerName;
+};
+
 const DWORD REG_KEY = 0x1111;
 const DWORD REG_KEY_UP = 0x1112;
 
@@ -23,7 +30,7 @@ struct Registry abstract final {
 	static CString QueryStringValue(CRegKey& key, PCWSTR name);
 	static CString StdRegPathToRealPath(const CString& path);
 	static PCWSTR GetRegTypeAsString(DWORD type);
-	static CString GetDataAsString(CRegKey& key, const RegistryItem& item);
+	static CString GetDataAsString(RegistryKey& key, const RegistryItem& item);
 	static HKEY OpenRealRegistryKey(PCWSTR path = nullptr, DWORD access = KEY_READ);
 	static HKEY CreateRealRegistryKey(PCWSTR path, DWORD access = KEY_READ);
 	static bool RenameKey(HKEY hKey, PCWSTR name, PCWSTR newName);
@@ -32,13 +39,17 @@ struct Registry abstract final {
 	static bool CopyValue(HKEY hSource, HKEY hTarget, PCWSTR sourceName, PCWSTR targetName);
 	static DWORD GetSubKeyCount(HKEY hKey, DWORD* values = 0, FILETIME* ft = nullptr);
 
-	static CRegKey OpenKey(const CString& path, DWORD access, bool* root = nullptr);
+	static RegistryKey OpenKey(const CString& path, DWORD access, bool* root = nullptr);
 	static CRegKey CreateKey(const CString& path, DWORD access);
 	static bool IsKeyLink(HKEY hKey, PCWSTR path, CString& linkPath);
 	static CString ExpandStrings(const CString& text);
 
+	static bool ConnectRegistry(PCWSTR computerName);
+	static bool Disconnect(PCWSTR computerName);
+
 	static const std::vector<Hive>& GetHiveList(bool refresh = false);
 	static bool IsHiveKey(const CString& path);
+	static bool IsKeyValid(HKEY h);
 
 	static inline const struct {
 		PCWSTR text;
@@ -56,5 +67,6 @@ struct Registry abstract final {
 	};
 
 private:
+	inline static std::map<CString, RemoteRegistry> _remotes;
 	inline static std::vector<Hive> _hives;
 };

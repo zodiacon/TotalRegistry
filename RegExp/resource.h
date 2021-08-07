@@ -61,6 +61,8 @@
 #define IDD_TEST                        170
 #define IDI_ICON1                       171
 #define IDI_CHECK                       171
+#define IDI_REGREMOTE                   172
+#define IDD_CONNECTREG                  173
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
@@ -162,15 +164,17 @@
 #define ID_VIEW_ADDRESSBAR              32860
 #define ID_EDIT_ADDRESSBAR              32861
 #define ID_BOOKMARKS_BOOKMARKS          32864
+#define ID_FILE_CONNECTREMOTEREGISTRY   32865
+#define ID_FILE_DISCONNECT              32866
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        172
-#define _APS_NEXT_COMMAND_VALUE         32865
-#define _APS_NEXT_CONTROL_VALUE         1048
+#define _APS_NEXT_RESOURCE_VALUE        174
+#define _APS_NEXT_COMMAND_VALUE         32867
+#define _APS_NEXT_CONTROL_VALUE         1049
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif
