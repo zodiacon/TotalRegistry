@@ -16,7 +16,7 @@ Replacement for the Windows built-in *Regedit.exe* tool. Improvements over that 
 
 ## Build instructions
 
-Build the solution file with Visual Studio 2022 preview. Can be built with Visual Studio 2019 as well (change toolset to v142).
+Build the solution file with Visual Studio 2022 preview. Can be built with Visual Studio 2019 as well (change toolset to v142 and C++ compiler version to C++ latest).
 
 ![](https://github.com/zodiacon/RegExp/blob/master/regexp1.png)
 
