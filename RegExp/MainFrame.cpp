@@ -26,12 +26,15 @@
 #include "GotoKeyDlg.h"
 #include "ThemeHelper.h"
 #include "ConnectRegistryDlg.h"
+#include "Helpers.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
 		return TRUE;
 
-	if (::GetFocus() == m_AddressBar)
+	auto hFocus = ::GetFocus();
+	WCHAR name[8];
+	if (hFocus == m_AddressBar || (::GetClassName(hFocus, name, _countof(name)) && ::_wcsicmp(name, L"EDIT") == 0))
 		return FALSE;
 
 	if (CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg))
@@ -143,7 +146,7 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 	CString text;
 	switch (static_cast<ColumnType>(GetColumnManager(h)->GetColumnTag(col))) {
 		case ColumnType::Name:
-			return item.Name.IsEmpty() ? CString(L"(Default)") : item.Name;
+			return item.Name.IsEmpty() ? CString(Helpers::DefaultValueName) : item.Name;
 
 		case ColumnType::Type:
 			return Registry::GetRegTypeAsString(item.Type);
@@ -310,7 +313,6 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	CToolBarCtrl tb;
 	tb.Create(m_hWnd, nullptr, nullptr, ATL_SIMPLE_TOOLBAR_PANE_STYLE, 0, ATL_IDW_TOOLBAR);
-	::SetWindowTheme(tb, L" ", L"");
 	COLORSCHEME cs = { sizeof(cs) };
 	cs.clrBtnHighlight = RGB(200, 200, 200);
 	cs.clrBtnShadow = RGB(0, 0, 255);
@@ -1362,13 +1364,18 @@ LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled
 
 		case Operation::CreateValue:
 		{
+			CString text(lv->item.pszText);
+			if (text.IsEmpty()) {
+				// default value
+				int zz = 9;
+			}
 			auto cb = [this](auto cmd, auto) {
 				if (m_CurrentOperation == Operation::None && cmd.GetPath() == GetFullNodePath(m_Tree.GetSelectedItem())) {
 					UpdateList(true);
 				}
 				return true;
 			};
-			cmd = std::make_shared<CreateValueCommand>(path, lv->item.pszText, item.Type, cb);
+			cmd = std::make_shared<CreateValueCommand>(path, text, item.Type, cb);
 			break;
 		}
 
@@ -1436,14 +1443,12 @@ void CMainFrame::InitCommandBar() {
 		{ ID_FILE_LOADHIVE, IDI_FOLDER_LOAD },
 		{ ID_KEY_GOTO, IDI_GOTO },
 		{ ID_FILE_CONNECTREMOTEREGISTRY, IDI_REGREMOTE },
+		{ ID_NEW_DWORDVALUE, IDI_NUM4 },
+		{ ID_NEW_BINARYVALUE, IDI_BINARY },
+		{ ID_NEW_QWORDVALUE, IDI_NUM8 },
+		{ ID_NEW_STRINGVALUE, IDI_TEXT },
 	};
 	for (auto& cmd : cmds) {
-		//HICON hIcon = cmd.hIcon;
-		//if (!hIcon) {
-		//	hIcon = AtlLoadIconImage(cmd.icon, 0, 16, 16);
-		//	ATLASSERT(hIcon);
-		//}
-		//m_CmdBar.AddIcon(cmd.icon ? hIcon : cmd.hIcon, cmd.id);
 		if (cmd.icon)
 			m_Menu.AddCommand(cmd.id, cmd.icon);
 		else

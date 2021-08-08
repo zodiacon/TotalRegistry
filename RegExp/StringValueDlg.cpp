@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "resource.h"
 #include "StringValueDlg.h"
+#include "Helpers.h"
 
 CStringValueDlg::CStringValueDlg(RegistryKey& key, PCWSTR name, bool readOnly) : m_Key(key), m_Name(name), m_ReadOnly(readOnly) {
 }
@@ -45,7 +46,7 @@ LRESULT CStringValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	else {
 		::SHAutoComplete(GetDlgItem(IDC_VALUE), SHACF_FILESYS_DIRS);
 	}
-	SetDlgItemText(IDC_NAME, m_Name);
+	SetDlgItemText(IDC_NAME, m_Name.IsEmpty() ? Helpers::DefaultValueName : m_Name);
 
 	return 0;
 }

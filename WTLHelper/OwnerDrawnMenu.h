@@ -87,7 +87,7 @@ public:
 				mii.dwItemData = 100;
 			else
 				mii.dwItemData = 0;
-			mii.fType = MFT_OWNERDRAW;
+			mii.fType |= MFT_OWNERDRAW;
 			ATLVERIFY(menu.SetMenuItemInfo(i, TRUE, &mii));
 			mii.fMask = MIIM_SUBMENU | MIIM_ID;
 			if (menu.GetMenuItemInfo(i, TRUE, &mii) && mii.hSubMenu) {
@@ -142,13 +142,16 @@ public:
 			return;
 		}
 
+		bool enabled = (dis->itemState & (ODS_DISABLED | ODS_GRAYED)) == 0;
+
 		dc.FillSolidRect(&rc, (dis->itemState & ODS_SELECTED) ? m_SelectionBackColor : m_BackColor);
+		rc.OffsetRect(2, 2);
+		rc.right = rc.left + 16;
+		rc.bottom = rc.top + 16;
+
 		auto it = m_Items.find(dis->itemID);
 		if (it != m_Items.end()) {
 			auto& data = it->second;
-			rc.OffsetRect(2, 2);
-			rc.right = rc.left + 16;
-			rc.bottom = rc.top + 16;
 			if (data.Image >= 0) {
 				m_Images.DrawEx(data.Image, dis->hDC, rc, CLR_NONE, CLR_NONE, ILD_NORMAL);
 				if (dis->itemState & ODS_CHECKED) {
@@ -163,11 +166,31 @@ public:
 				m_Images.DrawEx(0, dis->hDC, rc, CLR_NONE, CLR_NONE, ILD_NORMAL);
 			}
 		}
+		else if (dis->itemState & ODS_CHECKED) {
+			// draw a checkmark
+			m_Images.DrawEx(0, dis->hDC, rc, CLR_NONE, CLR_NONE, ILD_NORMAL);
+		}
 		CMenuHandle menu((HMENU)dis->hwndItem);
 		ATLASSERT(menu.IsMenu());
 		MENUITEMINFO mii = { sizeof(mii) };
-		mii.fMask = MIIM_FTYPE | MIIM_STRING;
-		mii.fType = MFT_STRING;
+		mii.fMask = MIIM_SUBMENU;
+		if (dis->itemData != TopLevelMenu && menu.GetMenuItemInfo(dis->itemID, FALSE, &mii) && mii.hSubMenu) {
+			CRect rc(dis->rcItem);
+			rc.DeflateRect(10, 6);
+			rc.left = rc.right - 10;
+			if (enabled) {
+				HBRUSH brush = ::GetSysColorBrush(COLOR_GRAYTEXT);
+				POINT pt[] = { { rc.left, rc.top }, { rc.left, rc.bottom }, { rc.right, rc.top + rc.Height() / 2 } };
+				CPen pen;
+				pen.CreatePen(PS_SOLID, 1, m_TextColor);
+				dc.SelectPen(pen);
+				dc.SelectBrush(brush);
+				dc.Polygon(pt, _countof(pt));
+				rc.right = dis->rcItem.right;
+			}
+			dc.ExcludeClipRect(&rc);
+		}
+
 		WCHAR mtext[64];
 		auto text = m_pT->UIGetText(dis->itemID);
 		if (text == nullptr)

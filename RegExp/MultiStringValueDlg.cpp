@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "resource.h"
 #include "MultiStringValueDlg.h"
+#include "Helpers.h"
 
 CMultiStringValueDlg::CMultiStringValueDlg(RegistryKey& key, PCWSTR name, bool readOnly) : m_Key(key), m_Name(name), m_ReadOnly(readOnly) {
 }
@@ -40,7 +41,7 @@ LRESULT CMultiStringValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	if (m_ReadOnly) {
 		((CEdit)GetDlgItem(IDC_VALUE)).SetReadOnly(TRUE);
 	}
-	SetDlgItemText(IDC_NAME, m_Name);
+	SetDlgItemText(IDC_NAME, m_Name.IsEmpty() ? Helpers::DefaultValueName : m_Name);
 
 	return 0;
 }

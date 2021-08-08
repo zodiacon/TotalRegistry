@@ -60,7 +60,7 @@ LRESULT CNumberValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	ATLASSERT(m_Type == type);
 	SetDialogIcon(m_Type == REG_DWORD ? IDI_NUM4 : IDI_NUM8);
 	SetWindowText(m_Type == REG_DWORD ? L"DWORD Value" : L"QWORD Value");
-	SetDlgItemText(IDC_NAME, m_Name);
+	SetDlgItemText(IDC_NAME, m_Name.IsEmpty() ? Helpers::DefaultValueName : m_Name);
 	DisplayValue(m_Value);
 
 	if (m_ReadOnly)

@@ -47,7 +47,7 @@ CString CFindAllDlg::GetColumnText(HWND, int row, int col) const {
         case 1:
             if (item.Data.IsEmpty())
                 return item.Name;
-            return item.Name.IsEmpty() ? CString(L"(Default)") : item.Name;
+            return item.Name.IsEmpty() ? CString(Helpers::DefaultValueName) : item.Name;
 
         case 2: return item.Data;
     };
