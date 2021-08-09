@@ -83,12 +83,19 @@ public:
 		WCHAR text[64];
 		for (decltype(count) i = 0; i < count; i++) {
 			mii.fMask = MIIM_TYPE | MIIM_DATA;
+			mii.fType = 0;
 			if (menu.GetMenuItemInfoW(i, TRUE, &mii) && mii.fType == MFT_SEPARATOR)
-				mii.dwItemData = 100;
+				mii.dwItemData = Separator;
 			else
 				mii.dwItemData = 0;
+			if (mii.fType & MFT_OWNERDRAW)
+				continue;
+
 			mii.fType |= MFT_OWNERDRAW;
 			ATLVERIFY(menu.SetMenuItemInfo(i, TRUE, &mii));
+			if (mii.dwItemData == Separator)
+				continue;
+
 			mii.fMask = MIIM_SUBMENU | MIIM_ID;
 			if (menu.GetMenuItemInfo(i, TRUE, &mii) && mii.hSubMenu) {
 				AddSubMenu(mii.hSubMenu);
@@ -191,7 +198,7 @@ public:
 			dc.ExcludeClipRect(&rc);
 		}
 
-		WCHAR mtext[64];
+		WCHAR mtext[256];
 		auto text = m_pT->UIGetText(dis->itemID);
 		if (text == nullptr)
 			if (menu.GetMenuString(dis->itemID, mtext, _countof(mtext), MF_BYCOMMAND))

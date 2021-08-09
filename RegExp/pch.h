@@ -28,6 +28,7 @@ extern CAppModule _Module;
 #include <atltime.h>
 #include <atlsecurity.h>
 #include <atltheme.h>
+#include <atldwm.h>
 #include <algorithm>
 #include <vector>
 #include <functional>

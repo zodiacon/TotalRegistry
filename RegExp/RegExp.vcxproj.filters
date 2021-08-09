@@ -156,6 +156,9 @@
     <ClInclude Include="RegistryKey.h">
       <Filter>Helpers</Filter>
     </ClInclude>
+    <ClInclude Include="LocationManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -265,6 +268,9 @@
     </ClCompile>
     <ClCompile Include="RegistryKey.cpp">
       <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="LocationManager.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

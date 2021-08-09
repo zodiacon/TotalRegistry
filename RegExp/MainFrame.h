@@ -11,6 +11,7 @@
 #include "DeleteValueCommand.h"
 #include "OwnerDrawnMenu.h"
 #include "Theme.h"
+#include "LocationManager.h"
 
 enum class NodeType {
 	None = 0,
@@ -31,6 +32,7 @@ class CMainFrame :
 	public CFrameWindowImpl<CMainFrame>,
 	public CAutoUpdateUI<CMainFrame>,
 	public CVirtualListView<CMainFrame>,
+	public CDwmImpl<CMainFrame>,
 	public IMainFrame,
 	public CMessageFilter,
 	public CIdleHandler {
@@ -69,8 +71,13 @@ public:
 	BOOL OnRightClickList(HWND, int row, int col, const POINT&);
 	BOOL OnDoubleClickList(HWND, int row, int col, const POINT& pt);
 
+	enum {
+		ID_LOCATION_FIRST = 1500
+	};
+
 	BEGIN_MSG_MAP(CMainFrame)
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
+//		MESSAGE_HANDLER(WM_NCPAINT, OnNcPaint)
 		NOTIFY_CODE_HANDLER(NM_SETFOCUS, OnFocusChanged)
 		NOTIFY_CODE_HANDLER(TVN_ITEMEXPANDING, OnTreeItemExpanding)
 		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnTreeSelChanged)
@@ -111,7 +118,7 @@ public:
 		COMMAND_ID_HANDLER(ID_COPY_FULLNAME, OnCopyFullKeyName)
 		COMMAND_ID_HANDLER(ID_COPY_NAME, OnCopyKeyName)
 		COMMAND_ID_HANDLER(ID_SEARCH_FINDALL, OnFindAll)
-		COMMAND_RANGE_HANDLER(ID_LOCATIONS_SERVICES, ID_LOCATIONS_SERVICES + 15, OnKnownLocation)
+		COMMAND_RANGE_HANDLER(ID_LOCATION_FIRST, ID_LOCATION_FIRST + 49, OnKnownLocation)
 		COMMAND_ID_HANDLER(ID_KEY_PERMISSIONS, OnKeyPermissions)
 		COMMAND_ID_HANDLER(ID_KEY_PROPERTIES, OnProperties)
 		COMMAND_ID_HANDLER(ID_KEY_GOTO, OnGotoKey)
@@ -182,6 +189,7 @@ private:
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnTimer(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnNcPaint(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnShowWindow(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnMenuSelect(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnFindUpdate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
@@ -266,6 +274,7 @@ private:
 	HTREEITEM GotoKey(const CString& path);
 	void ShowBand(int index, bool show);
 	void InitDarkTheme();
+	void InitLocations();
 
 	AppCommandCallback<DeleteKeyCommand> GetDeleteKeyCommandCallback();
 
@@ -273,6 +282,7 @@ private:
 	void UpdateList(bool force = false);
 
 	CommandManager m_CmdMgr;
+	LocationManager m_Locations;
 	LocalClipboard m_Clipboard;
 	mutable RegistryKey m_CurrentKey;
 	CString m_CurrentPath;

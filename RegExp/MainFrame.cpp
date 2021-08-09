@@ -27,6 +27,8 @@
 #include "ThemeHelper.h"
 #include "ConnectRegistryDlg.h"
 #include "Helpers.h"
+#define __cpp_lib_format
+#include <format>
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -273,9 +275,11 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp"))
 		m_ReadOnly = m_Settings.ReadOnly();
+	m_Locations.LoadFromRegistry(L"Software\\ScorpioSoftware\\RegExp");
 
 	InitDarkTheme();
 	ThemeHelper::SetCurrentTheme(m_Settings.DarkMode() ? m_DarkTheme : m_DefaultTheme);
+	InitLocations();
 
 	m_hSingleInstMutex = ::CreateMutex(nullptr, FALSE, L"RegExpSingleInstanceMutex");
 	if (m_Settings.SingleInstance() && m_hSingleInstMutex) {
@@ -450,6 +454,20 @@ LRESULT CMainFrame::OnTimer(UINT, WPARAM id, LPARAM, BOOL&) {
 		KillTimer(2);
 		UpdateList();
 	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnNcPaint(UINT, WPARAM wp, LPARAM, BOOL&) {
+	//DefWindowProc();
+	CWindowDC dc(m_hWnd);
+	CRect rc;
+	GetWindowRect(&rc);
+	rc.top = ::GetSystemMetrics(SM_CYDLGFRAME);
+	rc.bottom = rc.top + ::GetSystemMetrics(SM_CYCAPTION);
+	rc.left = ::GetSystemMetrics(SM_CXDLGFRAME);
+	rc.right = rc.Width() + rc.left;
+	::DrawCaption(m_hWnd, dc.m_hDC, &rc, DC_ACTIVE | DC_BUTTONS | DC_ICON | DC_GRADIENT | DC_TEXT);
+
 	return 0;
 }
 
@@ -944,34 +962,20 @@ LRESULT CMainFrame::OnCopyKeyName(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnKnownLocation(WORD, WORD id, HWND, BOOL&) {
-	static const struct {
-		UINT id;
-		PCWSTR path;
-	} locations[] = {
-		{ ID_LOCATIONS_SERVICES, L"HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Services" },
-		{ ID_LOCATIONS_HARDWARE, L"HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Enum" },
-		{ ID_LOCATIONS_CLASS, L"HKEY_LOCAL_MACHINE\\System\\CurrentControlSet\\Control\\Class" },
-		{ ID_LOCATIONS_HIVELIST, L"HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\hivelist" },
-		{ ID_LOCATIONS_IMAGEFILEEXECUTIONOPTIONS, L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options" },
-	};
-
-	for (auto& loc : locations) {
-		if (loc.id == id) {
-			TreeHelper th(m_Tree);
-			auto hItem = th.FindItem(m_hStdReg, loc.path);
-			if (hItem) {
-				m_Tree.EnsureVisible(hItem);
-				m_Tree.SelectItem(hItem);
-			}
-			else {
-				CString text;
-				text.Format(L"Location %s not found", loc.path);
-				AtlMessageBox(m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_ICONWARNING);
-			}
-			return 0;
-		}
+	CString name;
+	auto menu = (CMenuHandle)GetMenu();
+	menu.GetMenuString(id, name.GetBufferSetLength(256), 256, MF_BYCOMMAND);
+	auto path = m_Locations.GetPathByName(name);
+	TreeHelper th(m_Tree);
+	auto hItem = th.FindItem(m_hStdReg, path);
+	if (hItem) {
+		m_Tree.EnsureVisible(hItem);
+		m_Tree.SelectItem(hItem);
 	}
-	AtlMessageBox(m_hWnd, L"Location not implemented", IDS_APP_TITLE, MB_ICONINFORMATION);
+	else {
+		AtlMessageBox(m_hWnd, std::format(L"Location {} not found", name).c_str(), IDS_APP_TITLE, MB_ICONWARNING);
+		return 0;
+	}
 	return 0;
 }
 
@@ -2015,6 +2019,62 @@ void CMainFrame::InitDarkTheme() {
 	m_DarkTheme.Name = L"Dark";
 	m_DarkTheme.Menu.BackColor = m_DarkTheme.BackColor;
 	m_DarkTheme.Menu.TextColor = m_DarkTheme.TextColor;
+}
+
+void CMainFrame::InitLocations() {
+	CMenuHandle menu = GetMenu();
+	menu = menu.GetSubMenu(6);
+	while (menu.DeleteMenu(2, MF_BYPOSITION))
+		;
+
+	if (m_Locations.GetCount() == 0) {
+		const struct {
+			PCWSTR name;
+			PCWSTR path;
+		} locations[] = {
+			{ L"Services", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services)" },
+			{ L"Hardware", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Enum)" },
+			{ L"Device Classes", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Class)" },
+			{ L"Hive List", LR"(HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\hivelist)" },
+			{ L"Image File Execution Options", LR"(HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shell)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shellex)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\AllFileSystemObjects\ShellEx\ContextMenuHandlers)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shell)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shellex\ContextMenuHandlers)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\shell)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shell)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shellex\ContextMenuHandlers)" }
+		};
+		for (const auto& [name, path] : locations)
+			m_Locations.Add(name, path);
+		m_Locations.SaveToRegistry();
+	}
+
+	int i = 0;
+	CMenuHandle hSubMenu{ nullptr };
+	std::vector<std::pair<CString, CString>> replace;
+	for (auto& [name, _] : m_Locations) {
+		auto slash = name.Find(L'/');
+		if (slash >= 0) {
+			if (!hSubMenu) {
+				hSubMenu.CreatePopupMenu();
+				menu.AppendMenu(MF_POPUP, hSubMenu, name.Left(slash));
+			}
+			auto name2 = name.Mid(slash + 1);
+			hSubMenu.AppendMenu(MF_BYPOSITION, ID_LOCATION_FIRST + i, name2);
+			replace.push_back({ name, name2 });
+		}
+		else if(hSubMenu) {
+			hSubMenu.Detach();
+		}
+		if(!hSubMenu)
+			menu.AppendMenu(MF_BYPOSITION, ID_LOCATION_FIRST + i, name);
+		i++;
+	}
+
+	for (auto& r : replace)
+		m_Locations.Replace(r.first, r.second);
 }
 
 AppCommandCallback<DeleteKeyCommand> CMainFrame::GetDeleteKeyCommandCallback() {
