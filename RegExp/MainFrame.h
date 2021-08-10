@@ -136,6 +136,7 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_ADDRESSBAR, OnViewAddressBar)
 		COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
 		COMMAND_ID_HANDLER(ID_VIEW_STATUSBAR, OnViewStatusBar)
+		COMMAND_ID_HANDLER(ID_OPTIONS_FONT, OnOptionsFont)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
@@ -248,6 +249,7 @@ private:
 	LRESULT OnViewStatusBar(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnConnectRemote(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnDisconnectRemote(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnOptionsFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -304,6 +306,7 @@ private:
 	CString m_StartKey;
 	CComObject<CEnumStrings>* m_AutoCompleteStrings{ nullptr };
 	Theme m_DarkTheme, m_DefaultTheme{ true };
+	CFont m_Font;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };

@@ -6,6 +6,7 @@
 struct AppSettings : Settings {
 	BEGIN_SETTINGS(AppSettings)
 		SETTING(MainWindowPlacement, WINDOWPLACEMENT{}, SettingType::Binary);
+		SETTING(Font, LOGFONT{}, SettingType::Binary);
 		SETTING(ShowExtraHives, 0, SettingType::Bool);
 		SETTING(ShowKeysInList, 0, SettingType::Bool);
 		SETTING(AlwaysOnTop, 0, SettingType::Bool);
@@ -25,6 +26,7 @@ struct AppSettings : Settings {
 	DEF_SETTING(ShowKeysInList, int)
 	DEF_SETTING(ReadOnly, int)
 	DEF_SETTING(MainWindowPlacement, WINDOWPLACEMENT)
+	DEF_SETTING(Font, LOGFONT)
 	DEF_SETTING(Find, FindOptions)
 	DEF_SETTING(ReplaceRegEdit, int)
 	DEF_SETTING(DarkMode, int)

@@ -16,12 +16,17 @@ bool Settings::Load(PCWSTR registryPath) {
 		return false;
 
 	WCHAR name[64];
-	BYTE value[1024];
+	BYTE value[512];
 	DWORD type;
 	for (DWORD i = 0;; ++i) {
-		DWORD lname = _countof(name), lvalue = _countof(value);
-		if (ERROR_SUCCESS != ::RegEnumValue(key, i, name, &lname, nullptr, &type, value, &lvalue))
+		DWORD lname = _countof(name), lvalue = sizeof(value);
+		auto error = ::RegEnumValue(key, i, name, &lname, nullptr, &type, value, &lvalue);
+		if (ERROR_NO_MORE_ITEMS == error)
 			break;
+
+		if (error != ERROR_SUCCESS)
+			continue;
+
 		auto it = _settings.find(name);
 		if (it == _settings.end())
 			_settings.insert({ name, Setting(name, (BYTE*)value, lvalue, (SettingType)type) });

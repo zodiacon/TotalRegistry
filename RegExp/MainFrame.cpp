@@ -361,10 +361,10 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	m_Tree.Create(m_MainSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN |
 		TVS_HASBUTTONS | TVS_LINESATROOT | TVS_HASLINES | TVS_SHOWSELALWAYS | TVS_EDITLABELS, 0, TreeId);
-	m_Tree.SetExtendedStyle(TVS_EX_DOUBLEBUFFER | TVS_EX_RICHTOOLTIP | TVS_EX_FADEINOUTEXPANDOS, 0);
+	m_Tree.SetExtendedStyle(TVS_EX_DOUBLEBUFFER | TVS_EX_RICHTOOLTIP, 0);
 
 	CImageList images;
-	images.Create(16, 16, ILC_COLOR32, 16, 4);
+	images.Create(16, 16, ILC_COLOR32 | ILC_COLOR | ILC_MASK, 16, 4);
 	UINT icons[] = {
 		IDR_MAINFRAME, IDI_COMPUTER, IDI_FOLDER, IDI_FOLDER_CLOSED, IDI_FOLDER_LINK,
 		IDI_FOLDER_ACCESSDENIED, IDI_HIVE, IDI_HIVE_ACCESSDENIED, IDI_FOLDER_UP, IDI_BINARY,
@@ -417,6 +417,13 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	SetDarkMode(m_Settings.DarkMode());
 	if (m_Settings.AlwaysOnTop())
 		SetWindowPos(HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+
+	auto lf = m_Settings.Font();
+	if (lf.lfHeight) {
+		m_Font.CreateFontIndirect(&lf);
+		m_List.SetFont(m_Font);
+		m_Tree.SetFont(m_Font);
+	}
 
 	UISetCheck(ID_EDIT_READONLY, m_ReadOnly);
 	UpdateLayout();
@@ -1342,6 +1349,22 @@ LRESULT CMainFrame::OnDisconnectRemote(WORD, WORD, HWND, BOOL&) {
 	m_Tree.GetItemText(hItem, name);
 	if (Registry::Disconnect(name))
 		m_Tree.DeleteItem(hItem);
+	return 0;
+}
+
+LRESULT CMainFrame::OnOptionsFont(WORD, WORD, HWND, BOOL&) {
+	LOGFONT lf;
+	CFontHandle(m_List.GetFont()).GetLogFont(lf);
+	CFontDialog dlg(&lf);
+	if (dlg.DoModal() == IDOK) {
+		dlg.GetCurrentFont(&lf);
+		if (m_Font)
+			m_Font.DeleteObject();
+		m_Font.CreateFontIndirect(&lf);
+		m_List.SetFont(m_Font);
+		m_Tree.SetFont(m_Font);
+		m_Settings.Font(lf);
+	}
 	return 0;
 }
 
