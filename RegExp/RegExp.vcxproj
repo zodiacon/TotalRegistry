@@ -163,6 +163,7 @@
     <ClInclude Include="NumberValueDlg.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RegExp.h" />
+    <ClInclude Include="RegExportImport.h" />
     <ClInclude Include="Registry.h" />
     <ClInclude Include="RegistryKey.h" />
     <ClInclude Include="RegistrySearcher.h" />
@@ -207,6 +208,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="RegExp.cpp" />
+    <ClCompile Include="RegExportImport.cpp" />
     <ClCompile Include="Registry.cpp" />
     <ClCompile Include="RegistryKey.cpp" />
     <ClCompile Include="RegistrySearcher.cpp" />

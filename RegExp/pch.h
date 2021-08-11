@@ -34,6 +34,8 @@ extern CAppModule _Module;
 #include <functional>
 #include <memory>
 #include <map>
+#define __cpp_lib_format
+#include <format>
 #include <AclUI.h>
 
 #if defined _M_IX86

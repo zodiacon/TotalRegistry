@@ -159,6 +159,9 @@
     <ClInclude Include="LocationManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RegExportImport.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -271,6 +274,9 @@
     </ClCompile>
     <ClCompile Include="LocationManager.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RegExportImport.cpp">
+      <Filter>Helpers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

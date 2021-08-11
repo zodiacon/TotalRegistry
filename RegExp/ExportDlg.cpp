@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "resource.h"
 #include "ExportDlg.h"
+#include "ThemeHelper.h"
 
 void CExportDlg::SetKeyPath(PCWSTR path) {
     m_Key = path;
@@ -15,6 +16,7 @@ const CString& CExportDlg::GetFileName() const {
 }
 
 LRESULT CExportDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
+    SetDialogIcon(IDI_EXPORT);
     SetDlgItemText(IDC_KEY, m_Key);
     CheckDlgButton(IDC_EXPORTKEY, BST_CHECKED);
     ::SHAutoComplete(GetDlgItem(IDC_PATH), SHACF_FILESYS_ONLY);
@@ -35,11 +37,14 @@ LRESULT CExportDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
 }
 
 LRESULT CExportDlg::OnBrowse(WORD, WORD wID, HWND, BOOL&) {
-    CSimpleFileDialog dlg(FALSE, L"dat", nullptr, OFN_EXPLORER | OFN_ENABLESIZING | OFN_OVERWRITEPROMPT,
-        L"All Files\0*.*\0", m_hWnd);
+    ThemeHelper::Suspend();
+    CSimpleFileDialog dlg(FALSE, nullptr, nullptr, 
+        OFN_EXPLORER | OFN_ENABLESIZING | OFN_OVERWRITEPROMPT,
+        L"REG format (*reg)\0*.reg\0Native Format\0*.*\0", m_hWnd);
     if (dlg.DoModal() == IDOK) {
         SetDlgItemText(IDC_PATH, dlg.m_szFileName);
     }
+    ThemeHelper::Resume();
     return 0;
 }
 

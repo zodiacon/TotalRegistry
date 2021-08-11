@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Resource.h"
 #include "LoadHiveDlg.h"
+#include "ThemeHelper.h"
 
 HKEY CLoadHiveDlg::GetSelectedKey() const {
     return m_hKey;
@@ -15,6 +16,7 @@ const CString& CLoadHiveDlg::GetName() const {
 }
 
 LRESULT CLoadHiveDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
+    SetDialogIcon(IDI_FOLDER_LOAD);
     CheckDlgButton(IDC_MACHINE, BST_CHECKED);
     ::SHAutoComplete(GetDlgItem(IDC_PATH), SHACF_FILESYS_ONLY);
 
@@ -32,11 +34,13 @@ LRESULT CLoadHiveDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
 }
 
 LRESULT CLoadHiveDlg::OnBrowse(WORD, WORD wID, HWND, BOOL&) {
+    ThemeHelper::Suspend();
     CSimpleFileDialog dlg(TRUE, L"dat", nullptr, OFN_EXPLORER | OFN_ENABLESIZING | OFN_FILEMUSTEXIST,
         L"All Files\0*.*\0", m_hWnd);
     if (dlg.DoModal() == IDOK) {
         SetDlgItemText(IDC_PATH, dlg.m_szFileName);
     }
+    ThemeHelper::Resume();
     return 0;
 }
 

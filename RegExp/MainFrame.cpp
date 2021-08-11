@@ -27,8 +27,7 @@
 #include "ThemeHelper.h"
 #include "ConnectRegistryDlg.h"
 #include "Helpers.h"
-#define __cpp_lib_format
-#include <format>
+#include "RegExportImport.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -1059,14 +1058,24 @@ void CMainFrame::DisplayBackupRestorePrivilegeError() {
 }
 
 LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
-	if (!SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true)) {
-		DisplayBackupRestorePrivilegeError();
-		return 0;
-	}
 	CExportDlg dlg;
 	dlg.SetKeyPath(GetFullNodePath(m_Tree.GetSelectedItem()));
 	if (dlg.DoModal() == IDOK) {
-		auto path = dlg.GetSelectedKey();
+		auto filename = dlg.GetFileName();
+		const auto& path = dlg.GetSelectedKey();
+		if (filename.Right(4).CompareNoCase(L".reg") == 0) {
+			CWaitCursor wait;
+			RegExportImport reg;
+			if (reg.Export(path, filename))
+				AtlMessageBox(m_hWnd, L"Export successful.", IDS_APP_TITLE, MB_ICONINFORMATION);
+			else
+				AtlMessageBox(m_hWnd, L"Export failed.", IDS_APP_TITLE, MB_ICONERROR);
+			return 0;
+		}
+		if (!SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true)) {
+			DisplayBackupRestorePrivilegeError();
+			return 0;
+		}
 		HKEY hKey;
 		if (path.IsEmpty())
 			hKey = Registry::OpenRealRegistryKey();
@@ -1081,9 +1090,9 @@ LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
 			CWaitCursor wait;
 			::DeleteFile(dlg.GetFileName());
 			if (path == "HKEY_CLASSES_ROOT")
-				error = ::RegSaveKey(hKey, dlg.GetFileName(), nullptr);
+				error = ::RegSaveKey(hKey, filename, nullptr);
 			else
-				error = ::RegSaveKeyEx(hKey, dlg.GetFileName(), nullptr, REG_LATEST_FORMAT);
+				error = ::RegSaveKeyEx(hKey, filename, nullptr, REG_LATEST_FORMAT);
 			::SetLastError(error);
 			if (error != ERROR_SUCCESS)
 				DisplayError(L"Failed to export key");
@@ -1102,6 +1111,7 @@ LRESULT CMainFrame::OnImport(WORD, WORD, HWND, BOOL&) {
 		DisplayBackupRestorePrivilegeError();
 		return 0;
 	}
+	ThemeHelper::Suspend();
 	CSimpleFileDialog dlg(TRUE, L"dat", nullptr, OFN_FILEMUSTEXIST | OFN_ENABLESIZING | OFN_EXPLORER,
 		L"All Files\0*.*\0", m_hWnd);
 	if (dlg.DoModal() == IDOK) {
@@ -1112,6 +1122,7 @@ LRESULT CMainFrame::OnImport(WORD, WORD, HWND, BOOL&) {
 			RefreshItem(m_Tree.GetSelectedItem());
 		}
 	}
+	ThemeHelper::Resume();
 
 	SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
 	SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, false);
