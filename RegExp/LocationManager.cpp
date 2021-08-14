@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "LocationManager.h"
+#include "IniFile.h"
 
 bool LocationManager::LoadFromRegistry(PCWSTR path) {
     path = GetPath(path);
@@ -57,6 +58,55 @@ bool LocationManager::SaveToRegistry(PCWSTR path) const {
         text += name + L";" + value + L"\n";
     }
     return ERROR_SUCCESS == key.SetStringValue(L"Locations", text);
+}
+
+bool LocationManager::LoadFromFile(PCWSTR path) {
+    path = GetPath(path);
+    if (!path)
+        return false;
+
+    IniFile file(path);
+    if (!file.IsValid())
+        return false;
+
+    auto data = file.ReadSection(L"Locations");
+    for (auto& text : data) {
+        int n = text.Find(L'=');
+        _items.insert({ n < 0 ? text : text.Left(n), n < 0 ? text : text.Mid(n + 1) });
+    }
+
+    return true;
+}
+
+bool LocationManager::SaveToFile(PCWSTR path) const {
+    path = GetPath(path);
+    if (!path)
+        return false;
+
+    IniFile file(path);
+    for (auto& [name, target] : _items) {
+        file.WriteString(L"Locations", name, target);
+    }
+    return true;
+}
+
+bool LocationManager::Load(PCWSTR path) {
+    WCHAR fullpath[MAX_PATH];
+    ::GetModuleFileName(nullptr, fullpath, _countof(fullpath));
+    auto ch = fullpath[3];
+    fullpath[3] = 0;
+    if (::GetDriveType(fullpath) == DRIVE_FIXED)
+        return LoadFromRegistry(path);
+    fullpath[3] = ch;
+    wcscpy_s(fullpath + wcslen(fullpath) - 3, _countof(fullpath), L"ini");
+    return LoadFromFile(fullpath);
+}
+
+bool LocationManager::Save() const {
+    if (_path.IsEmpty())
+        return false;
+
+    return _path[1] == L':' ? SaveToFile() : SaveToRegistry();
 }
 
 int LocationManager::GetCount() const {

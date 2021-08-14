@@ -274,7 +274,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp"))
 		m_ReadOnly = m_Settings.ReadOnly();
-	m_Locations.LoadFromRegistry(L"Software\\ScorpioSoftware\\RegExp");
+	m_Locations.Load(L"Software\\ScorpioSoftware\\RegExp");
 
 	InitDarkTheme();
 	ThemeHelper::SetCurrentTheme(m_Settings.DarkMode() ? m_DarkTheme : m_DefaultTheme);
@@ -2082,7 +2082,7 @@ void CMainFrame::InitLocations() {
 		};
 		for (const auto& [name, path] : locations)
 			m_Locations.Add(name, path);
-		m_Locations.SaveToRegistry();
+		m_Locations.Save();
 	}
 
 	int i = 0;

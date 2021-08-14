@@ -1,7 +1,8 @@
 #include "pch.h"
 #include "Settings.h"
+#include "IniFile.h"
 
-bool Settings::Load(PCWSTR registryPath) {
+bool Settings::LoadFromKey(PCWSTR registryPath) {
 	if (registryPath == nullptr)
 		registryPath = _path.c_str();
 	else
@@ -36,7 +37,7 @@ bool Settings::Load(PCWSTR registryPath) {
 	return true;
 }
 
-bool Settings::Save(PCWSTR registryPath) const {
+bool Settings::SaveToKey(PCWSTR registryPath) const {
 	if (registryPath == nullptr)
 		registryPath = _path.c_str();
 
@@ -53,6 +54,91 @@ bool Settings::Save(PCWSTR registryPath) const {
 		key.SetValue(name.c_str(), (DWORD)setting.Type, setting.Buffer.get(), setting.Size);
 	}
 	return true;
+}
+
+bool Settings::LoadFromFile(PCWSTR path) {
+	if (path == nullptr)
+		path = _path.c_str();
+
+	ATLASSERT(path);
+	if (path == nullptr)
+		return false;
+	else
+		_path = path;
+
+	IniFile file(path);
+	if (!file.IsValid())
+		return false;
+
+	PCWSTR section = L"General";
+	for (auto& [name, setting] : _settings) {
+		switch (setting.Type) {
+			case SettingType::String:
+				setting.SetString(file.ReadString(section, name.c_str()));
+				break;
+
+			case SettingType::Int32:
+				setting.Set<int>(file.ReadInt(section, name.c_str()));
+				break;
+
+			default:
+				unsigned size;
+				auto data = file.ReadBinary(section, name.c_str(), size);
+				if (data && size > 0)
+					setting.Set(data.get(), size);
+				break;
+		}
+	}
+
+	return true;
+}
+
+bool Settings::SaveToFile(PCWSTR path) const {
+	if (path == nullptr)
+		path = _path.c_str();
+
+	ATLASSERT(path);
+	if (path == nullptr)
+		return false;
+
+	IniFile file(path);
+
+	PCWSTR section = L"General";
+	for (auto& [name, setting] : _settings) {
+		switch (setting.Type) {
+			case SettingType::String:
+				file.WriteString(section, name.c_str(), (PCWSTR)setting.Buffer.get());
+				break;
+
+			case SettingType::Int32:
+				file.WriteInt(section, name.c_str(), *(DWORD*)setting.Buffer.get());
+				break;
+
+			default:
+				file.WriteBinary(section, name.c_str(), setting.Buffer.get(), setting.Size);
+				break;
+		}
+	}
+	return true;
+}
+
+bool Settings::Load(PCWSTR path) {
+	WCHAR fullpath[MAX_PATH];
+	::GetModuleFileName(nullptr, fullpath, _countof(fullpath));
+	auto ch = fullpath[3];
+	fullpath[3] = 0;
+	if (::GetDriveType(fullpath) == DRIVE_FIXED)
+		return LoadFromKey(path);
+	fullpath[3] = ch;
+	wcscpy_s(fullpath + wcslen(fullpath) - 3, _countof(fullpath), L"ini");
+	return LoadFromFile(fullpath);
+}
+
+bool Settings::Save() const {
+	if (_path.empty())
+		return false;
+
+	return _path[1] == L':' ? SaveToFile() : SaveToKey();
 }
 
 void Settings::Set(PCWSTR name, int value) {

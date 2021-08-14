@@ -105,6 +105,23 @@ bool IniFile::WriteFont(PCWSTR section, PCWSTR name, const LOGFONT& font) {
     return ::WritePrivateProfileStruct(section, name, (PVOID)&font, sizeof(font), _path);
 }
 
+bool IniFile::WriteBinary(PCWSTR section, PCWSTR name, void* data, unsigned size) {
+    WriteInt(section, name + CString(L"_size"), size);
+    return ::WritePrivateProfileStruct(section, name, data, size, _path);
+}
+
 bool IniFile::ReadFont(PCWSTR section, PCWSTR name, LOGFONT& font) {
     return ::GetPrivateProfileStruct(section, name, &font, sizeof(font), _path);
 }
+
+std::unique_ptr<uint8_t[]> IniFile::ReadBinary(PCWSTR section, PCWSTR name, unsigned& size) {
+    size = (unsigned)ReadInt(section, name + CString(L"_size"));
+    if (size == 0)
+        return nullptr;
+    auto buffer = std::make_unique<uint8_t[]>(size);
+    if (buffer == nullptr)
+        return nullptr;
+    ::GetPrivateProfileStruct(section, name, buffer.get(), size, _path);
+    return buffer;
+}
+

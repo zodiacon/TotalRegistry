@@ -74,8 +74,12 @@ class Settings {
 public:
 	Settings() = default;
 
-	bool Load(PCWSTR registryPath = nullptr);
-	bool Save(PCWSTR registryPath = nullptr) const;
+	bool LoadFromKey(PCWSTR registryPath = nullptr);
+	bool SaveToKey(PCWSTR registryPath = nullptr) const;
+	bool LoadFromFile(PCWSTR path = nullptr);
+	bool SaveToFile(PCWSTR path = nullptr) const;
+	bool Load(PCWSTR path);
+	bool Save() const;
 
 	template<typename T>
 	void Set(const std::wstring& name, const T& value, SettingType type = SettingType::Binary) {

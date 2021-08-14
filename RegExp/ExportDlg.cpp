@@ -39,7 +39,7 @@ LRESULT CExportDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
 LRESULT CExportDlg::OnBrowse(WORD, WORD wID, HWND, BOOL&) {
     ThemeHelper::Suspend();
     CSimpleFileDialog dlg(FALSE, nullptr, nullptr, 
-        OFN_EXPLORER | OFN_ENABLESIZING | OFN_OVERWRITEPROMPT,
+        OFN_EXPLORER | OFN_ENABLESIZING | OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY,
         L"REG format (*reg)\0*.reg\0Native Format\0*.*\0", m_hWnd);
     if (dlg.DoModal() == IDOK) {
         SetDlgItemText(IDC_PATH, dlg.m_szFileName);

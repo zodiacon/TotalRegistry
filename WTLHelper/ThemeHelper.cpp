@@ -85,7 +85,7 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 LRESULT CALLBACK CallWndProc(int action, WPARAM wp, LPARAM lp) {
 	auto def = ThemeHelper::GetCurrentTheme() == nullptr || ThemeHelper::GetCurrentTheme()->IsDefault();
 
-	if (!def && SuspendCount == 0 && action == HC_ACTION) {
+	if (SuspendCount == 0 && action == HC_ACTION) {
 		auto cs = reinterpret_cast<CWPRETSTRUCT*>(lp);
 
 		switch (cs->message) {

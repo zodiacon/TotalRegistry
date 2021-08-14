@@ -4,6 +4,10 @@ class LocationManager {
 public:
 	bool LoadFromRegistry(PCWSTR path = nullptr);
 	bool SaveToRegistry(PCWSTR path = nullptr) const;
+	bool LoadFromFile(PCWSTR path = nullptr);
+	bool SaveToFile(PCWSTR path = nullptr) const;
+	bool Load(PCWSTR path);
+	bool Save() const;
 
 	int GetCount() const;
 
