@@ -28,6 +28,8 @@ public:
 		CDCHandle dc(cd->hdc);
 		auto theme = ThemeHelper::GetCurrentTheme();
 		dc.FillSolidRect(&cd->rc, (cd->uItemState & (CDIS_DISABLED | CDIS_GRAYED)) ? ::GetSysColor(COLOR_GRAYTEXT) : theme->BackColor);
+		dc.DrawEdge(&cd->rc, (cd->uItemState & CDIS_SELECTED) ? EDGE_BUMP : EDGE_SUNKEN, BF_RECT);
+
 		return CDRF_DODEFAULT;
 	}
 

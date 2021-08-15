@@ -90,6 +90,7 @@
     <ClInclude Include="ClipboardHelper.h" />
     <ClInclude Include="ColumnManager.h" />
     <ClInclude Include="CustomButton.h" />
+    <ClInclude Include="CustomDialog.h" />
     <ClInclude Include="CustomEdit.h" />
     <ClInclude Include="CustomStatusBar.h" />
     <ClInclude Include="DialogHelper.h" />

@@ -6,6 +6,8 @@
 #include "SizeGrip.h"
 #include "CustomStatusBar.h"
 #include "CustomButton.h"
+#include "CustomDialog.h"
+#include <unordered_map>
 
 const Theme* CurrentTheme;
 std::atomic<int> SuspendCount;
@@ -13,13 +15,29 @@ std::atomic<int> SuspendCount;
 static decltype(::GetSysColor)* OrgGetSysColor = ::GetSysColor;
 static decltype(::GetSysColorBrush)* OrgGetSysColorBrush = ::GetSysColorBrush;
 static decltype(::GetSystemMetrics)* OrgGetSystemMetrics = ::GetSystemMetrics;
+static decltype(::SetTextColor)* OrgSetTextColor = ::SetTextColor;
+static decltype(::ReleaseDC)* OrgReleaseDC = ::ReleaseDC;
+
+thread_local std::unordered_map<HDC, DCOperation> SuspendedDCOperations;
+
+COLORREF WINAPI HookedSetTextColor(HDC hdc, COLORREF color) {
+	if (auto it = SuspendedDCOperations.find(hdc); it != SuspendedDCOperations.end() && (it->second & DCOperation::SetTextColor) == DCOperation::SetTextColor) {
+		return ::GetTextColor(hdc);
+	}
+	return OrgSetTextColor(hdc, color);
+}
+
+int WINAPI HookedReleaseDC(HWND hWnd, HDC hDC) {
+	SuspendedDCOperations.erase(hDC);
+	return OrgReleaseDC(hWnd, hDC);
+}
 
 int WINAPI HookedGetSystemMetrics(_In_ int index) {
 	return OrgGetSystemMetrics(index);
 }
 
 HBRUSH WINAPI HookedGetSysColorBrush(int index) {
-	if (CurrentTheme) {
+	if (CurrentTheme && SuspendCount == 0) {
 		auto hBrush = CurrentTheme->GetSysBrush(index);
 		if (hBrush)
 			return hBrush;
@@ -28,7 +46,7 @@ HBRUSH WINAPI HookedGetSysColorBrush(int index) {
 }
 
 COLORREF WINAPI HookedGetSysColor(int index) {
-	if (CurrentTheme) {
+	if (CurrentTheme && SuspendCount == 0) {
 		auto color = CurrentTheme->GetSysColor(index);
 		if (color != CLR_INVALID)
 			return color;
@@ -47,10 +65,10 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 		if ((lpcs->style & (WS_THICKFRAME | WS_CAPTION | WS_POPUP | WS_DLGFRAME)) == 0)
 			::SetWindowTheme(cs->hwnd, L" ", L"");
 	}
-	//if (name.CompareNoCase(L"EDIT") == 0 || name.CompareNoCase(L"ATL:EDIT") == 0) {
-	//	auto win = new CCustomEdit;
-	//	ATLVERIFY(win->SubclassWindow(cs->hwnd));
-	//}
+	if (name.CompareNoCase(L"EDIT") == 0 || name.CompareNoCase(L"ATL:EDIT") == 0) {
+		auto win = new CCustomEdit;
+		ATLVERIFY(win->SubclassWindow(cs->hwnd));
+	}
 	if (name.CompareNoCase(WC_LISTVIEW) == 0) {
 		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
 	}
@@ -60,9 +78,10 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 	else if (name.CompareNoCase(WC_HEADER) == 0) {
 		::SetWindowTheme(cs->hwnd, L" ", L"");
 	}
-	//else if (name.CompareNoCase(L"BUTTON") == 0) {
-	//	::SetWindowTheme(cs->hwnd, L" ", L"");
-	//}
+	else if (name.CompareNoCase(L"#32770") == 0) {		// dialog
+		auto win = new CCustomDialog;
+		ATLVERIFY(win->SubclassWindow(cs->hwnd));
+	}
 	else if (name.CompareNoCase(STATUSCLASSNAME) == 0) {
 		::SetWindowTheme(cs->hwnd, L" ", L"");
 		auto win = new CCustomStatusBar;
@@ -112,6 +131,8 @@ bool ThemeHelper::Init(HANDLE hThread) {
 	DetourAttach((PVOID*)&OrgGetSysColor, HookedGetSysColor);
 	DetourAttach((PVOID*)&OrgGetSysColorBrush, HookedGetSysColorBrush);
 	DetourAttach((PVOID*)&OrgGetSystemMetrics, HookedGetSystemMetrics);
+	DetourAttach((PVOID*)&OrgSetTextColor, HookedSetTextColor);
+	DetourAttach((PVOID*)&OrgReleaseDC, HookedReleaseDC);
 	auto error = DetourTransactionCommit();
 	ATLASSERT(error == NOERROR);
 	return error == NOERROR;
@@ -123,6 +144,16 @@ int ThemeHelper::Suspend() {
 
 int ThemeHelper::Resume() {
 	return --SuspendCount;
+}
+
+bool ThemeHelper::SuspendDCOperation(DCOperation op, HDC hdc) {
+	auto it = SuspendedDCOperations.find(hdc);
+	if (it == SuspendedDCOperations.end())
+		SuspendedDCOperations.insert({ hdc, op });
+	else
+		it->second |= op;
+
+	return true;
 }
 
 const Theme* ThemeHelper::GetCurrentTheme() {

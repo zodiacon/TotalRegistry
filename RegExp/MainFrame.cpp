@@ -332,7 +332,8 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	if (SUCCEEDED(hr)) {
 		m_AutoCompleteStrings->CreateInstance(&m_AutoCompleteStrings);
 		CRect r(0, 0, 400, 20);
-		auto hEdit = m_AddressBar.Create(m_hWnd, &r, nullptr, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_WANTRETURN);
+		CEdit edit;
+		auto hEdit = edit.Create(m_hWnd, &r, nullptr, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_WANTRETURN | WS_CLIPSIBLINGS);
 		hr = spAC->Init(hEdit, m_AutoCompleteStrings->GetUnknown(), nullptr, nullptr);
 		if (SUCCEEDED(hr)) {
 			spAC->Enable(TRUE);
@@ -341,6 +342,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 				spAC2->SetOptions(ACO_AUTOSUGGEST | ACO_USETAB | ACO_AUTOAPPEND);
 			}
 			AddSimpleReBarBand(hEdit, nullptr, true, 0, true);
+			ATLVERIFY(m_AddressBar.SubclassWindow(hEdit));
 		}
 		else {
 			m_AddressBar.DestroyWindow();
@@ -356,10 +358,10 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	m_StatusBar.SetParts(_countof(panes), panes);
 
 	m_hWndClient = m_MainSplitter.Create(m_hWnd, rcDefault, nullptr,
-		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, WS_EX_CLIENTEDGE);
+		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0);
 
 	m_Tree.Create(m_MainSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN |
-		TVS_HASBUTTONS | TVS_LINESATROOT | TVS_HASLINES | TVS_SHOWSELALWAYS | TVS_EDITLABELS, 0, TreeId);
+		TVS_HASBUTTONS | TVS_LINESATROOT | TVS_HASLINES | TVS_SHOWSELALWAYS | TVS_EDITLABELS, WS_EX_CLIENTEDGE, TreeId);
 	m_Tree.SetExtendedStyle(TVS_EX_DOUBLEBUFFER | TVS_EX_RICHTOOLTIP, 0);
 
 	CImageList images;
@@ -374,7 +376,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	m_Tree.SetImageList(images, TVSIL_NORMAL);
 
 	m_List.Create(m_MainSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN
-		| LVS_OWNERDATA | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | LVS_EDITLABELS, 0);
+		| LVS_OWNERDATA | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS | LVS_EDITLABELS, WS_EX_CLIENTEDGE);
 	m_List.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_INFOTIP);
 	m_List.SetImageList(images, LVSIL_SMALL);
 
@@ -460,20 +462,6 @@ LRESULT CMainFrame::OnTimer(UINT, WPARAM id, LPARAM, BOOL&) {
 		KillTimer(2);
 		UpdateList();
 	}
-	return 0;
-}
-
-LRESULT CMainFrame::OnNcPaint(UINT, WPARAM wp, LPARAM, BOOL&) {
-	//DefWindowProc();
-	CWindowDC dc(m_hWnd);
-	CRect rc;
-	GetWindowRect(&rc);
-	rc.top = ::GetSystemMetrics(SM_CYDLGFRAME);
-	rc.bottom = rc.top + ::GetSystemMetrics(SM_CYCAPTION);
-	rc.left = ::GetSystemMetrics(SM_CXDLGFRAME);
-	rc.right = rc.Width() + rc.left;
-	::DrawCaption(m_hWnd, dc.m_hDC, &rc, DC_ACTIVE | DC_BUTTONS | DC_ICON | DC_GRADIENT | DC_TEXT);
-
 	return 0;
 }
 
@@ -992,7 +980,7 @@ LRESULT CMainFrame::OnFindAll(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
-	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
+		auto path = GetFullNodePath(m_Tree.GetSelectedItem());
 	CRegKey key;
 	if (::GetFocus() == m_List) {
 		auto& item = m_Items[m_List.GetSelectionMark()];
@@ -1011,7 +999,9 @@ LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
 	}
 	else {
 		CSecurityInformation si((HANDLE)key.m_hKey, path, m_ReadOnly);
+		ThemeHelper::Suspend();
 		::EditSecurity(m_hWnd, &si);
+		ThemeHelper::Resume();
 	}
 	return 0;
 }
@@ -1366,6 +1356,7 @@ LRESULT CMainFrame::OnDisconnectRemote(WORD, WORD, HWND, BOOL&) {
 LRESULT CMainFrame::OnOptionsFont(WORD, WORD, HWND, BOOL&) {
 	LOGFONT lf;
 	CFontHandle(m_List.GetFont()).GetLogFont(lf);
+	ThemeHelper::Suspend();
 	CFontDialog dlg(&lf);
 	if (dlg.DoModal() == IDOK) {
 		dlg.GetCurrentFont(&lf);
@@ -1376,6 +1367,7 @@ LRESULT CMainFrame::OnOptionsFont(WORD, WORD, HWND, BOOL&) {
 		m_Tree.SetFont(m_Font);
 		m_Settings.Font(lf);
 	}
+	ThemeHelper::Resume();
 	return 0;
 }
 
@@ -2046,8 +2038,14 @@ void CMainFrame::ShowBand(int index, bool show) {
 void CMainFrame::InitDarkTheme() {
 	m_DarkTheme.BackColor = m_DarkTheme.SysColors[COLOR_WINDOW] = RGB(32, 32, 32);
 	m_DarkTheme.TextColor = m_DarkTheme.SysColors[COLOR_WINDOWTEXT] = RGB(248, 248, 248);
+	m_DarkTheme.SysColors[COLOR_HIGHLIGHT] = RGB(0, 0, 248);
+	m_DarkTheme.SysColors[COLOR_HIGHLIGHTTEXT] = RGB(240, 240, 240);
+	m_DarkTheme.SysColors[COLOR_MENUTEXT] = m_DarkTheme.TextColor;
+	m_DarkTheme.SysColors[COLOR_CAPTIONTEXT] = m_DarkTheme.TextColor;
 	m_DarkTheme.SysColors[COLOR_BTNFACE] = m_DarkTheme.BackColor;
 	m_DarkTheme.SysColors[COLOR_BTNTEXT] = m_DarkTheme.TextColor;
+	m_DarkTheme.SysColors[COLOR_3DLIGHT] = RGB(192, 192, 192);
+	m_DarkTheme.SysColors[COLOR_BTNHIGHLIGHT] = RGB(192, 192, 192);
 	m_DarkTheme.SysColors[COLOR_CAPTIONTEXT] = m_DarkTheme.TextColor;
 	m_DarkTheme.SysColors[COLOR_3DSHADOW] = m_DarkTheme.TextColor;
 	m_DarkTheme.Name = L"Dark";
