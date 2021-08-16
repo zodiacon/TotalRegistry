@@ -32,6 +32,7 @@ class CMainFrame :
 	public CFrameWindowImpl<CMainFrame>,
 	public CAutoUpdateUI<CMainFrame>,
 	public CVirtualListView<CMainFrame>,
+	public CCustomDraw<CMainFrame>,
 	public CDwmImpl<CMainFrame>,
 	public IMainFrame,
 	public CMessageFilter,
@@ -48,6 +49,10 @@ public:
 
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual BOOL OnIdle();
+
+	DWORD OnPrePaint(int, LPNMCUSTOMDRAW cd);
+	DWORD OnItemPrePaint(int, LPNMCUSTOMDRAW cd);
+	DWORD OnSubItemPrePaint(int, LPNMCUSTOMDRAW cd);
 
 	void RunOnUiThread(std::function<void()> f);
 	void SetStartKey(const CString& key);
@@ -137,7 +142,9 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_STATUSBAR, OnViewStatusBar)
 		COMMAND_ID_HANDLER(ID_OPTIONS_FONT, OnOptionsFont)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
+		COMMAND_ID_HANDLER(ID_OPTIONS_RESTOREDEFAULTFONT, OnRestoreDefaultFont)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
+		CHAIN_MSG_MAP(CCustomDraw<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
 		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
 		CHAIN_MSG_MAP_MEMBER(m_Menu)
@@ -249,6 +256,7 @@ private:
 	LRESULT OnConnectRemote(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnDisconnectRemote(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnOptionsFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnRestoreDefaultFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);

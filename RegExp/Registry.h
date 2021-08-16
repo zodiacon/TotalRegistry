@@ -27,7 +27,7 @@ const DWORD REG_KEY_UP = 0x1112;
 struct Registry abstract final {
 	static DWORD EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&)> handler);
 	static DWORD EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler);
-	static CString QueryStringValue(CRegKey& key, PCWSTR name);
+	static CString QueryStringValue(RegistryKey& key, PCWSTR name);
 	static CString StdRegPathToRealPath(const CString& path);
 	static PCWSTR GetRegTypeAsString(DWORD type);
 	static CString GetDataAsString(RegistryKey& key, const RegistryItem& item);

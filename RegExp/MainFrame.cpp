@@ -49,6 +49,41 @@ BOOL CMainFrame::OnIdle() {
 	return 0;
 }
 
+DWORD CMainFrame::OnPrePaint(int, LPNMCUSTOMDRAW cd) {
+	return cd->hdr.hwndFrom == m_List ? CDRF_NOTIFYITEMDRAW : CDRF_DODEFAULT;
+}
+
+DWORD CMainFrame::OnItemPrePaint(int, LPNMCUSTOMDRAW cd) {
+	return CDRF_NOTIFYSUBITEMDRAW;
+}
+
+DWORD CMainFrame::OnSubItemPrePaint(int, LPNMCUSTOMDRAW cd) {
+	auto lv = (NMLVCUSTOMDRAW*)cd;
+	if (GetColumnManager(m_List)->GetColumnTag<ColumnType>(lv->iSubItem) == ColumnType::Details) {
+		auto& item = m_Items[(int)cd->dwItemSpec];
+		if (!item.Key) {
+			CString nodeText;
+			m_Tree.GetItemText(m_Tree.GetSelectedItem(), nodeText);
+			if ((item.Type == REG_SZ || item.Type == REG_DWORD) && 
+				(item.Name.Find(L"Color") >= 0 || item.Name.Find(L"Background") >= 0 || item.Name.Find(L"Foreground") >= 0 || nodeText.Find(L"Color") >= 0)) {
+				COLORREF color = CLR_INVALID;
+				if (item.Type == REG_DWORD)
+					m_CurrentKey.QueryDWORDValue(item.Name, color);
+				else
+					color = Helpers::ParseColor(Registry::QueryStringValue(m_CurrentKey, item.Name));
+				if (color != CLR_INVALID) {
+					CRect rc(cd->rc);
+					rc.right = rc.left + std::min(rc.Width(), 100);
+					CDCHandle dc(cd->hdc);
+					dc.FillSolidRect(&rc, color);
+					return CDRF_SKIPDEFAULT;
+				}
+			}
+		}
+	}
+	return CDRF_SKIPPOSTPAINT;
+}
+
 void CMainFrame::RunOnUiThread(std::function<void()> f) {
 	SendMessage(WM_RUN, 0, reinterpret_cast<LPARAM>(&f));
 }
@@ -423,6 +458,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	if (lf.lfHeight) {
 		m_Font.CreateFontIndirect(&lf);
 		m_List.SetFont(m_Font);
+		m_List.RedrawWindow(nullptr, nullptr, RDW_ALLCHILDREN | RDW_UPDATENOW | RDW_INTERNALPAINT | RDW_INVALIDATE);
 		m_Tree.SetFont(m_Font);
 	}
 
@@ -1371,6 +1407,16 @@ LRESULT CMainFrame::OnOptionsFont(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnRestoreDefaultFont(WORD, WORD, HWND, BOOL&) {
+	m_List.SetFont(nullptr);
+	m_Tree.SetFont(nullptr);
+	if(m_Font)
+		m_Font.DeleteObject();
+	m_Settings.Font(LOGFONT{});
+
+	return 0;
+}
+
 LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/) {
 	auto lv = (NMLVDISPINFO*)pnmh;
 	if (lv->item.pszText == nullptr) {
@@ -1792,7 +1838,16 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 
 		case REG_SZ:
 			if (item.Value[0] == L'@') {
-				::RegLoadMUIString(m_CurrentKey.Get(), item.Name, text.GetBufferSetLength(512), 512, nullptr, REG_MUI_STRING_TRUNCATE, nullptr);
+				static const CString paths[] = {
+					L"",
+					Helpers::GetSystemDirectory(),
+					Helpers::GetSystemDirectory() + CString(L"\\Drivers"),
+					Helpers::GetWindowsDirectory(),
+				};
+				for (auto& path : paths)
+					if (ERROR_FILE_NOT_FOUND != ::RegLoadMUIString(m_CurrentKey.Get(), item.Name, text.GetBufferSetLength(512), 512, 
+						nullptr, REG_MUI_STRING_TRUNCATE, path.IsEmpty() ? nullptr : (PCWSTR)path))
+						break;
 			}
 			break;
 	}

@@ -83,7 +83,7 @@ DWORD Registry::EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, 
 	return i;
 }
 
-CString Registry::QueryStringValue(CRegKey& key, PCWSTR name) {
+CString Registry::QueryStringValue(RegistryKey& key, PCWSTR name) {
 	ULONG len = 0;
 	key.QueryStringValue(name, nullptr, &len);
 	auto value = std::make_unique<WCHAR[]>(len);
@@ -189,7 +189,7 @@ const std::vector<Hive>& Registry::GetHiveList(bool refresh) {
 	if (!_hives.empty())
 		return _hives;
 
-	CRegKey key;
+	RegistryKey key;
 	key.Open(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\hivelist", KEY_READ);
 	if(!key)
 		return _hives;
@@ -270,8 +270,8 @@ PCWSTR Registry::GetRegTypeAsString(DWORD type) {
 }
 
 CString Registry::GetDataAsString(RegistryKey& key, const RegistryItem& item) {
-	ULONG realsize = item.Size;
-	ULONG size = (realsize > (1 << 10) ? (1 << 10) : realsize) / sizeof(WCHAR);
+	auto realsize = item.Size;
+	ULONG size = std::min(realsize, 512UL) / sizeof(WCHAR);
 	LSTATUS status;
 	CString text;
 	DWORD type;
@@ -279,7 +279,7 @@ CString Registry::GetDataAsString(RegistryKey& key, const RegistryItem& item) {
 	switch (item.Type) {
 		case REG_SZ:
 		case REG_EXPAND_SZ:
-			status = key.QueryStringValue(item.Name, text.GetBufferSetLength(size), &size);
+			text = QueryStringValue(key, item.Name).Left(size);
 			break;
 
 		case REG_LINK:

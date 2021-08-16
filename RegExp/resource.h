@@ -168,6 +168,7 @@
 #define ID_FILE_DISCONNECT              32866
 #define ID_LOCATIONS_MANAGE             32867
 #define ID_OPTIONS_FONT                 32868
+#define ID_OPTIONS_RESTOREDEFAULTFONT   32869
 
 // Next default values for new objects
 // 
@@ -175,7 +176,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        174
-#define _APS_NEXT_COMMAND_VALUE         32869
+#define _APS_NEXT_COMMAND_VALUE         32870
 #define _APS_NEXT_CONTROL_VALUE         1049
 #define _APS_NEXT_SYMED_VALUE           115
 #endif

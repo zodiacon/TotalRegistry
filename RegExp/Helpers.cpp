@@ -29,3 +29,36 @@ CString Helpers::ToBinary(ULONGLONG value) {
         svalue = L"0";
     return svalue;
 }
+
+PCWSTR Helpers::GetSystemDirectory() {
+    static WCHAR dir[MAX_PATH];
+    if (dir[0] == 0)
+        ::GetSystemDirectory(dir, _countof(dir));
+
+    return dir;
+}
+
+PCWSTR Helpers::GetWindowsDirectory() {
+    static WCHAR dir[MAX_PATH];
+    if (dir[0] == 0)
+        ::GetWindowsDirectory(dir, _countof(dir));
+
+    return dir;
+}
+
+COLORREF Helpers::ParseColor(const CString& text) {
+    int index = 0;
+    CString token;
+    COLORREF color = 0;
+    int shift = 0;
+    while (!(token = text.Tokenize(L" ", index)).IsEmpty()) {
+        if (shift > 24)
+            return CLR_INVALID;
+        int n = _wtoi(token);
+        if (n < 0 || n > 255)
+            return CLR_INVALID;
+        color |= (n << shift);
+        shift += 8;
+    }
+    return color;
+}
