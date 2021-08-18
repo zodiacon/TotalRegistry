@@ -190,7 +190,7 @@ const std::vector<Hive>& Registry::GetHiveList(bool refresh) {
 		return _hives;
 
 	RegistryKey key;
-	key.Open(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\hivelist", KEY_READ);
+	key.Open(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\hivelist", KEY_QUERY_VALUE);
 	if(!key)
 		return _hives;
 

@@ -688,8 +688,8 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 			auto hParent = m_Tree.GetParentItem(hItem);
 			auto cmd = std::make_shared<CreateKeyCommand>(GetFullNodePath(hParent), item.pszText);
 			if (!m_CmdMgr.AddCommand(cmd)) {
-				DisplayError(L"Failed to create key");
 				m_Tree.DeleteItem(hItem);
+				DisplayError(L"Failed to create key");
 				return FALSE;
 			}
 			auto cb = [this](auto& cmd, bool execute) {
@@ -1029,6 +1029,9 @@ LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
 		key = Registry::OpenKey(path, READ_CONTROL);
 		readonly = true;
 	}
+	if (!key && ::GetLastError() == ERROR_ACCESS_DENIED) {
+		key = Registry::OpenKey(path, MAXIMUM_ALLOWED);
+	}
 	if (!key) {
 		DisplayError(L"Failed to open key");
 	}
@@ -1106,7 +1109,7 @@ LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
 		if (path.IsEmpty())
 			hKey = Registry::OpenRealRegistryKey();
 		else {
-			auto key = Registry::OpenKey(path, KEY_READ);
+			auto key = Registry::OpenKey(path, KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
 			hKey = key.Detach();
 		}
 		if (!hKey)
@@ -1204,7 +1207,7 @@ LRESULT CMainFrame::OnUnloadHive(WORD, WORD, HWND, BOOL&) {
 	auto error = ::RegUnLoadKey(GetKeyFromNode(m_Tree.GetParentItem(hItem)), name);
 	if (error != ERROR_SUCCESS) {
 		DisplayError(L"Failed to unload hive", error);
-		m_CurrentKey.Attach(Registry::OpenKey(GetFullNodePath(hItem), KEY_READ).Detach());
+		m_CurrentKey.Attach(Registry::OpenKey(GetFullNodePath(hItem), KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS).Detach());
 	}
 	else
 		m_Tree.DeleteItem(hItem);
@@ -1591,7 +1594,7 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 			auto hItem = m_Tree.InsertItem(name, 3, 2, hRoot, TVI_LAST);
 			SetNodeData(hItem, NodeType::Key);
 			CRegKey subKey;
-			auto error = subKey.Open(hKey, name, KEY_READ);
+			auto error = subKey.Open(hKey, name, KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
 			if (error == ERROR_SUCCESS) {
 				DWORD subkeys = Registry::GetSubKeyCount(subKey);
 				if (subkeys) {
@@ -1631,7 +1634,7 @@ void CMainFrame::InitTree() {
 	m_hStdReg = m_Tree.InsertItem(L"Standard Registry", 0, 0, m_hLocalRoot, TVI_LAST);
 	SetNodeData(m_hStdReg, NodeType::StandardRoot);
 	m_hRealReg = m_Tree.InsertItem(L"REGISTRY", 11, 11, m_hLocalRoot, TVI_LAST);
-	SetNodeData(m_hRealReg, NodeType::RegistryRoot | NodeType::Predefined);
+	SetNodeData(m_hRealReg, NodeType::RegistryRoot | NodeType::Predefined | NodeType::Key);
 	m_hLocalRoot.Expand(TVE_EXPAND);
 	m_Tree.SelectItem(m_hStdReg);
 }
@@ -1702,7 +1705,7 @@ void CMainFrame::RefreshFull(HTREEITEM hItem) {
 			else {
 				// really expanded
 				RefreshFull(hItem);
-				auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_READ);
+				auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
 				if (key) {
 					auto keys = th.GetChildItems(hItem);
 					Registry::EnumSubKeys(key.Get(), [&](auto name, const auto&) {
@@ -1734,7 +1737,7 @@ void CMainFrame::RefreshFull(HTREEITEM hItem) {
 		}
 		else if (m_Tree.GetChildItem(hItem) == nullptr && (GetNodeData(hItem) & NodeType::AccessDenied) == NodeType::None) {
 			// no children - check if new exist
-			auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_READ);
+			auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
 			if (Registry::GetSubKeyCount(key.Get()) > 0) {
 				m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
 				TVITEM tvi;
@@ -1897,7 +1900,7 @@ int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 		return 4;
 
 	RegistryKey key;
-	auto error = key.Open(m_CurrentKey.Get(), item.Name, KEY_READ);
+	auto error = key.Open(m_CurrentKey.Get(), item.Name, READ_CONTROL);
 	if (Registry::IsHiveKey(GetFullNodePath(m_Tree.GetSelectedItem()) + L"\\" + item.Name))
 		image = error == ERROR_ACCESS_DENIED ? 7 : 6;
 	else if (error == ERROR_ACCESS_DENIED)
@@ -2266,7 +2269,7 @@ void CMainFrame::UpdateList(bool force) {
 			item.Name = name;
 			if (m_CurrentPath[0] == L'\\')
 				name = m_CurrentPath + L"\\" + name;
-			auto key = Registry::OpenKey(name, KEY_READ);
+			auto key = Registry::OpenKey(name, KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
 			if (key) {
 				Registry::GetSubKeyCount(key.Get(), nullptr, &item.TimeStamp);
 			}
@@ -2321,7 +2324,7 @@ void CMainFrame::UpdateList(bool force) {
 
 	auto parentPath = GetFullParentNodePath(hItem);
 	if (!parentPath.IsEmpty()) {
-		auto temp = Registry::OpenKey(parentPath, KEY_READ);
+		auto temp = Registry::OpenKey(parentPath, KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
 		if (temp) {
 			CString name, linkPath;
 			m_Tree.GetItemText(hItem, name);
