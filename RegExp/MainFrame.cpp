@@ -1016,29 +1016,29 @@ LRESULT CMainFrame::OnFindAll(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
-		auto path = GetFullNodePath(m_Tree.GetSelectedItem());
-	CRegKey key;
+	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
+	SecurityHelper::EnablePrivilege(SE_TAKE_OWNERSHIP_NAME, true);
 	if (::GetFocus() == m_List) {
 		auto& item = m_Items[m_List.GetSelectionMark()];
 		ATLASSERT(item.Key);
 		path += L"\\" + item.Name;
-		auto key2 = Registry::OpenKey(path, KEY_READ | (m_ReadOnly ? 0 : KEY_WRITE));
-		key.Attach(key2.Detach());
 	}
-	else {
-		auto key2 = Registry::OpenKey(path, KEY_READ | (m_ReadOnly ? 0 : KEY_WRITE));
-		key.Attach(key2.Detach());
+	auto readonly = m_ReadOnly;
+	auto key = Registry::OpenKey(path, READ_CONTROL | (readonly ? 0 : (WRITE_DAC | WRITE_OWNER)));
+	if (!key && ::GetLastError() == ERROR_ACCESS_DENIED) {
+		key = Registry::OpenKey(path, READ_CONTROL);
+		readonly = true;
 	}
-
 	if (!key) {
 		DisplayError(L"Failed to open key");
 	}
 	else {
-		CSecurityInformation si((HANDLE)key.m_hKey, path, m_ReadOnly);
+		CSecurityInformation si(key, path, readonly);
 		ThemeHelper::Suspend();
 		::EditSecurity(m_hWnd, &si);
 		ThemeHelper::Resume();
 	}
+	SecurityHelper::EnablePrivilege(SE_TAKE_OWNERSHIP_NAME, false);
 	return 0;
 }
 
