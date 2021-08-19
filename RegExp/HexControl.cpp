@@ -124,15 +124,16 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 }
 
 LRESULT CHexControl::OnSetFocus(UINT, WPARAM, LPARAM, BOOL&) {
-	UpdateCaret();
+	CreateSolidCaret(m_InsertMode ? 2 : m_CharWidth, m_CharHeight);
 	ShowCaret();
+	UpdateCaret();
 
 	return 0;
 }
 
 LRESULT CHexControl::OnKillFocus(UINT, WPARAM, LPARAM, BOOL&) {
 	HideCaret();
-
+	DestroyCaret();
 	return 0;
 }
 
@@ -321,9 +322,9 @@ void CHexControl::CommitValue(int64_t offset, uint64_t value) {
 
 LRESULT CHexControl::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	InitFontMetrics();
-	CreateSolidCaret(m_InsertMode ? 2 : m_CharWidth, m_CharHeight);
 	m_NotifyData.hdr.hwndFrom = m_hWnd;
 	m_NotifyData.hdr.idFrom = GetWindowLongPtr(GWLP_ID);
+	SetCaretBlinkTime(500);
 
 	return 0;
 }
