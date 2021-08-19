@@ -51,9 +51,12 @@ bool RegExportImport::ExportKey(HKEY hKey, HANDLE hFile, PCWSTR section) const {
 				WriteString(hFile, sname + (L"=dword:" + std::format(L"{:08x}\n", *(DWORD*)data.get())).c_str());
 				break;
 			
-			case REG_SZ:
-				WriteString(hFile, sname + L"=\"" + (PCWSTR)data.get() + L"\"\n");
+			case REG_SZ: {
+				CString text(data.get());
+				text.Replace(L"\"", L"\\\"");
+				WriteString(hFile, sname + L"=\"" + text + L"\"\n");
 				break;
+			}
 
 			case REG_BINARY:
 				WriteString(hFile, sname + L"=hex:" + BytesToString(data.get(), count) + L"\n");
