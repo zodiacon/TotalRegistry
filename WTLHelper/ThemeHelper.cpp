@@ -7,6 +7,7 @@
 #include "CustomStatusBar.h"
 #include "CustomButton.h"
 #include "CustomDialog.h"
+#include "CustomHeader.h"
 #include <unordered_map>
 
 const Theme* CurrentTheme;
@@ -76,7 +77,10 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
 	}
 	else if (name.CompareNoCase(WC_HEADER) == 0) {
-		::SetWindowTheme(cs->hwnd, L" ", L"");
+		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
+		auto win = new CCustomHeaderParent;
+		win->SubclassWindow(lpcs->hwndParent);
+		win->Init(cs->hwnd);
 	}
 	else if (name.CompareNoCase(L"#32770") == 0) {		// dialog
 		auto win = new CCustomDialog;
@@ -87,9 +91,15 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 		auto win = new CCustomStatusBar;
 		ATLVERIFY(win->SubclassWindow(cs->hwnd));
 	}
-	else if (name.CompareNoCase(L"ScrollBar") == 0 && (lpcs->style & (SBS_SIZEBOX | SBS_SIZEGRIP))) {
-		//auto win = new CSizeGrip;
-		//ATLVERIFY(win->SubclassWindow(cs->hwnd));
+	else if (name.CompareNoCase(L"ScrollBar") == 0) {
+		if (lpcs->style & (SBS_SIZEBOX | SBS_SIZEGRIP)) {
+			auto win = new CSizeGrip;
+			ATLVERIFY(win->SubclassWindow(cs->hwnd));
+		}
+		else {
+			//auto win = new CCustomScrollBar;
+			//win->SubclassWindow(cs->hwnd);
+		}
 	}
 	else if (name.CompareNoCase(L"BUTTON") == 0) {
 		auto type = lpcs->style & BS_TYPEMASK;
@@ -102,8 +112,6 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 }
 
 LRESULT CALLBACK CallWndProc(int action, WPARAM wp, LPARAM lp) {
-	auto def = ThemeHelper::GetCurrentTheme() == nullptr || ThemeHelper::GetCurrentTheme()->IsDefault();
-
 	if (SuspendCount == 0 && action == HC_ACTION) {
 		auto cs = reinterpret_cast<CWPRETSTRUCT*>(lp);
 
@@ -158,6 +166,10 @@ bool ThemeHelper::SuspendDCOperation(DCOperation op, HDC hdc) {
 
 const Theme* ThemeHelper::GetCurrentTheme() {
 	return CurrentTheme;
+}
+
+bool ThemeHelper::IsDefault() {
+	return GetCurrentTheme() == nullptr || GetCurrentTheme()->IsDefault();
 }
 
 void ThemeHelper::SetCurrentTheme(const Theme& theme) {

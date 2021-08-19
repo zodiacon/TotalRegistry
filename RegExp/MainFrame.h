@@ -12,6 +12,7 @@
 #include "OwnerDrawnMenu.h"
 #include "Theme.h"
 #include "LocationManager.h"
+#include "KeysHandlesDlg.h"
 
 enum class NodeType {
 	None = 0,
@@ -47,8 +48,8 @@ public:
 	const UINT WM_RUN = WM_APP + 13;
 	const UINT TreeId = 123;
 
-	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	virtual BOOL OnIdle();
+	BOOL PreTranslateMessage(MSG* pMsg) override;
+	BOOL OnIdle() override;
 
 	DWORD OnPrePaint(int, LPNMCUSTOMDRAW cd);
 	DWORD OnItemPrePaint(int, LPNMCUSTOMDRAW cd);
@@ -109,6 +110,7 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_SHOWKEYSINLIST, OnShowKeysInList)
 		COMMAND_ID_HANDLER(ID_NEW_KEY, OnNewKey)
 		COMMAND_RANGE_HANDLER(ID_NEW_DWORDVALUE, ID_NEW_BINARYVALUE, OnNewValue)
+		COMMAND_ID_HANDLER(ID_TOOLS_SCANKEYHANDLES, OnShowKeysHandles)
 		COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
 		COMMAND_ID_HANDLER(ID_EDIT_CUT, OnEditCut)
 		COMMAND_ID_HANDLER(ID_EDIT_PASTE, OnEditPaste)
@@ -257,6 +259,7 @@ private:
 	LRESULT OnDisconnectRemote(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnOptionsFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnRestoreDefaultFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnShowKeysHandles(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -276,7 +279,6 @@ private:
 	CString GetValueDetails(const RegistryItem& item) const;
 	bool RefreshItem(HTREEITEM hItem);
 	void DisplayBackupRestorePrivilegeError();
-	static CString GetErrorText(DWORD error);
 	int GetKeyImage(const RegistryItem& item) const;
 	INT_PTR ShowValueProperties(RegistryItem& item, int index);
 	void SetDarkMode(bool dark);
@@ -284,6 +286,7 @@ private:
 	void ShowBand(int index, bool show);
 	void InitDarkTheme();
 	void InitLocations();
+	HTREEITEM BuildKeyPath(const CString& path);
 
 	AppCommandCallback<DeleteKeyCommand> GetDeleteKeyCommandCallback();
 
@@ -314,6 +317,7 @@ private:
 	CComObject<CEnumStrings>* m_AutoCompleteStrings{ nullptr };
 	Theme m_DarkTheme, m_DefaultTheme{ true };
 	CFont m_Font;
+	CKeysHandlesDlg m_HandlesDlg;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };

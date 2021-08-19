@@ -18,6 +18,7 @@ struct ThemeHelper abstract final {
 	static bool ResumeDCOperation(DCOperation op, HDC hdc);
 
 	static const Theme* GetCurrentTheme();
+	static bool IsDefault();
 	static void SetCurrentTheme(const Theme& theme);
 };
 

@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Helpers.h"
 #include "AppSettings.h"
+#include "NtDll.h"
+#include "SecurityHelper.h"
+#include <TlHelp32.h>
 
 bool Helpers::SaveWindowPosition(HWND hWnd, PCWSTR name) {
     CRect rc;
@@ -61,4 +64,99 @@ COLORREF Helpers::ParseColor(const CString& text) {
         shift += 8;
     }
     return color;
+}
+
+CString Helpers::GetObjectName(HANDLE hObject, DWORD pid) {
+    auto h = SecurityHelper::DupHandle(hObject, pid, GENERIC_READ);
+    if (h) {
+        BYTE buffer[2048];
+        auto status = NtQueryObject(h, ObjectNameInformation, buffer, sizeof(buffer), nullptr);
+        ::CloseHandle(h);
+        if (STATUS_SUCCESS == status) {
+            auto str = reinterpret_cast<UNICODE_STRING*>(buffer);
+            return CString(str->Buffer, str->Length / sizeof(WCHAR));
+        }
+    }
+    return L"";
+}
+
+USHORT Helpers::GetKeyObjectTypeIndex() {
+    static USHORT keyIndex = 0;
+    if (keyIndex == 0) {
+        const ULONG len = 1 << 14;
+        auto buffer = std::make_unique<BYTE[]>(len);
+        if (!NT_SUCCESS(NtQueryObject(nullptr, ObjectTypesInformation, buffer.get(), len, nullptr)))
+            return 0;
+
+        auto p = reinterpret_cast<OBJECT_TYPES_INFORMATION*>(buffer.get());
+        auto raw = &p->TypeInformation[0];
+        for (ULONG i = 0; i < p->NumberOfTypes; i++) {
+            if (raw->TypeName.Buffer == CString(L"Key")) {
+                keyIndex = raw->TypeIndex;
+                break;
+            }
+            auto temp = (BYTE*)raw + sizeof(OBJECT_TYPE_INFORMATION) + raw->TypeName.MaximumLength;
+            temp += sizeof(PVOID) - 1;
+            raw = reinterpret_cast<OBJECT_TYPE_INFORMATION*>((ULONG_PTR)temp / sizeof(PVOID) * sizeof(PVOID));
+        }
+    }
+    return keyIndex;
+}
+
+CString Helpers::GetErrorText(DWORD error) {
+    ATLASSERT(error);
+    PWSTR buffer;
+    CString msg;
+    if (::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+        nullptr, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buffer, 0, nullptr)) {
+        msg = buffer;
+        ::LocalFree(buffer);
+        msg.Trim(L"\n\r");
+    }
+    return msg;
+}
+
+CString Helpers::GetProcessNameById(DWORD pid) {
+    static std::unordered_map<DWORD, CString> processes;
+    if (processes.empty()) {
+        auto hSnapshot = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        ATLASSERT(hSnapshot != INVALID_HANDLE_VALUE);
+        if (hSnapshot == INVALID_HANDLE_VALUE)
+            return L"";
+
+        PROCESSENTRY32 pe;
+        pe.dwSize = sizeof(pe);
+        ::Process32First(hSnapshot, &pe);
+
+        while (::Process32Next(hSnapshot, &pe)) {
+            processes.insert({ pe.th32ProcessID, pe.szExeFile });
+        }
+        ::CloseHandle(hSnapshot);
+    }
+
+    if (auto it = processes.find(pid); it != processes.end()) {
+        auto hProcess = ::OpenProcess(SYNCHRONIZE, FALSE, pid);
+        if (hProcess && ::WaitForSingleObject(hProcess, 0) == WAIT_OBJECT_0) {
+            // process is dead
+            processes.erase(pid);
+            ::CloseHandle(hProcess);
+        }
+        else {
+            return it->second;
+        }
+    }
+    auto hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    if (!hProcess)
+        return L"";
+
+    WCHAR path[MAX_PATH * 2];
+    DWORD size = _countof(path);
+    CString name;
+    if (::QueryFullProcessImageName(hProcess, 0, path, &size)) {
+        name = wcsrchr(path, L'\\') + 1;
+        processes.insert({ pid, name });
+    }
+    ::CloseHandle(hProcess);
+
+    return name;
 }

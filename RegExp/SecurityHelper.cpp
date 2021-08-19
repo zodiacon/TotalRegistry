@@ -45,3 +45,14 @@ bool SecurityHelper::EnablePrivilege(PCWSTR privName, bool enable) {
 	::CloseHandle(hToken);
 	return result;
 }
+
+HANDLE SecurityHelper::DupHandle(HANDLE hSource, DWORD sourcePid, DWORD access) {
+	auto hProcess = ::OpenProcess(PROCESS_DUP_HANDLE, FALSE, sourcePid);
+	if (!hProcess)
+		return nullptr;
+
+	HANDLE h{ nullptr };
+	::DuplicateHandle(hProcess, hSource, ::GetCurrentProcess(), &h, access, FALSE, access == 0 ? DUPLICATE_SAME_ACCESS : 0);
+	::CloseHandle(hProcess);
+	return h;
+}

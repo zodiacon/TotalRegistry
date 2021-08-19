@@ -162,6 +162,15 @@
     <ClInclude Include="RegExportImport.h">
       <Filter>Helpers</Filter>
     </ClInclude>
+    <ClInclude Include="NtDll.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeysHandlesDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageIconCache.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -276,6 +285,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RegExportImport.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="KeysHandlesDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageIconCache.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
   </ItemGroup>

@@ -24,6 +24,16 @@ struct RemoteRegistry {
 const DWORD REG_KEY = 0x1111;
 const DWORD REG_KEY_UP = 0x1112;
 
+struct HandleInfo {
+	ULONG Handle;
+	PVOID Object;
+	DWORD Access;
+	DWORD ProcessId;
+	ULONG Attributes;
+	CString Name;
+	CString ProcessName;
+};
+
 struct Registry abstract final {
 	static DWORD EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&)> handler);
 	static DWORD EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler);
@@ -50,6 +60,7 @@ struct Registry abstract final {
 	static const std::vector<Hive>& GetHiveList(bool refresh = false);
 	static bool IsHiveKey(const CString& path);
 	static bool IsKeyValid(HKEY h);
+	static std::vector<HandleInfo> EnumKeyHandles(bool hideInaccessible);
 
 	static inline const struct {
 		PCWSTR text;

@@ -28,6 +28,7 @@
 #include "ConnectRegistryDlg.h"
 #include "Helpers.h"
 #include "RegExportImport.h"
+#include "ImageIconCache.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
@@ -451,8 +452,6 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	UISetCheck(ID_VIEW_STATUSBAR, m_Settings.ViewStatusBar());
 
 	SetDarkMode(m_Settings.DarkMode());
-	if (m_Settings.AlwaysOnTop())
-		SetWindowPos(HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
 	auto lf = m_Settings.Font();
 	if (lf.lfHeight) {
@@ -471,6 +470,10 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 }
 
 LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled) {
+	if (m_HandlesDlg)
+		m_HandlesDlg.DestroyWindow();
+	ImageIconCache::Get().Destroy();
+
 	WINDOWPLACEMENT wp;
 	wp.length = sizeof(wp);
 	if (GetWindowPlacement(&wp)) {
@@ -510,6 +513,8 @@ LRESULT CMainFrame::OnShowWindow(UINT, WPARAM show, LPARAM, BOOL&) {
 			SetWindowPlacement(&wp);
 			UpdateLayout();
 		}
+		if (m_Settings.AlwaysOnTop())
+			SetWindowPos(HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	}
 	return 0;
 }
@@ -1281,6 +1286,16 @@ LRESULT CMainFrame::OnGotoKey(WORD, WORD, HWND, BOOL&) {
 	if (dlg.DoModal() == IDOK) {
 		CWaitCursor wait;
 		auto hItem = GotoKey(dlg.GetKey());
+		if (!hItem) {
+			auto key = Registry::OpenKey(dlg.GetKey(), KEY_QUERY_VALUE);
+			if (key) {
+				hItem = BuildKeyPath(dlg.GetKey());
+				if (hItem) {
+					m_Tree.SelectItem(hItem);
+					m_Tree.EnsureVisible(hItem);
+				}
+			}
+		}
 		if (!hItem)
 			AtlMessageBox(m_hWnd, L"Failed to locate key", IDS_APP_TITLE, MB_ICONERROR);
 	}
@@ -1416,6 +1431,16 @@ LRESULT CMainFrame::OnRestoreDefaultFont(WORD, WORD, HWND, BOOL&) {
 	if(m_Font)
 		m_Font.DeleteObject();
 	m_Settings.Font(LOGFONT{});
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnShowKeysHandles(WORD, WORD, HWND, BOOL&) {
+	if (!m_HandlesDlg)
+		m_HandlesDlg.Create(nullptr);
+
+	m_HandlesDlg.ShowWindow(SW_SHOW);
+	m_HandlesDlg.Refresh();
 
 	return 0;
 }
@@ -1873,21 +1898,8 @@ bool CMainFrame::RefreshItem(HTREEITEM hItem) {
 
 void CMainFrame::DisplayError(PCWSTR msg, DWORD error) const {
 	CString text;
-	text.Format(L"%s (%s)", msg, (PCWSTR)GetErrorText(error));
+	text.Format(L"%s (%s)", msg, (PCWSTR)Helpers::GetErrorText(error));
 	AtlMessageBox(m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_ICONERROR);
-}
-
-CString CMainFrame::GetErrorText(DWORD error) {
-	ATLASSERT(error);
-	PWSTR buffer;
-	CString msg;
-	if (::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-		nullptr, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buffer, 0, nullptr)) {
-		msg = buffer;
-		::LocalFree(buffer);
-		msg.Trim(L"\n\r");
-	}
-	return msg;
 }
 
 int CMainFrame::GetKeyImage(const RegistryItem& item) const {
@@ -2113,7 +2125,7 @@ void CMainFrame::InitDarkTheme() {
 
 void CMainFrame::InitLocations() {
 	CMenuHandle menu = GetMenu();
-	menu = menu.GetSubMenu(6);
+	menu = menu.GetSubMenu(5);
 	while (menu.DeleteMenu(2, MF_BYPOSITION))
 		;
 
@@ -2165,6 +2177,22 @@ void CMainFrame::InitLocations() {
 
 	for (auto& r : replace)
 		m_Locations.Replace(r.first, r.second);
+}
+
+HTREEITEM CMainFrame::BuildKeyPath(const CString& path) {
+	auto hItem = path[0] == L'\\' ? m_hRealReg : m_hStdReg;
+	CString name;
+	int start = -1;
+	TreeHelper th(m_Tree);
+	while (!(name = path.Tokenize(L"\\", start)).IsEmpty()) {
+		auto hChild = th.FindChild(hItem, name);
+		if (hChild) {
+			hItem = hChild;
+			continue;
+		}
+		hItem = InsertKeyItem(hItem, name);
+	}
+	return hItem;
 }
 
 AppCommandCallback<DeleteKeyCommand> CMainFrame::GetDeleteKeyCommandCallback() {

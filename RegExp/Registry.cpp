@@ -1,23 +1,7 @@
 #include "pch.h"
 #include "Registry.h"
-#include <winternl.h>
-
-extern "C" NTSYSCALLAPI NTSTATUS NTAPI NtOpenKey(
-	_Out_ PHANDLE KeyHandle,
-	_In_ ACCESS_MASK DesiredAccess,
-	_In_ POBJECT_ATTRIBUTES ObjectAttributes
-);
-
-extern "C" NTSYSCALLAPI NTSTATUS NTAPI NtCreateKey(
-	_Out_ PHANDLE KeyHandle,
-	_In_ ACCESS_MASK DesiredAccess,
-	_In_ POBJECT_ATTRIBUTES ObjectAttributes,
-	_Reserved_ ULONG TitleIndex,
-	_In_opt_ PUNICODE_STRING Class,
-	_In_ ULONG CreateOptions,
-	_Out_opt_ PULONG Disposition
-);
-
+#include "NtDll.h"
+#include "Helpers.h"
 
 #pragma comment(lib, "ntdll")
 
@@ -423,3 +407,56 @@ bool Registry::IsKeyValid(HKEY h) {
 	DWORD type, lname = _countof(name);
 	return ::RegEnumValue(h, 0, name, &lname, nullptr, &type, nullptr, nullptr) != ERROR_INVALID_HANDLE;
 }
+
+std::vector<HandleInfo> Registry::EnumKeyHandles(bool hideInaccessible) {
+	DWORD size = 1 << 24;
+	void* buffer;
+	do {
+		buffer = ::VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+		if (!buffer)
+			break;
+		auto status = NtQuerySystemInformation(SystemInformationClass::ExtendedHandleInformation, buffer, size, nullptr);
+		if (status == 0)
+			break;
+		if (status == STATUS_INFO_LENGTH_MISMATCH) {
+			::VirtualFree(buffer, 0, MEM_RELEASE);
+			size *= 2;
+		}
+		else {
+			break;
+		}
+	} while (true);
+	
+	std::vector<HandleInfo> handles;
+
+	if (!buffer)
+		return handles;
+
+	auto p = (PSYSTEM_HANDLE_INFORMATION_EX)buffer;
+	handles.reserve(p->NumberOfHandles);
+	auto keyType = Helpers::GetKeyObjectTypeIndex();
+	for (ULONG i = 0; i < p->NumberOfHandles; i++) {
+		auto& hi = p->Handles[i];
+		if (hi.ObjectTypeIndex != keyType)
+			continue;
+
+		HandleInfo info;
+		info.Access = hi.GrantedAccess;
+		info.Object = hi.Object;
+		info.Handle = static_cast<ULONG>(hi.HandleValue);
+		info.ProcessId = static_cast<ULONG>(hi.UniqueProcessId);
+		info.Attributes = hi.HandleAttributes;
+		info.Name = Helpers::GetObjectName(ULongToHandle(info.Handle), info.ProcessId);
+		if (info.Name.IsEmpty()) {
+			if (hideInaccessible)
+				continue;
+			info.Name = L"<" + Helpers::GetErrorText() + L">";
+		}
+		info.ProcessName = Helpers::GetProcessNameById(info.ProcessId);
+		handles.push_back(std::move(info));
+	}
+
+	::VirtualFree(buffer, 0, MEM_RELEASE);
+	return handles;
+}
+

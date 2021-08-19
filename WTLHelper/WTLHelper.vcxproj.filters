@@ -75,6 +75,9 @@
     <ClInclude Include="CustomDialog.h">
       <Filter>Controls</Filter>
     </ClInclude>
+    <ClInclude Include="CustomHeader.h">
+      <Filter>Controls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WTLHelper.cpp">

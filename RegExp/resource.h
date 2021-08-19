@@ -4,7 +4,9 @@
 //
 #define IDR_MAINFRAME                   100
 #define IDS_APP_TITLE                   101
+#define ID_HIDE_EMPTY                   102
 #define IDD_ABOUTBOX                    103
+#define ID_CLOSE_HANDLE                 103
 #define IDM_ABOUT                       104
 #define IDM_EXIT                        105
 #define IDI_REGEXP                      107
@@ -63,6 +65,7 @@
 #define IDI_CHECK                       171
 #define IDI_REGREMOTE                   172
 #define IDD_CONNECTREG                  173
+#define IDD_HANDLES                     174
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
@@ -108,6 +111,7 @@
 #define IDC_MACHINE                     1042
 #define IDC_USERS                       1043
 #define IDC_LINK                        1045
+#define IDC_HANDLECOUNT                 1050
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -169,15 +173,16 @@
 #define ID_LOCATIONS_MANAGE             32867
 #define ID_OPTIONS_FONT                 32868
 #define ID_OPTIONS_RESTOREDEFAULTFONT   32869
+#define ID_TOOLS_SCANKEYHANDLES         32870
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        174
-#define _APS_NEXT_COMMAND_VALUE         32870
-#define _APS_NEXT_CONTROL_VALUE         1049
+#define _APS_NEXT_RESOURCE_VALUE        175
+#define _APS_NEXT_COMMAND_VALUE         32871
+#define _APS_NEXT_CONTROL_VALUE         1051
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif
