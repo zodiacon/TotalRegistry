@@ -6,6 +6,9 @@
 #include "SortHelper.h"
 #include "SecurityInformation.h"
 #include "SecurityHelper.h"
+#include "ListViewhelper.h"
+#include "ClipboardHelper.h"
+#include "ThemeHelper.h"
 
 CString CKeysHandlesDlg::GetColumnText(HWND hWnd, int row, int col) const {
 	auto& item = m_Handles[row];
@@ -57,6 +60,10 @@ void CKeysHandlesDlg::Refresh() {
 BOOL CKeysHandlesDlg::OnIdle() {
 	UIUpdateToolBar();
 	return FALSE;
+}
+
+BOOL CKeysHandlesDlg::PreTranslateMessage(MSG* pMsg) {
+	return ::GetActiveWindow() == m_hWnd && (::TranslateAccelerator(m_hWnd, m_hAccel.get(), pMsg));
 }
 
 void CKeysHandlesDlg::BuildToolBar() {
@@ -122,7 +129,10 @@ LRESULT CKeysHandlesDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	cm->AddColumn(L"Attributes", LVCFMT_RIGHT, 90, ColumnType::Attributes);
 	cm->UpdateColumns();
 
+	m_hAccel.reset(LoadAccelerators(_Module.GetModuleInstance(), MAKEINTRESOURCE(IDR_MAINFRAME)));
+
 	_Module.GetMessageLoop()->AddIdleHandler(this);
+	_Module.GetMessageLoop()->AddMessageFilter(this);
 
 	return 0;
 }
@@ -148,6 +158,7 @@ LRESULT CKeysHandlesDlg::OnHideInaccessible(WORD, WORD wID, HWND, BOOL&) {
 LRESULT CKeysHandlesDlg::OnDestroy(UINT, WPARAM, LPARAM, BOOL& handled) {
 	handled = FALSE;
 	_Module.GetMessageLoop()->RemoveIdleHandler(this);
+	_Module.GetMessageLoop()->RemoveMessageFilter(this);
 	return 0;
 }
 
@@ -156,7 +167,12 @@ LRESULT CKeysHandlesDlg::OnCloseHandle(WORD, WORD wID, HWND, BOOL&) {
 }
 
 LRESULT CKeysHandlesDlg::OnEditCopy(WORD, WORD wID, HWND, BOOL&) {
-	return LRESULT();
+	CString text;
+	for (int index = -1; (index = m_List.GetNextItem(index, LVIS_SELECTED)) >= 0;) {
+		text += ListViewHelper::GetRowAsString(m_List, index) + L"\n";
+	}
+	ClipboardHelper::CopyText(m_hWnd, text.Left(text.GetLength() - 1));
+	return 0;
 }
 
 LRESULT CKeysHandlesDlg::OnPermissions(WORD, WORD wID, HWND, BOOL&) {
@@ -168,7 +184,9 @@ LRESULT CKeysHandlesDlg::OnPermissions(WORD, WORD wID, HWND, BOOL&) {
 		hDup = SecurityHelper::DupHandle(ULongToHandle(item.Handle), item.ProcessId, READ_CONTROL);
 	if (hDup) {
 		CSecurityInformation si(hDup, item.Name, false);
+		ThemeHelper::Suspend();
 		::EditSecurity(m_hWnd, &si);
+		ThemeHelper::Resume();
 		::CloseHandle(hDup);
 	}
 	return 0;

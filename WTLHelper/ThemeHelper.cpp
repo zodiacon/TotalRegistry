@@ -8,6 +8,7 @@
 #include "CustomButton.h"
 #include "CustomDialog.h"
 #include "CustomHeader.h"
+#include "CustomRebar.h"
 #include <unordered_map>
 
 const Theme* CurrentTheme;
@@ -75,6 +76,10 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 	}
 	else if (name.CompareNoCase(WC_TREEVIEW) == 0) {
 		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
+	}
+	else if (name.CompareNoCase(REBARCLASSNAME) == 0) {
+		auto win = new CCustomRebar;
+		win->SubclassWindow(cs->hwnd);
 	}
 	else if (name.CompareNoCase(WC_HEADER) == 0) {
 		::SetWindowTheme(cs->hwnd, nullptr, nullptr);

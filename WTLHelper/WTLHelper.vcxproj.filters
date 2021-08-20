@@ -78,6 +78,9 @@
     <ClInclude Include="CustomHeader.h">
       <Filter>Controls</Filter>
     </ClInclude>
+    <ClInclude Include="CustomRebar.h">
+      <Filter>Controls</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WTLHelper.cpp">

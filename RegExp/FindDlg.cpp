@@ -105,6 +105,7 @@ LRESULT CFindDlg::OnFind(WORD, WORD wID, HWND, BOOL&) {
   
     m_Searcher.SetStartKey(m_pFrame->GetCurrentKeyPath());
     m_Searcher.Find([&](auto path, auto name, auto data) {
+        ResetUI();
         if (path == nullptr) {
             // search done
             m_pFrame->OnFindEnd(m_Searcher.IsCancelled());
@@ -112,7 +113,6 @@ LRESULT CFindDlg::OnFind(WORD, WORD wID, HWND, BOOL&) {
         else {
             m_pFrame->OnFindNext(path, name, data);
         }
-        ResetUI();
         });
 
     return 0;

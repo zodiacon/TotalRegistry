@@ -31,7 +31,7 @@
 #include "ImageIconCache.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
-	if (m_FindDlg.IsWindowVisible() && m_FindDlg.IsDialogMessage(pMsg))
+	if (m_FindDlg.IsWindowVisible() && ::GetActiveWindow() == m_FindDlg && m_FindDlg.IsDialogMessage(pMsg))
 		return TRUE;
 
 	auto hFocus = ::GetFocus();
@@ -502,6 +502,14 @@ LRESULT CMainFrame::OnTimer(UINT, WPARAM id, LPARAM, BOOL&) {
 		UpdateList();
 	}
 	return 0;
+}
+
+LRESULT CMainFrame::OnEditPaint(UINT, WPARAM wp, LPARAM, BOOL& handled) {
+	CDCHandle dc((HDC)wp);
+	CRect rc;
+	GetClientRect(&rc);
+	dc.FillSolidRect(&rc, 255);
+	return 1;
 }
 
 LRESULT CMainFrame::OnShowWindow(UINT, WPARAM show, LPARAM, BOOL&) {
@@ -1286,16 +1294,6 @@ LRESULT CMainFrame::OnGotoKey(WORD, WORD, HWND, BOOL&) {
 	if (dlg.DoModal() == IDOK) {
 		CWaitCursor wait;
 		auto hItem = GotoKey(dlg.GetKey());
-		if (!hItem) {
-			auto key = Registry::OpenKey(dlg.GetKey(), KEY_QUERY_VALUE);
-			if (key) {
-				hItem = BuildKeyPath(dlg.GetKey());
-				if (hItem) {
-					m_Tree.SelectItem(hItem);
-					m_Tree.EnsureVisible(hItem);
-				}
-			}
-		}
 		if (!hItem)
 			AtlMessageBox(m_hWnd, L"Failed to locate key", IDS_APP_TITLE, MB_ICONERROR);
 	}
@@ -2091,6 +2089,13 @@ HTREEITEM CMainFrame::GotoKey(const CString& path) {
 		spath.Replace(L"HKCC\\", L"HKEY_CURRENT_CONFIG");
 	}
 	auto hItem = TreeHelper(m_Tree).FindItem(spath[0] == L'\\' ? m_hRealReg : m_hStdReg, spath);
+	if (!hItem) {
+		auto key = Registry::OpenKey(path, KEY_QUERY_VALUE);
+		if (key) {
+			hItem = BuildKeyPath(path);
+		}
+	}
+
 	if (hItem) {
 		m_Tree.SelectItem(hItem);
 		m_Tree.EnsureVisible(hItem);
@@ -2108,11 +2113,11 @@ void CMainFrame::ShowBand(int index, bool show) {
 void CMainFrame::InitDarkTheme() {
 	m_DarkTheme.BackColor = m_DarkTheme.SysColors[COLOR_WINDOW] = RGB(32, 32, 32);
 	m_DarkTheme.TextColor = m_DarkTheme.SysColors[COLOR_WINDOWTEXT] = RGB(248, 248, 248);
-	m_DarkTheme.SysColors[COLOR_HIGHLIGHT] = RGB(0, 0, 248);
+	m_DarkTheme.SysColors[COLOR_HIGHLIGHT] = RGB(32, 32, 255);
 	m_DarkTheme.SysColors[COLOR_HIGHLIGHTTEXT] = RGB(240, 240, 240);
 	m_DarkTheme.SysColors[COLOR_MENUTEXT] = m_DarkTheme.TextColor;
 	m_DarkTheme.SysColors[COLOR_CAPTIONTEXT] = m_DarkTheme.TextColor;
-	m_DarkTheme.SysColors[COLOR_BTNFACE] = m_DarkTheme.BackColor;
+	m_DarkTheme.SysColors[COLOR_BTNFACE] = RGB(16, 16, 96);
 	m_DarkTheme.SysColors[COLOR_BTNTEXT] = m_DarkTheme.TextColor;
 	m_DarkTheme.SysColors[COLOR_3DLIGHT] = RGB(192, 192, 192);
 	m_DarkTheme.SysColors[COLOR_BTNHIGHLIGHT] = RGB(192, 192, 192);

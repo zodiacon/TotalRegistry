@@ -39,8 +39,11 @@ bool ListViewHelper::SaveAll(PCWSTR path, CListViewCtrl& lv, bool includeHeaders
 }
 
 CString ListViewHelper::GetRowAsString(CListViewCtrl& lv, int row, WCHAR separator) {
-	CString text, item;
 	auto count = lv.GetHeader().GetItemCount();
+	if (count == 0)
+		return L"";
+
+	CString text, item;
 	for (int c = 0; c < count; c++) {
 		lv.GetItemText(row, c, item);
 		text += item;

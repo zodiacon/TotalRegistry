@@ -57,6 +57,9 @@ public:
 	}
 
 	DWORD OnPrePaint(int /*idCtrl*/, LPNMCUSTOMDRAW cd) {
+		if (ThemeHelper::IsDefault())
+			return CDRF_DODEFAULT;
+
 		if (cd->hdr.hwndFrom != m_Header) {
 			SetMsgHandled(FALSE);
 			return CDRF_DODEFAULT;

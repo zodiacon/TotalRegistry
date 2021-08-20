@@ -3,6 +3,7 @@
 #include "DialogHelper.h"
 #include "VirtualListView.h"
 #include "Registry.h"
+#include <wil\resource.h>
 
 class CKeysHandlesDlg :
 	public CDialogImpl<CKeysHandlesDlg>,
@@ -10,12 +11,14 @@ class CKeysHandlesDlg :
 	public CAutoUpdateUI<CKeysHandlesDlg>,
 	public CVirtualListView<CKeysHandlesDlg>,
 	public CIdleHandler,
+	public CMessageFilter,
 	public CDialogHelper<CKeysHandlesDlg> {
 public:
 	enum { IDD = IDD_HANDLES };
 
 	void Refresh();
 	BOOL OnIdle() override;
+	BOOL PreTranslateMessage(MSG* pMsg) override;
 
 	CString GetColumnText(HWND, int row, int col) const;
 	int GetRowImage(HWND, int row) const;
@@ -63,4 +66,5 @@ private:
 	CListViewCtrl m_List;
 	std::vector<HandleInfo> m_Handles;
 	bool m_HideInaccesible{ false };
+	wil::unique_haccel m_hAccel;
 };
