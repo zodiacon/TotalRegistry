@@ -30,6 +30,7 @@ public:
 		COMMAND_ID_HANDLER(ID_HIDE_EMPTY, OnHideInaccessible)
 		COMMAND_ID_HANDLER(ID_CLOSE_HANDLE, OnCloseHandle)
 		COMMAND_ID_HANDLER(ID_KEY_PERMISSIONS, OnPermissions)
+		COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		CHAIN_MSG_MAP(CVirtualListView<CKeysHandlesDlg>)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CKeysHandlesDlg>)
@@ -54,6 +55,7 @@ private:
 	LRESULT OnHideInaccessible(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnCloseHandle (WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnEditCopy(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnPermissions(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnToolTipGetDisplay(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnListSelectionChanged(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);

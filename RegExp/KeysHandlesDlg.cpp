@@ -61,7 +61,7 @@ BOOL CKeysHandlesDlg::OnIdle() {
 
 void CKeysHandlesDlg::BuildToolBar() {
 	CToolBarCtrl tb;
-	CRect rc(0, 6, 350, 34);
+	CRect rc(8, 4, 350, 40);
 	tb.Create(m_hWnd, &rc, nullptr, ATL_SIMPLE_TOOLBAR_PANE_STYLE | TBSTYLE_LIST, 0, ATL_IDW_TOOLBAR);
 	tb.GetToolTips().ModifyStyle(0, TTS_ALWAYSTIP);
 	tb.SetExtendedStyle(TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DRAWDDARROWS);
@@ -155,6 +155,10 @@ LRESULT CKeysHandlesDlg::OnCloseHandle(WORD, WORD wID, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CKeysHandlesDlg::OnEditCopy(WORD, WORD wID, HWND, BOOL&) {
+	return LRESULT();
+}
+
 LRESULT CKeysHandlesDlg::OnPermissions(WORD, WORD wID, HWND, BOOL&) {
 	auto index = m_List.GetSelectionMark();
 	ATLASSERT(index >= 0);
@@ -185,6 +189,7 @@ LRESULT CKeysHandlesDlg::OnListSelectionChanged(int, LPNMHDR, BOOL&) {
 	auto count = m_List.GetSelectedCount();
 	UIEnable(ID_KEY_PERMISSIONS, count == 1);
 	UIEnable(ID_CLOSE_HANDLE, count > 0);
+	UIEnable(ID_EDIT_COPY, count > 0);
 
 	return 0;
 }

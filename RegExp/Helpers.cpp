@@ -142,6 +142,8 @@ CString Helpers::GetProcessNameById(DWORD pid) {
             ::CloseHandle(hProcess);
         }
         else {
+            if (hProcess)
+                ::CloseHandle(hProcess);
             return it->second;
         }
     }

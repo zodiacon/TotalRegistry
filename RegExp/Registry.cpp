@@ -433,7 +433,7 @@ std::vector<HandleInfo> Registry::EnumKeyHandles(bool hideInaccessible) {
 		return handles;
 
 	auto p = (PSYSTEM_HANDLE_INFORMATION_EX)buffer;
-	handles.reserve(p->NumberOfHandles);
+	handles.reserve(p->NumberOfHandles / 5);	// estimate
 	auto keyType = Helpers::GetKeyObjectTypeIndex();
 	for (ULONG i = 0; i < p->NumberOfHandles; i++) {
 		auto& hi = p->Handles[i];
@@ -455,6 +455,7 @@ std::vector<HandleInfo> Registry::EnumKeyHandles(bool hideInaccessible) {
 		info.ProcessName = Helpers::GetProcessNameById(info.ProcessId);
 		handles.push_back(std::move(info));
 	}
+	handles.shrink_to_fit();
 
 	::VirtualFree(buffer, 0, MEM_RELEASE);
 	return handles;
