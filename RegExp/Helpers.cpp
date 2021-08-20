@@ -4,6 +4,7 @@
 #include "NtDll.h"
 #include "SecurityHelper.h"
 #include <TlHelp32.h>
+#include <wil\resource.h>
 
 bool Helpers::SaveWindowPosition(HWND hWnd, PCWSTR name) {
     CRect rc;
@@ -135,30 +136,26 @@ CString Helpers::GetProcessNameById(DWORD pid) {
     }
 
     if (auto it = processes.find(pid); it != processes.end()) {
-        auto hProcess = ::OpenProcess(SYNCHRONIZE, FALSE, pid);
-        if (hProcess && ::WaitForSingleObject(hProcess, 0) == WAIT_OBJECT_0) {
+        wil::unique_handle hProcess(::OpenProcess(SYNCHRONIZE, FALSE, pid));
+        if (hProcess && ::WaitForSingleObject(hProcess.get(), 0) == WAIT_OBJECT_0) {
             // process is dead
             processes.erase(pid);
-            ::CloseHandle(hProcess);
         }
         else {
-            if (hProcess)
-                ::CloseHandle(hProcess);
             return it->second;
         }
     }
-    auto hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+    wil::unique_handle hProcess(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid));
     if (!hProcess)
         return L"";
 
     WCHAR path[MAX_PATH * 2];
     DWORD size = _countof(path);
     CString name;
-    if (::QueryFullProcessImageName(hProcess, 0, path, &size)) {
+    if (::QueryFullProcessImageName(hProcess.get(), 0, path, &size)) {
         name = wcsrchr(path, L'\\') + 1;
         processes.insert({ pid, name });
     }
-    ::CloseHandle(hProcess);
 
     return name;
 }

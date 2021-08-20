@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "SecurityHelper.h"
+#include <wil\resource.h>
 
 bool SecurityHelper::IsRunningElevated() {
 	static bool runningElevated = false;
@@ -8,16 +9,15 @@ bool SecurityHelper::IsRunningElevated() {
 		return runningElevated;
 
 	runningElevatedCheck = true;
-	HANDLE hToken;
-	if (!::OpenProcessToken(::GetCurrentProcess(), TOKEN_QUERY, &hToken))
+	wil::unique_handle hToken;
+	if (!::OpenProcessToken(::GetCurrentProcess(), TOKEN_QUERY, hToken.addressof()))
 		return false;
 
 	TOKEN_ELEVATION te;
 	DWORD len;
-	if (::GetTokenInformation(hToken, TokenElevation, &te, sizeof(te), &len)) {
+	if (::GetTokenInformation(hToken.get(), TokenElevation, &te, sizeof(te), &len)) {
 		runningElevated = te.TokenIsElevated ? true : false;
 	}
-	::CloseHandle(hToken);
 	return runningElevated;
 }
 
@@ -28,8 +28,8 @@ bool SecurityHelper::RunElevated() {
 }
 
 bool SecurityHelper::EnablePrivilege(PCWSTR privName, bool enable) {
-	HANDLE hToken;
-	if (!::OpenProcessToken(::GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken))
+	wil::unique_handle hToken;
+	if (!::OpenProcessToken(::GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, hToken.addressof()))
 		return false;
 
 	bool result = false;
@@ -38,21 +38,19 @@ bool SecurityHelper::EnablePrivilege(PCWSTR privName, bool enable) {
 	tp.Privileges[0].Attributes = enable ? SE_PRIVILEGE_ENABLED : 0;
 	if (::LookupPrivilegeValue(nullptr, privName,
 		&tp.Privileges[0].Luid)) {
-		if (::AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp),
+		if (::AdjustTokenPrivileges(hToken.get(), FALSE, &tp, sizeof(tp),
 			nullptr, nullptr))
 			result = ::GetLastError() == ERROR_SUCCESS;
 	}
-	::CloseHandle(hToken);
 	return result;
 }
 
 HANDLE SecurityHelper::DupHandle(HANDLE hSource, DWORD sourcePid, DWORD access) {
-	auto hProcess = ::OpenProcess(PROCESS_DUP_HANDLE, FALSE, sourcePid);
+	wil::unique_handle hProcess(::OpenProcess(PROCESS_DUP_HANDLE, FALSE, sourcePid));
 	if (!hProcess)
 		return nullptr;
 
 	HANDLE h{ nullptr };
-	::DuplicateHandle(hProcess, hSource, ::GetCurrentProcess(), &h, access, FALSE, access == 0 ? DUPLICATE_SAME_ACCESS : 0);
-	::CloseHandle(hProcess);
+	::DuplicateHandle(hProcess.get(), hSource, ::GetCurrentProcess(), &h, access, FALSE, access == 0 ? DUPLICATE_SAME_ACCESS : 0);
 	return h;
 }
