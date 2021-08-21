@@ -10,6 +10,14 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 #define NOMINMAX
 
+#ifndef __cpp_lib_concepts
+#define __cpp_lib_concepts
+#endif
+
+#ifndef __cpp_lib_format
+#define __cpp_lib_format
+#endif
+
 #include <atlbase.h>
 #include <atlapp.h>
 #include <atlstr.h>
@@ -34,8 +42,9 @@ extern CAppModule _Module;
 #include <functional>
 #include <memory>
 #include <map>
-#define __cpp_lib_format
 #include <format>
+#include <concepts>
+#include <ranges>
 #include <AclUI.h>
 
 #if defined _M_IX86

@@ -159,3 +159,10 @@ CString Helpers::GetProcessNameById(DWORD pid) {
 
     return name;
 }
+
+bool Helpers::CloseHandle(HANDLE hObject, DWORD pid) {
+    wil::unique_handle hProcess(::OpenProcess(PROCESS_DUP_HANDLE, FALSE, pid));
+    if (!hProcess)
+        return false;
+    return ::DuplicateHandle(hProcess.get(), hObject, nullptr, nullptr, 0, FALSE, DUPLICATE_CLOSE_SOURCE);
+}

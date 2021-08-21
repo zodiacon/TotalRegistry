@@ -9,6 +9,7 @@
 #include "CustomDialog.h"
 #include "CustomHeader.h"
 #include "CustomRebar.h"
+#include "OwnerDrawnMenu.h"
 #include <unordered_map>
 
 const Theme* CurrentTheme;
@@ -113,7 +114,6 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 			ATLVERIFY(win->SubclassWindow(::GetParent(cs->hwnd)));
 		}
 	}
-
 }
 
 LRESULT CALLBACK CallWndProc(int action, WPARAM wp, LPARAM lp) {
@@ -179,4 +179,16 @@ bool ThemeHelper::IsDefault() {
 
 void ThemeHelper::SetCurrentTheme(const Theme& theme) {
 	CurrentTheme = &theme;
+}
+
+void ThemeHelper::UpdateMenuColors(COwnerDrawnMenuBase& menu, bool dark) {
+	//
+	// customize menu colors
+	//
+	auto theme = GetCurrentTheme();
+	menu.SetBackColor(theme->Menu.BackColor);
+	menu.SetTextColor(theme->Menu.TextColor);
+	menu.SetSelectionTextColor(dark ? RGB(240, 240, 240) : RGB(248, 248, 248));
+	menu.SetSelectionBackColor(dark ? RGB(0, 64, 240) : RGB(0, 48, 160));
+	menu.SetSeparatorColor(dark ? RGB(160, 160, 160) : RGB(64, 64, 64));
 }

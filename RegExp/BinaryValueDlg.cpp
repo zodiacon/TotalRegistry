@@ -2,6 +2,8 @@
 #include "resource.h"
 #include "BinaryValueDlg.h"
 #include "Helpers.h"
+#include "ThemeHelper.h"
+#include "Theme.h"
 
 CBinaryValueDlg::CBinaryValueDlg(RegistryKey& key, PCWSTR name, bool readOnly, IMainFrame* frame)
 	: m_Key(key), m_Name(name), m_ReadOnly(readOnly), m_pFrame(frame) {
@@ -71,8 +73,16 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	ScreenToClient(&rc);
 	GetDlgItem(IDC_BUTTON1).ShowWindow(SW_HIDE);
 
-	m_Hex.Create(m_hWnd, &rc, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, WS_EX_CLIENTEDGE, IDC_HEX);
+	m_Hex.Create(m_hWnd, &rc, nullptr, 
+		WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, WS_EX_CLIENTEDGE, IDC_HEX);
 	rc.OffsetRect(0, -30);
+	if (!ThemeHelper::IsDefault()) {
+		auto theme = ThemeHelper::GetCurrentTheme();
+		auto& colors = m_Hex.GetColors();
+		colors.Offset = theme->TextColor;
+		colors.Ascii = theme->TextColor;
+	}
+
 	BuildToolBar(rc);
 
 	Helpers::RestoreWindowPosition(m_hWnd, L"BinaryValueDialog");

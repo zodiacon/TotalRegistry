@@ -12,5 +12,6 @@ struct Helpers abstract final {
 	static USHORT GetKeyObjectTypeIndex();
 	static CString GetErrorText(DWORD error = ::GetLastError());
 	static CString GetProcessNameById(DWORD pid);
+	static bool CloseHandle(HANDLE hObject, DWORD pid);
 };
 

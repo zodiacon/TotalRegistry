@@ -1,14 +1,42 @@
 #pragma once
 
+#include <unordered_map>
+
+struct COwnerDrawnMenuBase {
+	void SetTextColor(COLORREF color);
+	void SetBackColor(COLORREF color);
+	void SetSelectionTextColor(COLORREF color);
+	void SetSelectionBackColor(COLORREF color);
+	void SetSeparatorColor(COLORREF color);
+	void UpdateMenu(CMenuHandle menu, bool subMenus = false);
+	void AddCommand(UINT id, HICON hIcon);
+	void AddCommand(UINT id, UINT iconId);
+	bool AddMenu(HMENU hMenu);
+	void AddSubMenu(CMenuHandle menu);
+	void SetCheckIcon(HICON hicon);
+
+protected:
+	int m_Width{ 0 };
+	struct ItemData {
+		CString Text;
+		int Image;
+	};
+	std::unordered_map<UINT, ItemData> m_Items;
+	CImageList m_Images;
+	COLORREF m_TextColor{ RGB(0, 0, 0) }, m_BackColor{ RGB(240, 240, 240) };
+	COLORREF m_SelectionBackColor{ RGB(0, 48, 192) }, m_SelectionTextColor{ RGB(255, 255, 255) };
+	COLORREF m_SeparatorColor{ RGB(64, 64, 64) };
+	int m_LastHeight{ 16 };
+	int m_CheckIcon{ -1 };
+	enum { TopLevelMenu = 111, Separator = 100 };
+};
+
 template<typename T>
-class COwnerDrawnMenu {
-public:
+struct COwnerDrawnMenu : COwnerDrawnMenuBase {
 	BEGIN_MSG_MAP(COwnerDrawnMenu)
 		MESSAGE_HANDLER(WM_DRAWITEM, OnDrawItem)
 		MESSAGE_HANDLER(WM_MEASUREITEM, OnMeasureItem)
 	END_MSG_MAP()
-
-	enum { TopLevelMenu = 111, Separator = 100 };
 
 	LRESULT OnDrawItem(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& bHandled) {
 		m_pT->SetMsgHandled(TRUE);
@@ -25,97 +53,12 @@ public:
 	}
 
 	explicit COwnerDrawnMenu(T* pT) : m_pT(pT) {
-		m_Images.Create(16, 16, ILC_COLOR32 | ILC_COLOR, 16, 8);
-		m_Images.AddIcon(AtlLoadIconImage(IDI_CHECK, 0, 16, 16));
+		m_Images.Create(16, 16, ILC_COLOR32 | ILC_COLOR | ILC_MASK, 16, 8);
 	}
 
-	BOOL TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y) {
+	BOOL TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y, HWND hWnd = nullptr) {
 		AddSubMenu(hMenu);
-		return ::TrackPopupMenu(hMenu, flags, x, y, 0, m_pT->m_hWnd, nullptr);
-	}
-
-	void AddCommand(UINT id, HICON hIcon) {
-		ItemData data;
-		data.Image = m_Images.AddIcon(hIcon);
-		auto it = m_Items.find(id);
-		if (it != m_Items.end())
-			it->second.Image = data.Image;
-		else
-			m_Items.insert({ id, data });
-	}
-
-	void AddCommand(UINT id, UINT iconId) {
-		auto hIcon = AtlLoadIconImage(iconId, 64, 16, 16);
-		ATLASSERT(hIcon);
-		AddCommand(id, hIcon);
-	}
-
-	bool AddMenu(HMENU hMenu) {
-		ATLASSERT(::IsMenu(hMenu));
-		CMenuHandle menu(hMenu);
-		UpdateMenu(menu, true);
-		auto count = menu.GetMenuItemCount();
-		MENUITEMINFO mii = { sizeof(mii) };
-		WCHAR text[16];
-		for (decltype(count) i = 0; i < count; i++) {
-			mii.fMask = MIIM_SUBMENU | MIIM_ID;
-			if (menu.GetMenuItemInfo(i, TRUE, &mii) && mii.hSubMenu) {
-				AddSubMenu(mii.hSubMenu);
-				mii.fMask = MIIM_TYPE | MIIM_DATA;
-				mii.fType |= MFT_OWNERDRAW;
-				mii.dwItemData = TopLevelMenu;		// top level menu
-				ATLVERIFY(menu.SetMenuItemInfo(i, TRUE, &mii));
-				if (menu.GetMenuString(i, text, _countof(text), MF_BYPOSITION)) {
-					ItemData data;
-					data.Text = text;
-					data.Image = -1;
-					m_Items.insert({ mii.wID, data });
-				}
-			}
-		}
-		return true;
-	}
-
-	void AddSubMenu(CMenuHandle menu) {
-		UpdateMenu(menu);
-		auto count = menu.GetMenuItemCount();
-		MENUITEMINFO mii = { sizeof(mii) };
-		WCHAR text[64];
-		for (decltype(count) i = 0; i < count; i++) {
-			mii.fMask = MIIM_TYPE | MIIM_DATA;
-			mii.fType = 0;
-			if (menu.GetMenuItemInfoW(i, TRUE, &mii) && mii.fType == MFT_SEPARATOR)
-				mii.dwItemData = Separator;
-			else
-				mii.dwItemData = 0;
-			if (mii.fType & MFT_OWNERDRAW)
-				continue;
-
-			mii.fType |= MFT_OWNERDRAW;
-			ATLVERIFY(menu.SetMenuItemInfo(i, TRUE, &mii));
-			if (mii.dwItemData == Separator)
-				continue;
-
-			mii.fMask = MIIM_SUBMENU | MIIM_ID;
-			if (menu.GetMenuItemInfo(i, TRUE, &mii) && mii.hSubMenu) {
-				AddSubMenu(mii.hSubMenu);
-			}
-			else {
-				if (menu.GetMenuString(i, text, _countof(text), MF_BYPOSITION)) {
-					ATLASSERT(text[0]);
-					ATLASSERT(mii.wID);
-					auto it = m_Items.find(mii.wID);
-					if (it != m_Items.end())
-						it->second.Text = text;
-					else {
-						ItemData data;
-						data.Text = text;
-						data.Image = -1;
-						m_Items.insert({ mii.wID, data });
-					}
-				}
-			}
-		}
+		return ::TrackPopupMenu(hMenu, flags, x, y, 0, hWnd ? hWnd : m_pT->m_hWnd, nullptr);
 	}
 
 	void DrawSeparator(CDCHandle dc, CRect& rc) {
@@ -125,15 +68,6 @@ public:
 		dc.MoveTo(rc.left + 8, rc.top + rc.Height() / 2);
 		dc.SelectPen(pen);
 		dc.LineTo(rc.right - 8, rc.top + rc.Height() / 2);
-	}
-
-	void UpdateMenu(CMenuHandle menu, bool subMenus = false) {
-		MENUINFO mi = { sizeof(mi) };
-		mi.fMask = MIM_BACKGROUND | (subMenus ? MIM_APPLYTOSUBMENUS : 0);
-		CBrush brush;
-		brush.CreateSolidBrush(m_BackColor);
-		mi.hbrBack = brush.Detach();
-		ATLVERIFY(menu.SetMenuInfo(&mi));
 	}
 
 	void DrawItem(LPDRAWITEMSTRUCT dis) {
@@ -170,7 +104,7 @@ public:
 			}
 			else if (dis->itemState & ODS_CHECKED) {
 				// draw a checkmark
-				m_Images.DrawEx(0, dis->hDC, rc, CLR_NONE, CLR_NONE, ILD_NORMAL);
+				m_Images.DrawEx(m_CheckIcon, dis->hDC, rc, CLR_NONE, CLR_NONE, ILD_NORMAL);
 			}
 		}
 		else if (dis->itemState & ODS_CHECKED) {
@@ -271,37 +205,6 @@ public:
 		}
 	}
 
-	void SetTextColor(COLORREF color) {
-		m_TextColor = color;
-	}
-
-	void SetBackColor(COLORREF color) {
-		m_BackColor = color;
-	}
-
-	void SetSelectionTextColor(COLORREF color) {
-		m_SelectionTextColor = color;
-	}
-
-	void SetSelectionBackColor(COLORREF color) {
-		m_SelectionBackColor = color;
-	}
-
-	void SetSeparatorColor(COLORREF color) {
-		m_SeparatorColor = color;
-	}
-
 private:
-	int m_Width{ 0 };
-	struct ItemData {
-		CString Text;
-		int Image;
-	};
-	std::unordered_map<UINT, ItemData> m_Items;
-	CImageList m_Images;
-	COLORREF m_TextColor{ RGB(0, 0, 0) }, m_BackColor{ RGB(240, 240, 240) };
-	COLORREF m_SelectionBackColor{ RGB(0, 48, 192) }, m_SelectionTextColor{ RGB(255, 255, 255) };
-	COLORREF m_SeparatorColor{ RGB(64, 64, 64) };
-	int m_LastHeight{ 16 };
 	T* m_pT;
 };

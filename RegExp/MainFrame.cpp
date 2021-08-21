@@ -153,6 +153,7 @@ bool CMainFrame::GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) {
 	if (!hItem)
 		return false;
 
+	SetActiveWindow();
 	m_UpdateNoDelay = true;
 	m_Tree.SelectItem(hItem);
 	UpdateList();
@@ -170,8 +171,8 @@ bool CMainFrame::GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) {
 	return true;
 }
 
-BOOL CMainFrame::TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y) {
-	return m_Menu.TrackPopupMenu(hMenu, flags, x, y);
+BOOL CMainFrame::TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y, HWND hWnd) {
+	return m_Menu.TrackPopupMenu(hMenu, flags, x, y, hWnd);
 }
 
 CString CMainFrame::GetCurrentKeyPath() {
@@ -347,8 +348,10 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 		SetWindowText(text);
 	}
 
+	m_Menu.SetCheckIcon(AtlLoadIconImage(IDI_CHECK, 0, 16, 16));
 	InitCommandBar();
 	UIAddMenu(menu);
+	UIAddMenu(IDR_CONTEXT);
 
 	CToolBarCtrl tb;
 	tb.Create(m_hWnd, nullptr, nullptr, ATL_SIMPLE_TOOLBAR_PANE_STYLE, 0, ATL_IDW_TOOLBAR);
@@ -1159,7 +1162,7 @@ LRESULT CMainFrame::OnImport(WORD, WORD, HWND, BOOL&) {
 	if (dlg.DoModal() == IDOK) {
 		auto error = ::RegRestoreKey(m_CurrentKey.Get(), dlg.m_szFileName, REG_FORCE_RESTORE);
 		if (ERROR_SUCCESS != error)
-			DisplayError(L"Failed to import file", error);
+			DisplayError(L"Failed to import file", nullptr, error);
 		else {
 			RefreshItem(m_Tree.GetSelectedItem());
 		}
@@ -1183,7 +1186,7 @@ LRESULT CMainFrame::OnLoadHive(WORD, WORD, HWND, BOOL&) {
 		auto hKey = dlg.GetSelectedKey();
 		auto error = ::RegLoadKey(hKey, dlg.GetName(), dlg.GetFileName());
 		if (error != ERROR_SUCCESS)
-			DisplayError(L"Failed to load hive", error);
+			DisplayError(L"Failed to load hive", nullptr, error);
 		else {
 			AtlMessageBox(m_hWnd, L"Hive loaded successfully.", IDS_APP_TITLE, MB_ICONINFORMATION);
 			TreeHelper th(m_Tree);
@@ -1219,7 +1222,7 @@ LRESULT CMainFrame::OnUnloadHive(WORD, WORD, HWND, BOOL&) {
 	m_CurrentKey.Close();
 	auto error = ::RegUnLoadKey(GetKeyFromNode(m_Tree.GetParentItem(hItem)), name);
 	if (error != ERROR_SUCCESS) {
-		DisplayError(L"Failed to unload hive", error);
+		DisplayError(L"Failed to unload hive", nullptr, error);
 		m_CurrentKey.Attach(Registry::OpenKey(GetFullNodePath(hItem), KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS).Detach());
 	}
 	else
@@ -1240,13 +1243,13 @@ LRESULT CMainFrame::OnReplaceRegEdit(WORD, WORD, HWND, BOOL&) {
 	CRegKey key;
 	auto error = key.Open(HKEY_LOCAL_MACHINE, L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options", KEY_WRITE | KEY_READ);
 	if (!key) {
-		DisplayError(L"Failed to open Image File Execution Options key", error);
+		DisplayError(L"Failed to open Image File Execution Options key", nullptr, error);
 		return 0;
 	}
 	CRegKey regEditKey;
 	error = regEditKey.Create(key, L"regedit.exe", nullptr, 0, KEY_WRITE);
 	if (!regEditKey) {
-		DisplayError(L"Failed to create RegEdit key", error);
+		DisplayError(L"Failed to create RegEdit key", nullptr, error);
 		return 0;
 	}
 	settings.ReplaceRegEdit(!settings.ReplaceRegEdit());
@@ -1259,7 +1262,7 @@ LRESULT CMainFrame::OnReplaceRegEdit(WORD, WORD, HWND, BOOL&) {
 		error = regEditKey.DeleteValue(L"Debugger");
 	}
 	if (ERROR_SUCCESS != error) {
-		DisplayError(L"Failed to replace RegEdit", error);
+		DisplayError(L"Failed to replace RegEdit", nullptr, error);
 	}
 	else {
 		UISetCheck(ID_OPTIONS_REPLACEREGEDIT, settings.ReplaceRegEdit());
@@ -1525,6 +1528,7 @@ void CMainFrame::InitCommandBar() {
 		{ ID_FILE_RUNASADMIN, 0, IconHelper::GetShieldIcon() },
 		{ ID_EDIT_COPY, IDI_COPY },
 		{ ID_VIEW_REFRESH, IDI_REFRESH },
+		{ ID_EDIT_COPY2, IDI_COPY },
 		{ ID_TREE_REFRESH, IDI_REFRESH },
 		{ ID_EDIT_CUT, IDI_CUT },
 		{ ID_EDIT_PASTE, IDI_PASTE },
@@ -1539,6 +1543,7 @@ void CMainFrame::InitCommandBar() {
 		{ ID_NEW_KEY, IDI_FOLDER_NEW },
 		{ ID_VIEW_SHOWKEYSINLIST, IDI_FOLDER_VIEW },
 		{ ID_KEY_PERMISSIONS, IDI_PERM },
+		{ ID_KEY_PERMISSIONS2, IDI_PERM },
 		{ ID_FILE_EXPORT, IDI_EXPORT },
 		{ ID_FILE_IMPORT, IDI_IMPORT },
 		{ ID_KEY_PROPERTIES, IDI_PROPERTIES },
@@ -1549,6 +1554,7 @@ void CMainFrame::InitCommandBar() {
 		{ ID_NEW_BINARYVALUE, IDI_BINARY },
 		{ ID_NEW_QWORDVALUE, IDI_NUM8 },
 		{ ID_NEW_STRINGVALUE, IDI_TEXT },
+		{ ID_HANDLES_CLOSEHANDLES, IDI_DELETE },
 	};
 	for (auto& cmd : cmds) {
 		if (cmd.icon)
@@ -1894,10 +1900,14 @@ bool CMainFrame::RefreshItem(HTREEITEM hItem) {
 	return true;
 }
 
-void CMainFrame::DisplayError(PCWSTR msg, DWORD error) const {
+void CMainFrame::DisplayError(PCWSTR msg, HWND hWnd, DWORD error) const {
 	CString text;
 	text.Format(L"%s (%s)", msg, (PCWSTR)Helpers::GetErrorText(error));
-	AtlMessageBox(m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_ICONERROR);
+	AtlMessageBox(hWnd ? hWnd : m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_ICONERROR);
+}
+
+bool CMainFrame::AddMenu(HMENU hMenu) {
+	return false;
 }
 
 int CMainFrame::GetKeyImage(const RegistryItem& item) const {
@@ -2060,16 +2070,12 @@ void CMainFrame::SetDarkMode(bool dark) {
 		}
 	}
 
-	RedrawWindow(nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE | RDW_ALLCHILDREN);
+	::EnumThreadWindows(::GetCurrentThreadId(), [](auto h, auto) {
+		::RedrawWindow(h, nullptr, nullptr, RDW_ERASENOW | RDW_INTERNALPAINT | RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN);
+		return TRUE;
+		}, 0);
 
-	//
-	// customize menu colors
-	//
-	m_Menu.SetBackColor(theme.Menu.BackColor);
-	m_Menu.SetTextColor(theme.Menu.TextColor);
-	m_Menu.SetSelectionTextColor(dark ? RGB(240, 240, 240) : RGB(248, 248, 248));
-	m_Menu.SetSelectionBackColor(dark ? RGB(0, 64, 240) : RGB(0, 48, 160));
-	m_Menu.SetSeparatorColor(dark ? RGB(160, 160, 160) : RGB(64, 64, 64));
+	ThemeHelper::UpdateMenuColors(m_Menu, dark);
 	m_Menu.UpdateMenu(GetMenu(), true);
 	DrawMenuBar();
 

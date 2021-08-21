@@ -24,6 +24,19 @@ CString CKeysHandlesDlg::GetColumnText(HWND hWnd, int row, int col) const {
 	return L"";
 }
 
+bool CKeysHandlesDlg::OnRightClickList(HWND, int row, int col, POINT const& pt) {
+	if (m_List.GetSelectedCount() > 0) {
+		CMenu menu;
+		menu.LoadMenu(IDR_CONTEXT);
+		auto subMenu = menu.GetSubMenu(6);
+		auto cmd = (UINT)m_Menu.TrackPopupMenu(subMenu, TPM_RETURNCMD, pt.x, pt.y);
+		if (cmd)
+			PostMessage(WM_COMMAND, cmd);
+		return true;
+	}
+	return false;
+}
+
 int CKeysHandlesDlg::GetRowImage(HWND, int row) const {
 	return ImageIconCache::Get().GetIconIndex(m_Handles[row].ProcessId);
 }
@@ -66,6 +79,13 @@ BOOL CKeysHandlesDlg::PreTranslateMessage(MSG* pMsg) {
 	return ::GetActiveWindow() == m_hWnd && (::TranslateAccelerator(m_hWnd, m_hAccel.get(), pMsg));
 }
 
+void CKeysHandlesDlg::UpdateUI() {
+	auto count = m_List.GetSelectedCount();
+	UIEnable(ID_KEY_PERMISSIONS2, count == 1);
+	UIEnable(ID_HANDLES_CLOSEHANDLES, count > 0);
+	UIEnable(ID_EDIT_COPY2, count > 0);
+}
+
 void CKeysHandlesDlg::BuildToolBar() {
 	CToolBarCtrl tb;
 	CRect rc(8, 4, 350, 40);
@@ -74,7 +94,7 @@ void CKeysHandlesDlg::BuildToolBar() {
 	tb.SetExtendedStyle(TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DRAWDDARROWS);
 
 	CImageList tbImages;
-	tbImages.Create(24, 24, ILC_COLOR32, 8, 4);
+	tbImages.Create(24, 24, ILC_COLOR32 | ILC_COLOR | ILC_MASK, 8, 4);
 	tb.SetImageList(tbImages);
 
 	const struct {
@@ -84,13 +104,13 @@ void CKeysHandlesDlg::BuildToolBar() {
 		BYTE state = TBSTATE_ENABLED;
 		PCWSTR text = nullptr;
 	} buttons[] = {
-		{ ID_EDIT_COPY, IDI_COPY },
+		{ ID_EDIT_COPY2, IDI_COPY },
 		{ ID_VIEW_REFRESH, IDI_REFRESH },
 		{ 0 },
 		{ ID_HIDE_EMPTY, IDI_FOLDER_ACCESSDENIED, BTNS_BUTTON | BTNS_CHECK, TBSTATE_ENABLED },
 		{ 0 },
-		{ ID_KEY_PERMISSIONS, IDI_PERM },
-		{ ID_CLOSE_HANDLE, IDI_DELETE },
+		{ ID_KEY_PERMISSIONS2, IDI_PERM },
+		{ ID_HANDLES_CLOSEHANDLES, IDI_DELETE },
 	};
 	for (auto& b : buttons) {
 		if (b.id == 0)
@@ -104,6 +124,9 @@ void CKeysHandlesDlg::BuildToolBar() {
 				image = tbImages.AddIcon(hIcon);
 			}
 			tb.AddButton(b.id, b.style | (b.text ? BTNS_SHOWTEXT : 0), b.state, image, b.text, 0);
+			if(hIcon)
+				m_Menu.AddCommand(b.id, hIcon);
+
 		}
 	}
 	UIAddToolBar(tb);
@@ -134,6 +157,10 @@ LRESULT CKeysHandlesDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	_Module.GetMessageLoop()->AddIdleHandler(this);
 	_Module.GetMessageLoop()->AddMessageFilter(this);
 
+	ThemeHelper::UpdateMenuColors(m_Menu, !ThemeHelper::IsDefault());
+	UIAddMenu(IDR_CONTEXT);
+	UpdateUI();
+
 	return 0;
 }
 
@@ -163,6 +190,23 @@ LRESULT CKeysHandlesDlg::OnDestroy(UINT, WPARAM, LPARAM, BOOL& handled) {
 }
 
 LRESULT CKeysHandlesDlg::OnCloseHandle(WORD, WORD wID, HWND, BOOL&) {
+	auto count = m_List.GetSelectedCount();
+	ATLASSERT(count > 0);
+
+	auto result = AtlMessageBox(m_hWnd, std::format(L"Close {} {}? This could lead to process instability.", count, count == 1 ? L"handle" : L"handles").c_str(),
+		IDS_APP_TITLE, MB_ICONWARNING | MB_OKCANCEL | MB_DEFBUTTON2);
+	if (result == IDCANCEL)
+		return 0;
+
+	int closed = 0;
+	for (int index = -1; (index = m_List.GetNextItem(index, LVIS_SELECTED)) >= 0;) {
+		if (Helpers::CloseHandle(UlongToHandle(m_Handles[index].Handle), m_Handles[index].ProcessId))
+			closed++;
+	}
+	if(closed > 0)
+		Refresh();
+	AtlMessageBox(m_hWnd, std::format(L"Successfully closed {} handle(s)", closed).c_str(), IDS_APP_TITLE, MB_ICONINFORMATION);
+
 	return 0;
 }
 
@@ -189,6 +233,9 @@ LRESULT CKeysHandlesDlg::OnPermissions(WORD, WORD wID, HWND, BOOL&) {
 		ThemeHelper::Resume();
 		::CloseHandle(hDup);
 	}
+	else {
+		m_pFrame->DisplayError(L"Failed to show key permissions", m_hWnd);
+	}
 	return 0;
 }
 
@@ -204,10 +251,7 @@ LRESULT CKeysHandlesDlg::OnToolTipGetDisplay(int, LPNMHDR hdr, BOOL&) {
 }
 
 LRESULT CKeysHandlesDlg::OnListSelectionChanged(int, LPNMHDR, BOOL&) {
-	auto count = m_List.GetSelectedCount();
-	UIEnable(ID_KEY_PERMISSIONS, count == 1);
-	UIEnable(ID_CLOSE_HANDLE, count > 0);
-	UIEnable(ID_EDIT_COPY, count > 0);
+	UpdateUI();
 
 	return 0;
 }

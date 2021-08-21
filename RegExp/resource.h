@@ -6,7 +6,6 @@
 #define IDS_APP_TITLE                   101
 #define ID_HIDE_EMPTY                   102
 #define IDD_ABOUTBOX                    103
-#define ID_CLOSE_HANDLE                 103
 #define IDM_ABOUT                       104
 #define IDM_EXIT                        105
 #define IDI_REGEXP                      107
@@ -174,6 +173,9 @@
 #define ID_OPTIONS_FONT                 32868
 #define ID_OPTIONS_RESTOREDEFAULTFONT   32869
 #define ID_TOOLS_SCANKEYHANDLES         32870
+#define ID_HANDLES_CLOSEHANDLES         32871
+#define ID_EDIT_COPY2                   32872
+#define ID_KEY_PERMISSIONS2             32873
 
 // Next default values for new objects
 // 
@@ -181,7 +183,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        175
-#define _APS_NEXT_COMMAND_VALUE         32871
+#define _APS_NEXT_COMMAND_VALUE         32874
 #define _APS_NEXT_CONTROL_VALUE         1051
 #define _APS_NEXT_SYMED_VALUE           115
 #endif

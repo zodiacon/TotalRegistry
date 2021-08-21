@@ -32,7 +32,7 @@ LRESULT CConnectRegistryDlg::OnBrowse(WORD, WORD wID, HWND, BOOL&) {
 	IDsObjectPicker* pPicker;
 	auto hr = ::CoCreateInstance(CLSID_DsObjectPicker, nullptr, CLSCTX_ALL, IID_IDsObjectPicker, reinterpret_cast<void**>(&pPicker));
 	if (FAILED(hr)) {
-		m_pFrame->DisplayError(L"Failed launch computer selection dialog", hr & 0xffff);
+		m_pFrame->DisplayError(L"Failed launch computer selection dialog", m_hWnd, hr & 0xffff);
 		return 0;
 	}
 
@@ -58,7 +58,7 @@ LRESULT CConnectRegistryDlg::OnBrowse(WORD, WORD wID, HWND, BOOL&) {
 	STGMEDIUM med;
 	hr = spData->GetData(&fmt, &med);
 	if (FAILED(hr)) {
-		m_pFrame->DisplayError(L"Failed to retrieve computer name", hr & 0xffff);
+		m_pFrame->DisplayError(L"Failed to retrieve computer name", m_hWnd, hr & 0xffff);
 		return 0;
 	}
 

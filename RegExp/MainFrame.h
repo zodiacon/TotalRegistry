@@ -41,7 +41,7 @@ class CMainFrame :
 public:
 	DECLARE_FRAME_WND_CLASS(L"RegExpWndClass", IDR_MAINFRAME)
 
-	CMainFrame() : m_FindDlg(this), m_AddressBar(this, 2), m_Menu(this) {}
+	CMainFrame() : m_FindDlg(this), m_HandlesDlg(this), m_AddressBar(this, 2), m_Menu(this) {}
 
 	const UINT WM_BUILD_TREE = WM_APP + 11;
 	const UINT WM_FIND_UPDATE = WM_APP + 12;
@@ -65,9 +65,10 @@ public:
 	void OnFindStart();
 	void OnFindEnd(bool cancelled);
 	bool GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) override;
-	BOOL TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y) override;
+	BOOL TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y, HWND hWnd = nullptr) override;
 	CString GetCurrentKeyPath() override;
-	void DisplayError(PCWSTR msg, DWORD error = ::GetLastError()) const;
+	void DisplayError(PCWSTR msg, HWND hWnd = nullptr, DWORD error = ::GetLastError()) const override;
+	bool AddMenu(HMENU hMenu) override;
 
 	CString GetColumnText(HWND, int row, int col) const;
 

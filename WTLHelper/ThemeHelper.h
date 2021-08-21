@@ -8,6 +8,8 @@ enum class DCOperation {
 };
 DEFINE_ENUM_FLAG_OPERATORS(DCOperation);
 
+struct COwnerDrawnMenuBase;
+
 struct ThemeHelper abstract final {
 	static bool LoadFromFile(PCWSTR path, Theme& theme);
 	static bool SaveToFile(Theme const& theme, PCWSTR path);
@@ -20,5 +22,6 @@ struct ThemeHelper abstract final {
 	static const Theme* GetCurrentTheme();
 	static bool IsDefault();
 	static void SetCurrentTheme(const Theme& theme);
+	static void UpdateMenuColors(COwnerDrawnMenuBase& menu, bool dark);
 };
 
