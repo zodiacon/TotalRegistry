@@ -9,8 +9,17 @@ public:
 	}
 
 	BEGIN_MSG_MAP(CCustomRebar)
+		//MESSAGE_HANDLER(WM_ERASEBKGND, OnEraseBkgnd)
 		MESSAGE_HANDLER(WM_CTLCOLOREDIT, OnColorEdit)
 	END_MSG_MAP()
+	
+	LRESULT OnEraseBkgnd(UINT /*uMsg*/, WPARAM wp, LPARAM lParam, BOOL& /*bHandled*/) {
+		CDCHandle dc((HDC)wp);
+		CRect rc;
+		GetClientRect(&rc);
+		dc.FillRect(&rc, ::GetSysColorBrush(COLOR_WINDOW));
+		return 1;
+	}
 
 	LRESULT OnColorEdit(UINT /*uMsg*/, WPARAM wp, LPARAM lParam, BOOL& /*bHandled*/) {
 		auto theme = ThemeHelper::GetCurrentTheme();

@@ -283,11 +283,11 @@ private:
 	int GetKeyImage(const RegistryItem& item) const;
 	INT_PTR ShowValueProperties(RegistryItem& item, int index);
 	void SetDarkMode(bool dark);
-	HTREEITEM GotoKey(const CString& path);
+	HTREEITEM GotoKey(const CString& path, bool knownToExist = false);
 	void ShowBand(int index, bool show);
 	void InitDarkTheme();
 	void InitLocations();
-	HTREEITEM BuildKeyPath(const CString& path);
+	HTREEITEM BuildKeyPath(const CString& path, bool accessible);
 
 	AppCommandCallback<DeleteKeyCommand> GetDeleteKeyCommandCallback();
 

@@ -26,6 +26,7 @@ public:
 
 	CString GetColumnText(HWND, int row, int col) const;
 	bool OnRightClickList(HWND, int row, int col, POINT const& pt);
+	bool OnDoubleClickList(HWND, int row, int col, POINT const& pt);
 
 	int GetRowImage(HWND, int row) const;
 	void DoSort(const SortInfo* si);

@@ -37,6 +37,13 @@ bool CKeysHandlesDlg::OnRightClickList(HWND, int row, int col, POINT const& pt) 
 	return false;
 }
 
+bool CKeysHandlesDlg::OnDoubleClickList(HWND, int row, int col, POINT const& pt) {
+	auto& item = m_Handles[row];
+	if(item.Name[0] != L'<')
+		m_pFrame->GotoKey(item.Name, true);
+	return true;
+}
+
 int CKeysHandlesDlg::GetRowImage(HWND, int row) const {
 	return ImageIconCache::Get().GetIconIndex(m_Handles[row].ProcessId);
 }

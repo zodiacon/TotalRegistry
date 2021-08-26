@@ -13,4 +13,5 @@ struct IMainFrame abstract {
 	virtual HWND GetHwnd() const = 0;
 	virtual void DisplayError(PCWSTR text, HWND hWnd = nullptr, DWORD err = ::GetLastError()) const = 0;
 	virtual bool AddMenu(HMENU hMenu) = 0;
+	virtual HTREEITEM GotoKey(CString const&, bool knownToExist) = 0;
 };

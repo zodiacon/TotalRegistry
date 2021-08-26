@@ -372,7 +372,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 		m_AutoCompleteStrings->CreateInstance(&m_AutoCompleteStrings);
 		CRect r(0, 0, 400, 20);
 		CEdit edit;
-		auto hEdit = edit.Create(m_hWnd, &r, nullptr, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_WANTRETURN | WS_CLIPSIBLINGS);
+		auto hEdit = edit.Create(m_hWnd, &r, nullptr, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_WANTRETURN | WS_CLIPSIBLINGS, WS_EX_WINDOWEDGE);
 		hr = spAC->Init(hEdit, m_AutoCompleteStrings->GetUnknown(), nullptr, nullptr);
 		if (SUCCEEDED(hr)) {
 			spAC->Enable(TRUE);
@@ -795,6 +795,8 @@ LRESULT CMainFrame::OnTreeKeyDown(int, LPNMHDR hdr, BOOL&) {
 	switch (tv->wVKey) {
 		case VK_TAB:
 			m_List.SetFocus();
+			if (m_List.GetSelectedCount() == 0)
+				m_List.SetItemState(0, LVIS_SELECTED, LVIS_SELECTED);
 			return TRUE;
 
 		case VK_APPS:
@@ -1441,6 +1443,7 @@ LRESULT CMainFrame::OnShowKeysHandles(WORD, WORD, HWND, BOOL&) {
 		m_HandlesDlg.Create(nullptr);
 
 	m_HandlesDlg.ShowWindow(SW_SHOW);
+	::SetForegroundWindow(m_HandlesDlg);
 	m_HandlesDlg.Refresh();
 
 	return 0;
@@ -1472,7 +1475,6 @@ LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled
 			CString text(lv->item.pszText);
 			if (text.IsEmpty()) {
 				// default value
-				int zz = 9;
 			}
 			auto cb = [this](auto cmd, auto) {
 				if (m_CurrentOperation == Operation::None && cmd.GetPath() == GetFullNodePath(m_Tree.GetSelectedItem())) {
@@ -1795,10 +1797,11 @@ HKEY CMainFrame::GetKeyFromNode(HTREEITEM hItem) const {
 }
 
 CTreeItem CMainFrame::InsertKeyItem(HTREEITEM hParent, PCWSTR name, NodeType type) {
-	auto item = m_Tree.InsertItem(name, 3, 2, hParent, TVI_LAST);
+	bool accessDenied = (type & NodeType::AccessDenied) == NodeType::AccessDenied;
+	auto item = m_Tree.InsertItem(name, accessDenied ? 5 : 3, accessDenied ? 5 : 2, hParent, TVI_LAST);
 	SetNodeData(item, type);
 	if ((type & NodeType::Key) == NodeType::Key) {
-		auto key = Registry::OpenKey(GetFullNodePath(item), KEY_READ);
+		auto key = Registry::OpenKey(GetFullNodePath(item), KEY_QUERY_VALUE);
 		if (key) {
 			if (Registry::GetSubKeyCount(key.Get()) > 0)
 				m_Tree.InsertItem(L"\\\\", item, TVI_LAST);
@@ -2082,7 +2085,7 @@ void CMainFrame::SetDarkMode(bool dark) {
 	m_StatusBar.SetBkColor(theme.BackColor);
 }
 
-HTREEITEM CMainFrame::GotoKey(const CString& path) {
+HTREEITEM CMainFrame::GotoKey(const CString& path, bool knownToExist) {
 	CString spath(path);
 	spath.MakeUpper();
 	if (spath != L'\\') {
@@ -2095,11 +2098,9 @@ HTREEITEM CMainFrame::GotoKey(const CString& path) {
 		spath.Replace(L"HKCC\\", L"HKEY_CURRENT_CONFIG");
 	}
 	auto hItem = TreeHelper(m_Tree).FindItem(spath[0] == L'\\' ? m_hRealReg : m_hStdReg, spath);
-	if (!hItem) {
-		auto key = Registry::OpenKey(path, KEY_QUERY_VALUE);
-		if (key) {
-			hItem = BuildKeyPath(path);
-		}
+	if (!hItem || knownToExist) {
+		auto key = Registry::OpenKey(path, KEY_ENUMERATE_SUB_KEYS | KEY_QUERY_VALUE);
+		hItem = BuildKeyPath(path, key.Get() != nullptr);
 	}
 
 	if (hItem) {
@@ -2190,10 +2191,10 @@ void CMainFrame::InitLocations() {
 		m_Locations.Replace(r.first, r.second);
 }
 
-HTREEITEM CMainFrame::BuildKeyPath(const CString& path) {
+HTREEITEM CMainFrame::BuildKeyPath(const CString& path, bool accessible) {
 	auto hItem = path[0] == L'\\' ? m_hRealReg : m_hStdReg;
 	CString name;
-	int start = -1;
+	int start = path[0] == L'\\' ? 10 : 0;
 	TreeHelper th(m_Tree);
 	while (!(name = path.Tokenize(L"\\", start)).IsEmpty()) {
 		auto hChild = th.FindChild(hItem, name);
@@ -2201,10 +2202,11 @@ HTREEITEM CMainFrame::BuildKeyPath(const CString& path) {
 			hItem = hChild;
 			continue;
 		}
-		hItem = InsertKeyItem(hItem, name);
+		hItem = InsertKeyItem(hItem, name, NodeType::Key | (accessible ? NodeType::None : NodeType::AccessDenied));
 	}
 	return hItem;
 }
+
 
 AppCommandCallback<DeleteKeyCommand> CMainFrame::GetDeleteKeyCommandCallback() {
 	static const auto cb = [this](auto& cmd, bool execute) {
