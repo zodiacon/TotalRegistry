@@ -13,7 +13,11 @@ public:
 		MESSAGE_HANDLER(WM_CTLCOLOREDIT, OnColorEdit)
 	END_MSG_MAP()
 	
-	LRESULT OnEraseBkgnd(UINT /*uMsg*/, WPARAM wp, LPARAM lParam, BOOL& /*bHandled*/) {
+	LRESULT OnEraseBkgnd(UINT /*uMsg*/, WPARAM wp, LPARAM lParam, BOOL& bHandled) {
+		if (ThemeHelper::IsDefault()) {
+			bHandled = FALSE;
+			return 0;
+		}
 		CDCHandle dc((HDC)wp);
 		CRect rc;
 		GetClientRect(&rc);

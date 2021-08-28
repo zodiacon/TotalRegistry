@@ -51,11 +51,14 @@ BOOL CMainFrame::OnIdle() {
 }
 
 DWORD CMainFrame::OnPrePaint(int, LPNMCUSTOMDRAW cd) {
-	return cd->hdr.hwndFrom == m_List ? CDRF_NOTIFYITEMDRAW : CDRF_DODEFAULT;
+	if (cd->hdr.hwndFrom == m_List)
+		return CDRF_NOTIFYITEMDRAW;
+	SetMsgHandled(FALSE);
+	return CDRF_DODEFAULT;
 }
 
 DWORD CMainFrame::OnItemPrePaint(int, LPNMCUSTOMDRAW cd) {
-	return CDRF_NOTIFYSUBITEMDRAW;
+	return cd->hdr.hwndFrom == m_List ? CDRF_NOTIFYSUBITEMDRAW : CDRF_DODEFAULT;
 }
 
 DWORD CMainFrame::OnSubItemPrePaint(int, LPNMCUSTOMDRAW cd) {
@@ -91,6 +94,10 @@ void CMainFrame::RunOnUiThread(std::function<void()> f) {
 
 void CMainFrame::SetStartKey(const CString& key) {
 	m_StartKey = key;
+}
+
+void CMainFrame::SetStatusText(PCWSTR text) {
+	m_StatusBar.SetText((int)StatusPane::Key, m_StatusText = text, SBT_NOBORDERS | (ThemeHelper::IsDefault() ? 0 : SBT_OWNERDRAW));
 }
 
 HWND CMainFrame::GetHwnd() const {
@@ -304,6 +311,17 @@ BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
 	return FALSE;
 }
 
+void CMainFrame::DrawItem(LPDRAWITEMSTRUCT dis) {
+	if (dis->hwndItem != m_StatusBar) {
+		SetMsgHandled(FALSE);
+		return;
+	}
+
+	::SetTextColor(dis->hDC, ThemeHelper::GetCurrentTheme()->TextColor);
+	::SetBkMode(dis->hDC, TRANSPARENT);
+	::DrawText(dis->hDC, m_StatusText, -1, &dis->rcItem, DT_LEFT | DT_SINGLELINE | DT_VCENTER);
+}
+
 LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	::RegDeleteTree(HKEY_CURRENT_USER, DeletedPathBackup.Left(DeletedPathBackup.GetLength() - 1));
 
@@ -355,11 +373,6 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	CToolBarCtrl tb;
 	tb.Create(m_hWnd, nullptr, nullptr, ATL_SIMPLE_TOOLBAR_PANE_STYLE, 0, ATL_IDW_TOOLBAR);
-	COLORSCHEME cs = { sizeof(cs) };
-	cs.clrBtnHighlight = RGB(200, 200, 200);
-	cs.clrBtnShadow = RGB(0, 0, 255);
-	tb.SetColorScheme(&cs);
-
 	InitToolBar(tb, 24);
 	UIAddToolBar(tb);
 
@@ -2066,9 +2079,8 @@ void CMainFrame::SetDarkMode(bool dark) {
 	for (UINT i = 0; i < rb.GetBandCount(); i++) {
 		if (rb.GetBandInfo(i, &rbi)) {
 			ATLASSERT(rbi.hwndChild);
-			::SetWindowTheme(rbi.hwndChild, dark ? L" " : nullptr, dark ? L"" : nullptr);
-			rbi.clrBack = RGB(32, 32, 32);
-			rbi.clrFore = RGB(240, 240, 240);
+			rbi.clrBack = dark ? RGB(32, 32, 32) : ::GetSysColor(COLOR_MENU);
+			rbi.clrFore = dark ? RGB(240, 240, 240) : ::GetSysColor(COLOR_WINDOWTEXT);
 			rb.SetBandInfo(i, &rbi);
 		}
 	}
@@ -2078,6 +2090,7 @@ void CMainFrame::SetDarkMode(bool dark) {
 		return TRUE;
 		}, 0);
 
+	SetStatusText(m_StatusText);
 	ThemeHelper::UpdateMenuColors(m_Menu, dark);
 	m_Menu.UpdateMenu(GetMenu(), true);
 	DrawMenuBar();
@@ -2285,7 +2298,7 @@ void CMainFrame::UpdateList(bool force) {
 	m_CurrentPath = GetFullNodePath(hItem);
 	auto& path = m_CurrentPath;
 
-	m_StatusBar.SetText((int)StatusPane::Key, path, SBT_NOBORDERS);
+	SetStatusText(path);
 
 	m_AddressBar.SetWindowText(path);
 	int image;

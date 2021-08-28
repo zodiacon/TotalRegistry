@@ -12,7 +12,7 @@ public:
 		delete this;
 	}
 
-	BEGIN_MSG_MAP(CCustomButton)
+	BEGIN_MSG_MAP(CCustomButtonParent)
 		CHAIN_MSG_MAP(CCustomDraw<CCustomButtonParent>)
 	END_MSG_MAP()
 

@@ -16,7 +16,7 @@ public:
 
 	LRESULT OnEraseBkgnd(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled) {
 		auto theme = ThemeHelper::GetCurrentTheme();
-		if (theme && theme->IsDefault()) {
+		if (theme == nullptr || theme->IsDefault()) {
 			bHandled = FALSE;
 			return 0;
 		}
@@ -30,7 +30,7 @@ public:
 
 	LRESULT OnPaint(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled) {
 		auto theme = ThemeHelper::GetCurrentTheme();
-		if (theme && theme->IsDefault()) {
+		if (theme == nullptr || theme->IsDefault()) {
 			bHandled = FALSE;
 			return 0;
 		}

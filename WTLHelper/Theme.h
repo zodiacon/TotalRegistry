@@ -11,9 +11,9 @@ struct Theme {
 
 	struct {
 		COLORREF TextColor{ ::GetSysColor(COLOR_WINDOWTEXT) };
-		COLORREF BackColor{ ::GetSysColor(COLOR_WINDOW) };
-		COLORREF SelectionTextColor{ ::GetSysColor(COLOR_HIGHLIGHTTEXT) };
-		COLORREF SelectionBackColor{ ::GetSysColor(COLOR_HIGHLIGHT) };
+		COLORREF BackColor{ ::GetSysColor(COLOR_MENU) };
+		COLORREF SelectionTextColor{ ::GetSysColor(COLOR_MENUTEXT) };
+		COLORREF SelectionBackColor{ ::GetSysColor(COLOR_MENUHILIGHT) };
 		COLORREF SeparatorColor{ ::GetSysColor(COLOR_GRAYTEXT) };
 	} Menu;
 

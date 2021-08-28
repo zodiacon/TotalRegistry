@@ -34,6 +34,7 @@ class CMainFrame :
 	public CAutoUpdateUI<CMainFrame>,
 	public CVirtualListView<CMainFrame>,
 	public CCustomDraw<CMainFrame>,
+	public COwnerDraw<CMainFrame>,
 	public CDwmImpl<CMainFrame>,
 	public IMainFrame,
 	public CMessageFilter,
@@ -57,6 +58,7 @@ public:
 
 	void RunOnUiThread(std::function<void()> f);
 	void SetStartKey(const CString& key);
+	void SetStatusText(PCWSTR text);
 
 	// IMainFrame
 	HWND GetHwnd() const override;
@@ -77,6 +79,8 @@ public:
 	bool IsSortable(HWND, int col) const;
 	BOOL OnRightClickList(HWND, int row, int col, const POINT&);
 	BOOL OnDoubleClickList(HWND, int row, int col, const POINT& pt);
+
+	void DrawItem(LPDRAWITEMSTRUCT dis);
 
 	enum {
 		ID_LOCATION_FIRST = 1500
@@ -146,11 +150,12 @@ public:
 		COMMAND_ID_HANDLER(ID_OPTIONS_FONT, OnOptionsFont)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		COMMAND_ID_HANDLER(ID_OPTIONS_RESTOREDEFAULTFONT, OnRestoreDefaultFont)
+		CHAIN_MSG_MAP_MEMBER(m_Menu)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CCustomDraw<CMainFrame>)
+		CHAIN_MSG_MAP(COwnerDraw<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
 		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
-		CHAIN_MSG_MAP_MEMBER(m_Menu)
 		REFLECT_NOTIFICATIONS_EX()
 	ALT_MSG_MAP(2)
 		MESSAGE_HANDLER(WM_KEYDOWN, OnEditKeyDown)
@@ -319,6 +324,7 @@ private:
 	Theme m_DarkTheme, m_DefaultTheme{ true };
 	CFont m_Font;
 	CKeysHandlesDlg m_HandlesDlg;
+	CString m_StatusText;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };

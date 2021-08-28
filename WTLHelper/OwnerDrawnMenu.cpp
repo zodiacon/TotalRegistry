@@ -117,3 +117,4 @@ void COwnerDrawnMenuBase::AddSubMenu(CMenuHandle menu) {
 void COwnerDrawnMenuBase::SetCheckIcon(HICON hIcon) {
 	m_CheckIcon = m_Images.AddIcon(hIcon);
 }
+

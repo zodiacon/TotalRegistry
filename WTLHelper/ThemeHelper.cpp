@@ -68,10 +68,10 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 		if ((lpcs->style & (WS_THICKFRAME | WS_CAPTION | WS_POPUP | WS_DLGFRAME)) == 0)
 			::SetWindowTheme(cs->hwnd, L" ", L"");
 	}
-	if (name.CompareNoCase(L"EDIT") == 0 || name.CompareNoCase(L"ATL:EDIT") == 0) {
-		auto win = new CCustomEdit;
-		ATLVERIFY(win->SubclassWindow(cs->hwnd));
-	}
+	//if (name.CompareNoCase(L"EDIT") == 0 || name.CompareNoCase(L"ATL:EDIT") == 0) {
+	//	auto win = new CCustomEdit;
+	//	ATLVERIFY(win->SubclassWindow(cs->hwnd));
+	//}
 	if (name.CompareNoCase(WC_LISTVIEW) == 0) {
 		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
 	}
@@ -79,8 +79,12 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
 	}
 	else if (name.CompareNoCase(REBARCLASSNAME) == 0) {
+		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
 		auto win = new CCustomRebar;
 		win->SubclassWindow(cs->hwnd);
+	}
+	else if (name.CompareNoCase(TOOLBARCLASSNAME) == 0) {
+		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
 	}
 	else if (name.CompareNoCase(WC_HEADER) == 0) {
 		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
@@ -93,7 +97,7 @@ void HandleCreateWindow(CWPRETSTRUCT* cs) {
 		ATLVERIFY(win->SubclassWindow(cs->hwnd));
 	}
 	else if (name.CompareNoCase(STATUSCLASSNAME) == 0) {
-		::SetWindowTheme(cs->hwnd, L" ", L"");
+		::SetWindowTheme(cs->hwnd, nullptr, nullptr);
 		auto win = new CCustomStatusBar;
 		ATLVERIFY(win->SubclassWindow(cs->hwnd));
 	}

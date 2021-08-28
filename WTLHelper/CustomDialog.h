@@ -20,6 +20,8 @@ public:
 	}
 
 	LRESULT OnDialogColor(UINT, WPARAM wp, LPARAM lp, BOOL&) {
+		if (ThemeHelper::IsDefault())
+			return DefWindowProc();
 		return (LRESULT)::GetSysColorBrush(COLOR_WINDOW);
 	}
 
