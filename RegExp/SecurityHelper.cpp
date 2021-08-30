@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "SecurityHelper.h"
 #include <wil\resource.h>
+#include "DriverHelper.h"
 
 bool SecurityHelper::IsRunningElevated() {
 	static bool runningElevated = false;
@@ -46,11 +47,13 @@ bool SecurityHelper::EnablePrivilege(PCWSTR privName, bool enable) {
 }
 
 HANDLE SecurityHelper::DupHandle(HANDLE hSource, DWORD sourcePid, DWORD access) {
-	wil::unique_handle hProcess(::OpenProcess(PROCESS_DUP_HANDLE, FALSE, sourcePid));
-	if (!hProcess)
-		return nullptr;
+	auto h = DriverHelper::DupHandle(hSource, sourcePid, access, access == 0 ? DUPLICATE_SAME_ACCESS : 0);
+	if (!h) {
+		wil::unique_handle hProcess(::OpenProcess(PROCESS_DUP_HANDLE, FALSE, sourcePid));
+		if (!hProcess)
+			return nullptr;
 
-	HANDLE h{ nullptr };
-	::DuplicateHandle(hProcess.get(), hSource, ::GetCurrentProcess(), &h, access, FALSE, access == 0 ? DUPLICATE_SAME_ACCESS : 0);
+		::DuplicateHandle(hProcess.get(), hSource, ::GetCurrentProcess(), &h, access, FALSE, access == 0 ? DUPLICATE_SAME_ACCESS : 0);
+	}
 	return h;
 }

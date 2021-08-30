@@ -68,7 +68,7 @@ COLORREF Helpers::ParseColor(const CString& text) {
 }
 
 CString Helpers::GetObjectName(HANDLE hObject, DWORD pid) {
-    auto h = SecurityHelper::DupHandle(hObject, pid, GENERIC_READ);
+    auto h = SecurityHelper::DupHandle(hObject, pid, KEY_QUERY_VALUE);
     if (h) {
         BYTE buffer[2048];
         auto status = NtQueryObject(h, ObjectNameInformation, buffer, sizeof(buffer), nullptr);

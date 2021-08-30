@@ -2,6 +2,7 @@
 #include "Registry.h"
 #include "NtDll.h"
 #include "Helpers.h"
+#include "DriverHelper.h"
 
 #pragma comment(lib, "ntdll")
 
@@ -24,11 +25,14 @@ DWORD Registry::EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&
 }
 
 HKEY Registry::OpenRealRegistryKey(PCWSTR path, DWORD access) {
+	auto hKey = DriverHelper::OpenKey(path ? path : L"\\REGISTRY", access);
+	if (hKey)
+		return (HKEY)hKey;
+
 	UNICODE_STRING keyName;
 	RtlInitUnicodeString(&keyName, path ? path : L"\\REGISTRY");
 	OBJECT_ATTRIBUTES keyAttr;
 	InitializeObjectAttributes(&keyAttr, &keyName, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
-	HANDLE hKey{ nullptr };
 	auto status = ::NtOpenKey(&hKey, access, &keyAttr);
 	::SetLastError(::RtlNtStatusToDosError(status));
 	return (HKEY)hKey;
@@ -70,6 +74,9 @@ DWORD Registry::EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, 
 CString Registry::QueryStringValue(RegistryKey& key, PCWSTR name) {
 	ULONG len = 0;
 	key.QueryStringValue(name, nullptr, &len);
+	if (len == 0)
+		return L"";
+
 	auto value = std::make_unique<WCHAR[]>(len);
 	key.QueryStringValue(name, value.get(), &len);
 	return value.get();

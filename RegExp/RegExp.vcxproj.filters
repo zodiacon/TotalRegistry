@@ -171,6 +171,9 @@
     <ClInclude Include="ImageIconCache.h">
       <Filter>Helpers</Filter>
     </ClInclude>
+    <ClInclude Include="DriverHelper.h">
+      <Filter>Helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -293,6 +296,9 @@
     <ClCompile Include="ImageIconCache.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
+    <ClCompile Include="DriverHelper.cpp">
+      <Filter>Helpers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="RegExp.rc">
@@ -302,6 +308,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="cpp.hint" />
+    <None Include="..\x64\Release\KRegExp.Sys" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="RegExp.ico">

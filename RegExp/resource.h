@@ -65,6 +65,7 @@
 #define IDI_REGREMOTE                   172
 #define IDD_CONNECTREG                  173
 #define IDD_HANDLES                     174
+#define IDR_DRIVER						999
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002

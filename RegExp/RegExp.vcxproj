@@ -21,13 +21,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -103,6 +103,9 @@
     <Manifest>
       <AdditionalManifestFiles>manifest.xml</AdditionalManifestFiles>
     </Manifest>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;_UNICODE;UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -144,6 +147,7 @@
     <ClInclude Include="CreateKeyCommand.h" />
     <ClInclude Include="DeleteKeyCommand.h" />
     <ClInclude Include="DeleteValueCommand.h" />
+    <ClInclude Include="DriverHelper.h" />
     <ClInclude Include="EnumStrings.h" />
     <ClInclude Include="ExportDlg.h" />
     <ClInclude Include="FindAllDlg.h" />
@@ -193,6 +197,7 @@
     <ClCompile Include="CreateValueCommand.cpp" />
     <ClCompile Include="DeleteKeyCommand.cpp" />
     <ClCompile Include="DeleteValueCommand.cpp" />
+    <ClCompile Include="DriverHelper.cpp" />
     <ClCompile Include="EnumStrings.cpp" />
     <ClCompile Include="ExportDlg.cpp" />
     <ClCompile Include="FindAllDlg.cpp" />
@@ -276,6 +281,7 @@
     <Image Include="RegExp.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\x64\Release\KRegExp.Sys" />
     <None Include="cpp.hint" />
     <None Include="packages.config" />
   </ItemGroup>

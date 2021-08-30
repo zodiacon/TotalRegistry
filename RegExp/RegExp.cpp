@@ -3,6 +3,8 @@
 #include "RegExp.h"
 #include "MainFrame.h"
 #include "ThemeHelper.h"
+#include "DriverHelper.h"
+#include "SecurityHelper.h"
 
 CAppModule _Module;
 
@@ -42,6 +44,12 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ LPWSTR lp
 	::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 	ThemeHelper::Init();
 
+	if (!DriverHelper::IsDriverLoaded() && SecurityHelper::IsRunningElevated()) {
+		auto loaded = DriverHelper::LoadDriver();
+		if (!loaded)
+			AtlMessageBox(nullptr, L"Failed to load kernel driver. Some keys will be inaccesible", IDS_APP_TITLE, MB_ICONWARNING);
+	}
+	
 	int nRet = Run(lpCmdLine, nCmdShow);
 
 	_Module.Term();

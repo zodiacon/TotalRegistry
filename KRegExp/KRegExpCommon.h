@@ -1,0 +1,19 @@
+#pragma once
+
+#define DRIVER_CURRENT_VERSION 0x0100
+
+#define IOCTL_KREGEXP_OPEN_KEY				CTL_CODE(0x8000, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_KREGEXP_DUP_HANDLE			CTL_CODE(0x8000, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
+struct KeyData {
+	ULONG Length;
+	ULONG Access;
+	WCHAR Name[1];
+};
+
+struct DupHandleData {
+	HANDLE Handle;
+	ULONG SourcePid;
+	ULONG AccessMask;
+	ULONG Flags;
+};
