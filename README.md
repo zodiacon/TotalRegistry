@@ -12,11 +12,12 @@ Replacement for the Windows built-in *Regedit.exe* tool. Improvements over that 
 * Undo/redo
 * Copy/paste of keys/values
 * Optionally replace RegEdit
-* more to come!
+* Connect to remote Registry
+* View open key handles
 
 ## Build instructions
 
-Build the solution file with Visual Studio 2022 preview. Can be built with Visual Studio 2019 as well (change toolset to v142 and C++ compiler version to C++ latest).
+Build the solution file with Visual Studio 2022 preview. Can be built with Visual Studio 2019 as well (change toolset to v142 and C++ compiler version to C++ latest or C++20).
 
 ![](https://github.com/zodiacon/RegExp/blob/master/regexp1.png)
 
