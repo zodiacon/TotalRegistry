@@ -1635,7 +1635,7 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 	else {
 		CRegKey key(hKey);
 		Registry::EnumSubKeys(key, [&](auto name, const auto& ft) {
-			auto hItem = m_Tree.InsertItem(name, 3, 2, hRoot, TVI_LAST);
+			auto hItem = m_Tree.InsertItem(name, 3, 2, hRoot, TVI_SORT);
 			SetNodeData(hItem, NodeType::Key);
 			CRegKey subKey;
 			auto error = subKey.Open(hKey, name, KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
@@ -1662,7 +1662,7 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 			}
 			return true;
 			});
-		m_Tree.SortChildren(hRoot);
+		//m_Tree.SortChildren(hRoot);
 		key.Detach();
 	}
 
@@ -1811,7 +1811,7 @@ HKEY CMainFrame::GetKeyFromNode(HTREEITEM hItem) const {
 
 CTreeItem CMainFrame::InsertKeyItem(HTREEITEM hParent, PCWSTR name, NodeType type) {
 	bool accessDenied = (type & NodeType::AccessDenied) == NodeType::AccessDenied;
-	auto item = m_Tree.InsertItem(name, accessDenied ? 5 : 3, accessDenied ? 5 : 2, hParent, TVI_LAST);
+	auto item = m_Tree.InsertItem(name, accessDenied ? 5 : 3, accessDenied ? 5 : 2, hParent, TVI_SORT);
 	SetNodeData(item, type);
 	if ((type & NodeType::Key) == NodeType::Key) {
 		auto key = Registry::OpenKey(GetFullNodePath(item), KEY_QUERY_VALUE);
