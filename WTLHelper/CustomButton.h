@@ -17,11 +17,11 @@ public:
 	END_MSG_MAP()
 
 	DWORD OnPrePaint(int, LPNMCUSTOMDRAW cd) {
-		return ThemeHelper::GetCurrentTheme()->IsDefault() ? CDRF_DODEFAULT : CDRF_NOTIFYITEMDRAW;
+		return ThemeHelper::IsDefault() ? CDRF_DODEFAULT : CDRF_NOTIFYITEMDRAW;
 	}
 
 	DWORD OnPreErase(int, LPNMCUSTOMDRAW cd) {
-		return ThemeHelper::GetCurrentTheme()->IsDefault() ? CDRF_DODEFAULT : CDRF_NOTIFYPOSTERASE;
+		return ThemeHelper::IsDefault() ? CDRF_DODEFAULT : CDRF_NOTIFYPOSTERASE;
 	}
 
 	DWORD OnPostErase(int, LPNMCUSTOMDRAW cd) {

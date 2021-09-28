@@ -51,11 +51,11 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING) {
 			break;
 		}
 
-		UNICODE_STRING alt = RTL_CONSTANT_STRING(L"9999999.9912");
-		status = CmRegisterCallbackEx(OnRegistryCallback, &alt, DriverObject, nullptr, &RegCookie, nullptr);
-		if (!NT_SUCCESS(status)) {
-			KdPrint((DRIVER_PREFIX "Failed to register callback (0x%X)\n", status));
-		}
+		//UNICODE_STRING alt = RTL_CONSTANT_STRING(L"9999999.9912");
+		//status = CmRegisterCallbackEx(OnRegistryCallback, &alt, DriverObject, nullptr, &RegCookie, nullptr);
+		//if (!NT_SUCCESS(status)) {
+		//	KdPrint((DRIVER_PREFIX "Failed to register callback (0x%X)\n", status));
+		//}
 
 		UNICODE_STRING symName = RTL_CONSTANT_STRING(L"\\??\\KRegExp");
 		status = IoCreateSymbolicLink(&symName, &devName);
@@ -250,33 +250,43 @@ NTSTATUS OnRegistryCallback(PVOID /*context*/, PVOID arg1, PVOID arg2) {
 		{
 			if (IsRegisteredProcess()) {
 				auto info = (REG_OPEN_KEY_INFORMATION_V1*)arg2;
+				info->CheckAccessMode = KernelMode;
+				KdPrint((DRIVER_PREFIX "IsRegisteredProcess %wZ %wZ\n", info->CompleteName, info->RemainingName));
 				NTSTATUS status;
 				PUNICODE_STRING name = info->CompleteName;
-				UCHAR buffer[1024];
-				if (info->RootObject) {
-					auto nameInfo = (POBJECT_NAME_INFORMATION)buffer;
-					ULONG len;
-					status = ObQueryNameString(info->RootObject, nameInfo, sizeof(buffer), &len);
-					if (NT_SUCCESS(status)) {
-						nameInfo->Name.MaximumLength = sizeof(buffer) - sizeof(UNICODE_STRING);
-						RtlAppendUnicodeToString(&nameInfo->Name, L"\\");
-						status = RtlAppendUnicodeStringToString(&nameInfo->Name, info->RemainingName);
-						KdPrint((DRIVER_PREFIX "Appended string: %wZ\n", &nameInfo->Name));
-						if (NT_SUCCESS(status))
+				if (name == nullptr || name->Length == 0 || name->Buffer[0] != L'\\') {
+					UCHAR buffer[1024];
+					if (info->RootObject) {
+						auto nameInfo = (POBJECT_NAME_INFORMATION)buffer;
+						ULONG len;
+						status = ObQueryNameString(info->RootObject, nameInfo, sizeof(buffer), &len);
+						if (NT_SUCCESS(status)) {
 							name = &nameInfo->Name;
+							nameInfo->Name.MaximumLength = sizeof(buffer) - sizeof(UNICODE_STRING);
+							if (info->RemainingName) {
+								RtlAppendUnicodeToString(&nameInfo->Name, L"\\");
+								status = RtlAppendUnicodeStringToString(&nameInfo->Name, info->RemainingName);
+								KdPrint((DRIVER_PREFIX "Appended string: %wZ\n", &nameInfo->Name));
+								if (NT_SUCCESS(status))
+									name = &nameInfo->Name;
+							}
+						}
 					}
 				}
 				KdPrint((DRIVER_PREFIX "key name: %wZ\n", name));
-				OBJECT_ATTRIBUTES attr = RTL_CONSTANT_OBJECT_ATTRIBUTES(name, OBJ_KERNEL_HANDLE);
+				OBJECT_ATTRIBUTES attr = RTL_CONSTANT_OBJECT_ATTRIBUTES(name, OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE);
 				HANDLE h;
-				status = ObOpenObjectByName(&attr, *CmKeyObjectType, KernelMode, nullptr, info->DesiredAccess, nullptr, &h);
+				status = ZwOpenKey(&h, info->DesiredAccess, &attr);
 				if (NT_SUCCESS(status)) {
-					status = ObReferenceObjectByHandle(h, info->DesiredAccess, *CmKeyObjectType, KernelMode, info->ResultObject, nullptr);
+					status = ObReferenceObjectByHandle(h, info->DesiredAccess, *CmKeyObjectType, info->CheckAccessMode, info->ResultObject, nullptr);
 					ZwClose(h);
 				}
+				else {
+					KdPrint((DRIVER_PREFIX "Failed in ZwOpenKey: 0x%X\n", status));
+				}
 				if (NT_SUCCESS(status)) {
-					KdPrint((DRIVER_PREFIX "RegNtPreOpenKeyEx success %wZ\n", name));
 					info->GrantedAccess = info->DesiredAccess;
+					KdPrint((DRIVER_PREFIX "RegNtPreOpenKeyEx success %wZ\n", name));
 					return STATUS_CALLBACK_BYPASS;
 				}
 			}

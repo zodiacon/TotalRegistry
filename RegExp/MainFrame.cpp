@@ -1662,7 +1662,6 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 			}
 			return true;
 			});
-		//m_Tree.SortChildren(hRoot);
 		key.Detach();
 	}
 
