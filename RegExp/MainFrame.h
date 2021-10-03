@@ -318,6 +318,7 @@ private:
 	AppSettings m_Settings;
 	Operation m_CurrentOperation{ Operation::None };
 	CFindDlg m_FindDlg;
+	CEdit m_QuickSearch;
 	HANDLE m_hSingleInstMutex{ nullptr };
 	CString m_StartKey;
 	CComObject<CEnumStrings>* m_AutoCompleteStrings{ nullptr };

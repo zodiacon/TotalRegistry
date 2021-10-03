@@ -1,7 +1,9 @@
 #include <ntifs.h>
-#include <ntddk.h>
+#include <wdmsec.h>
 #include "KRegExpCommon.h"
 #include "KRegExp.h"
+
+#pragma comment(lib, "Wdmsec.lib")
 
 NTSTATUS RegExpDeviceControl(PDEVICE_OBJECT, PIRP Irp);
 void RegExpUnload(PDRIVER_OBJECT DriverObject);
@@ -45,7 +47,8 @@ extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING) {
 			break;
 
 		resourceInit = true;
-		status = IoCreateDevice(DriverObject, 0, &devName, FILE_DEVICE_UNKNOWN, 0, FALSE, &DeviceObject);
+		status = IoCreateDeviceSecure(DriverObject, 0, &devName, FILE_DEVICE_UNKNOWN, 0, FALSE, 
+			&SDDL_DEVOBJ_SYS_ALL_ADM_ALL, nullptr, &DeviceObject);
 		if (!NT_SUCCESS(status)) {
 			KdPrint((DRIVER_PREFIX "Failed to create device object (0x%X)\n", status));
 			break;

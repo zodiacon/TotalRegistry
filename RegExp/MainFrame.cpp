@@ -383,9 +383,9 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	auto hr = spAC.CoCreateInstance(CLSID_AutoComplete);
 	if (SUCCEEDED(hr)) {
 		m_AutoCompleteStrings->CreateInstance(&m_AutoCompleteStrings);
-		CRect r(0, 0, 400, 20);
+		CRect r(0, 0, 800, 20);
 		CEdit edit;
-		auto hEdit = edit.Create(m_hWnd, &r, nullptr, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_WANTRETURN | WS_CLIPSIBLINGS, WS_EX_WINDOWEDGE);
+		auto hEdit = edit.Create(m_hWnd, &r, nullptr, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL | ES_WANTRETURN | WS_CLIPSIBLINGS, WS_EX_CLIENTEDGE);
 		hr = spAC->Init(hEdit, m_AutoCompleteStrings->GetUnknown(), nullptr, nullptr);
 		if (SUCCEEDED(hr)) {
 			spAC->Enable(TRUE);
@@ -393,13 +393,17 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 			if (spAC2) {
 				spAC2->SetOptions(ACO_AUTOSUGGEST | ACO_USETAB | ACO_AUTOAPPEND);
 			}
-			AddSimpleReBarBand(hEdit, nullptr, true, 0, true);
+			AddSimpleReBarBand(hEdit, L"Path: ", TRUE, 0, TRUE);
 			ATLVERIFY(m_AddressBar.SubclassWindow(hEdit));
 		}
 		else {
 			m_AddressBar.DestroyWindow();
 		}
 	}
+
+	//CRect r(0, 0, 200, 20);
+	//m_QuickSearch.Create(m_hWnd, &r, L"", WS_CHILD | WS_VISIBLE, WS_EX_CLIENTEDGE);
+	//AddSimpleReBarBand(m_QuickSearch, L"Quick search: ", TRUE, 200);
 
 	CReBarCtrl rb(m_hWndToolBar);
 	rb.LockBands(true);
@@ -448,6 +452,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	m_FindDlg.Create(m_hWnd);
 
 	m_AddressBar.SetFont(m_Tree.GetFont());
+	m_QuickSearch.SetFont(m_Tree.GetFont());
 
 	auto pLoop = _Module.GetMessageLoop();
 	ATLASSERT(pLoop != NULL);
@@ -717,8 +722,8 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 			auto hParent = m_Tree.GetParentItem(hItem);
 			auto cmd = std::make_shared<CreateKeyCommand>(GetFullNodePath(hParent), item.pszText);
 			if (!m_CmdMgr.AddCommand(cmd)) {
-				m_Tree.DeleteItem(hItem);
 				DisplayError(L"Failed to create key");
+				m_Tree.DeleteItem(hItem);
 				return FALSE;
 			}
 			auto cb = [this](auto& cmd, bool execute) {

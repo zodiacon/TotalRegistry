@@ -119,7 +119,7 @@ bool DriverHelper::IsDriverLoaded() {
 }
 
 bool DriverHelper::OpenDevice() {
-	if (!_hDevice) {
+	if (SecurityHelper::IsRunningElevated() && !_hDevice) {
 		_hDevice.reset(::CreateFile(L"\\\\.\\KRegExp", GENERIC_WRITE | GENERIC_READ,
 			FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
 			OPEN_EXISTING, 0, nullptr));
