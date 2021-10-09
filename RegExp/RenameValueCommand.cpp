@@ -3,7 +3,7 @@
 #include "Registry.h"
 
 RenameValueCommand::RenameValueCommand(PCWSTR path, PCWSTR name, PCWSTR newName, AppCommandCallback<RenameValueCommand> cb)
-	: RegAppCommandBase(L"Rename Key", path, name, cb), _newName(newName) {
+	: RegAppCommandBase(L"Rename Value", path, name, cb), _newName(newName) {
 }
 
 bool RenameValueCommand::Execute() {
