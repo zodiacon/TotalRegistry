@@ -216,7 +216,7 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 			break;
 
 		case ColumnType::TimeStamp:
-			if (item.TimeStamp.dwHighDateTime + item.TimeStamp.dwHighDateTime)
+			if (item.TimeStamp.dwHighDateTime + item.TimeStamp.dwLowDateTime)
 				return CTime(item.TimeStamp).Format(L"%x %X");
 			break;
 
@@ -452,7 +452,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	m_FindDlg.Create(m_hWnd);
 
 	m_AddressBar.SetFont(m_Tree.GetFont());
-	m_QuickSearch.SetFont(m_Tree.GetFont());
+	//m_QuickSearch.SetFont(m_Tree.GetFont());
 
 	auto pLoop = _Module.GetMessageLoop();
 	ATLASSERT(pLoop != NULL);
@@ -803,7 +803,14 @@ LRESULT CMainFrame::OnTreeContextMenu(int, LPNMHDR hdr, BOOL&) {
 		menu.LoadMenu(IDR_CONTEXT);
 		UpdateUI();
 		auto type = GetNodeData(hItem);
-		m_Menu.TrackPopupMenu(menu.GetSubMenu((type & NodeType::RemoteRegistry) == NodeType::RemoteRegistry ? 5 : 0), 0, pt2.x, pt2.y);
+		auto hMenu = menu.GetSubMenu((type & NodeType::RemoteRegistry) == NodeType::RemoteRegistry ? 5 : 0);
+		if ((type & NodeType::Hive) == NodeType::Hive) {
+			//
+			// add jump to hive file
+			//
+			hMenu.InsertMenu(0, MF_BYPOSITION, ID_KEY_JUMPTOHIVEFILE, L"Jump &Hive File...");
+		}
+		m_Menu.TrackPopupMenu(hMenu, 0, pt2.x, pt2.y);
 	}
 	return 0;
 }
@@ -1463,6 +1470,28 @@ LRESULT CMainFrame::OnShowKeysHandles(WORD, WORD, HWND, BOOL&) {
 	m_HandlesDlg.ShowWindow(SW_SHOW);
 	::SetForegroundWindow(m_HandlesDlg);
 	m_HandlesDlg.Refresh();
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnJumpToHiveFile(WORD, WORD, HWND, BOOL&) {
+	auto const& hives = Registry::GetHiveList();
+	auto path = GetCurrentKeyPath();
+	path = Registry::StdRegPathToRealPath(path);
+	auto it = std::find_if(hives.begin(), hives.end(), [&](auto& h) {
+		return _wcsicmp(h.Key.c_str(), path) == 0;
+		});
+	if (it == hives.end()) {
+		AtlMessageBox(m_hWnd, L"Hive not found.", IDS_APP_TITLE, MB_ICONERROR);
+		return 0;
+	}
+
+	WCHAR explorer[MAX_PATH];
+	::ExpandEnvironmentStrings(L"%systemroot%\\explorer.exe", explorer, _countof(explorer));
+	
+	auto win32Path = Helpers::GetWin32PathFromNTPath(it->Path.c_str());
+	::ShellExecute(nullptr, L"open", explorer,
+		L"/select,\"" + win32Path + L"\"", nullptr, SW_SHOWNORMAL);
 
 	return 0;
 }
@@ -2288,6 +2317,7 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_KEY_PROPERTIES, FALSE);
 	}
 	UIEnable(ID_FILE_DISCONNECT, node == NodeType::RemoteRegistry);
+	UIEnable(ID_KEY_JUMPTOHIVEFILE, (GetNodeData(m_Tree.GetSelectedItem()) & NodeType::Hive) == NodeType::Hive);
 
 	for (auto id = ID_NEW_DWORDVALUE; id <= ID_NEW_BINARYVALUE; id++)
 		UIEnable(id, !m_ReadOnly);
