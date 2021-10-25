@@ -761,7 +761,7 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 			auto hParent = m_Tree.GetParentItem(item.hItem);
 			auto cmd = std::make_shared<RenameKeyCommand>(GetFullNodePath(hParent), name, item.pszText);
 			if (!m_CmdMgr.AddCommand(cmd)) {
-				DisplayError(L"Failed to rename keu");
+				DisplayError(L"Failed to rename key");
 				return FALSE;
 			}
 			cmd->SetCallback(cb);
