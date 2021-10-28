@@ -590,6 +590,10 @@ LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 			AtlMessageBox(m_hWnd, (PCWSTR)(L"Failed to locate key " + m_StartKey), IDS_APP_TITLE, MB_ICONWARNING);
 		}
 	}
+
+	if (!m_Settings.LastKey().empty())
+		GotoKey(m_Settings.LastKey().c_str());
+
 	m_Tree.SetFocus();
 
 	return 0;
@@ -2331,6 +2335,7 @@ void CMainFrame::UpdateList(bool force) {
 	auto hItem = m_Tree.GetSelectedItem();
 	m_CurrentPath = GetFullNodePath(hItem);
 	auto& path = m_CurrentPath;
+	m_Settings.LastKey((PCWSTR)path);
 
 	SetStatusText(path);
 

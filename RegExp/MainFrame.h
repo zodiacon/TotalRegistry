@@ -148,6 +148,7 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
 		COMMAND_ID_HANDLER(ID_VIEW_STATUSBAR, OnViewStatusBar)
 		COMMAND_ID_HANDLER(ID_OPTIONS_FONT, OnOptionsFont)
+		COMMAND_ID_HANDLER(ID_KEY_JUMPTOHIVEFILE, OnJumpToHiveFile)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		COMMAND_ID_HANDLER(ID_OPTIONS_RESTOREDEFAULTFONT, OnRestoreDefaultFont)
 		CHAIN_MSG_MAP_MEMBER(m_Menu)
@@ -266,6 +267,7 @@ private:
 	LRESULT OnOptionsFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnRestoreDefaultFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnShowKeysHandles(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnJumpToHiveFile(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);

@@ -9,6 +9,7 @@ struct AppSettings : Settings {
 		SETTING(Font, LOGFONT{}, SettingType::Binary);
 		SETTING(ShowExtraHives, 0, SettingType::Bool);
 		SETTING(ShowKeysInList, 0, SettingType::Bool);
+		SETTING_STRING(LastKey, L"");
 		SETTING(AlwaysOnTop, 0, SettingType::Bool);
 		SETTING(ViewAddressBar, 1, SettingType::Bool);
 		SETTING(ViewToolBar, 1, SettingType::Bool);
@@ -34,4 +35,5 @@ struct AppSettings : Settings {
 	DEF_SETTING(ViewAddressBar, int)
 	DEF_SETTING(ViewToolBar, int)
 	DEF_SETTING(ViewStatusBar, int)
+	DEF_SETTING_STRING(LastKey)
 };
