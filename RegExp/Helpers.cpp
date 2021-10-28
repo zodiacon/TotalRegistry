@@ -166,3 +166,36 @@ bool Helpers::CloseHandle(HANDLE hObject, DWORD pid) {
         return false;
     return ::DuplicateHandle(hProcess.get(), hObject, nullptr, nullptr, 0, FALSE, DUPLICATE_CLOSE_SOURCE);
 }
+
+CString Helpers::GetWin32PathFromNTPath(PCWSTR ntpath) {
+    if (ntpath[0] != L'\\')
+        return ntpath;
+
+    static std::vector<std::pair<CString, CString>> drives;
+    if (drives.empty()) {
+        auto ldrives = ::GetLogicalDrives();
+        int d = 0;
+        WCHAR drive[] = L"X:";
+        WCHAR target[256];
+        while (ldrives) {
+            if (ldrives & 1) {
+                drive[0] = WCHAR(d + 'A');
+                if (::QueryDosDevice(drive, target, _countof(target))) {
+                    drives.push_back({ target, drive });
+                }
+            }
+            d++;
+            ldrives >>= 1;
+        }
+    }
+    auto bs = wcschr(ntpath + 8, L'\\');
+    if (bs == nullptr)
+        return L"";
+
+    CString native(ntpath, (int)(bs - ntpath));
+    for (auto& [nt, win32] : drives)
+        if (nt.CompareNoCase(native) == 0)
+            return win32 + bs;
+
+    return L"";
+}

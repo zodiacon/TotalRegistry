@@ -262,7 +262,8 @@ void CMainFrame::DoSort(const SortInfo* si) {
 		return false;
 	};
 
-	std::sort(m_Items.begin() + (m_Settings.ShowKeysInList() ? 1 : 0), m_Items.end(), compare);
+	m_Items.Sort(m_Settings.ShowKeysInList() ? 1 : 0, m_Items.size(), compare);
+	//std::sort(m_Items.begin() + (m_Settings.ShowKeysInList() ? 1 : 0), m_Items.end(), compare);
 }
 
 bool CMainFrame::IsSortable(HWND h, int col) const {
@@ -379,6 +380,15 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	CreateSimpleReBar(ATL_SIMPLE_REBAR_NOBORDER_STYLE);
 	AddSimpleReBarBand(tb, nullptr, TRUE);
 
+	m_QuickFilter.Create(m_hWnd);
+	ATLASSERT(m_QuickFilter);
+	AddSimpleReBarBand(m_QuickFilter, L"Quick Filter: ", FALSE);
+
+	CReBarCtrl rb(m_hWndToolBar);
+	CRect rc;
+	tb.GetItemRect(tb.GetButtonCount() - 1, &rc);
+	rb.SetBandWidth(0, rc.right + 10);
+
 	CComPtr<IAutoComplete> spAC;
 	auto hr = spAC.CoCreateInstance(CLSID_AutoComplete);
 	if (SUCCEEDED(hr)) {
@@ -405,7 +415,6 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	//m_QuickSearch.Create(m_hWnd, &r, L"", WS_CHILD | WS_VISIBLE, WS_EX_CLIENTEDGE);
 	//AddSimpleReBarBand(m_QuickSearch, L"Quick search: ", TRUE, 200);
 
-	CReBarCtrl rb(m_hWndToolBar);
 	rb.LockBands(true);
 
 	CreateSimpleStatusBar(ATL_IDS_IDLEMESSAGE, WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | SBARS_SIZEGRIP | SBT_TOOLTIPS);
@@ -522,6 +531,11 @@ LRESULT CMainFrame::OnTimer(UINT, WPARAM id, LPARAM, BOOL&) {
 		KillTimer(2);
 		UpdateList();
 	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnSetFocus(UINT, WPARAM, LPARAM, BOOL&) {
+	m_Tree.SetFocus();
 	return 0;
 }
 
@@ -1500,6 +1514,11 @@ LRESULT CMainFrame::OnJumpToHiveFile(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnQuickFind(WORD, WORD, HWND, BOOL&) {
+	m_QuickFilter.SetFocus();
+	return 0;
+}
+
 LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/) {
 	auto lv = (NMLVDISPINFO*)pnmh;
 	if (lv->item.pszText == nullptr) {
@@ -1589,6 +1608,7 @@ void CMainFrame::InitCommandBar() {
 		{ ID_EDIT_REDO, IDI_REDO },
 		{ ID_EDIT_DELETE, IDI_DELETE },
 		{ ID_EDIT_FIND, IDI_FIND },
+		{ ID_SEARCH_QUICKFIND, IDI_QUICKFIND },
 		{ ID_SEARCH_FINDALL, IDI_FINDALL },
 		{ ID_SEARCH_FINDNEXT, IDI_FIND_NEXT },
 		{ ID_EDIT_READONLY, IDI_LOCK },
@@ -1963,6 +1983,13 @@ bool CMainFrame::AddMenu(HMENU hMenu) {
 	return false;
 }
 
+void CMainFrame::QuickFilter(PCWSTR text) {
+	CString stext(text);
+	m_QuickFilterText = stext;
+	UpdateFilter();
+	m_List.SetItemCountEx((int)m_Items.size(), LVSICF_NOINVALIDATEALL);
+}
+
 int CMainFrame::GetKeyImage(const RegistryItem& item) const {
 	int image = 3;
 	if (!m_CurrentKey)
@@ -2328,6 +2355,27 @@ void CMainFrame::UpdateUI() {
 	UIEnable(ID_SEARCH_FINDNEXT, m_FindDlg.IsFindNextAvailable());
 }
 
+void CMainFrame::UpdateFilter() {
+	CString stext(m_QuickFilterText);
+	stext.MakeLower();
+	if (stext.IsEmpty())
+		m_Items.Filter(nullptr);
+	else {
+		auto filter = [&](auto& item, int index) {
+			if (index == 0 && m_Settings.ShowKeysInList())
+				return true;
+
+			CString sname(item.Name);
+			sname.MakeLower();
+			if (sname.Find(stext) >= 0)
+				return true;
+
+			return false;
+		};
+		m_Items.Filter(filter);
+	}
+}
+
 void CMainFrame::UpdateList(bool force) {
 	m_Items.clear();
 	m_List.SetItemCount(0);
@@ -2432,6 +2480,7 @@ void CMainFrame::UpdateList(bool force) {
 		}
 	}
 
+	UpdateFilter();
 	m_List.SetItemCount(static_cast<int>(m_Items.size()));
 	DoSort(GetSortInfo(m_List));
 	m_List.RedrawItems(m_List.GetTopIndex(), m_List.GetTopIndex() + m_List.GetCountPerPage());

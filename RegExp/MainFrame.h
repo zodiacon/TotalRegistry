@@ -13,6 +13,8 @@
 #include "Theme.h"
 #include "LocationManager.h"
 #include "KeysHandlesDlg.h"
+#include "SortedFilteredVector.h"
+#include "QuickFilterBar.h"
 
 enum class NodeType {
 	None = 0,
@@ -42,7 +44,7 @@ class CMainFrame :
 public:
 	DECLARE_FRAME_WND_CLASS(L"RegExpWndClass", IDR_MAINFRAME)
 
-	CMainFrame() : m_FindDlg(this), m_HandlesDlg(this), m_AddressBar(this, 2), m_Menu(this) {}
+	CMainFrame() : m_FindDlg(this), m_HandlesDlg(this), m_AddressBar(this, 2), m_Menu(this), m_QuickFilter(this) {}
 
 	const UINT WM_BUILD_TREE = WM_APP + 11;
 	const UINT WM_FIND_UPDATE = WM_APP + 12;
@@ -71,6 +73,7 @@ public:
 	CString GetCurrentKeyPath() override;
 	void DisplayError(PCWSTR msg, HWND hWnd = nullptr, DWORD error = ::GetLastError()) const override;
 	bool AddMenu(HMENU hMenu) override;
+	void QuickFilter(PCWSTR text) override;
 
 	CString GetColumnText(HWND, int row, int col) const;
 
@@ -88,6 +91,7 @@ public:
 
 	BEGIN_MSG_MAP(CMainFrame)
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
+		MESSAGE_HANDLER(WM_SETFOCUS, OnSetFocus)
 		NOTIFY_CODE_HANDLER(NM_SETFOCUS, OnFocusChanged)
 		NOTIFY_CODE_HANDLER(TVN_ITEMEXPANDING, OnTreeItemExpanding)
 		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnTreeSelChanged)
@@ -132,6 +136,7 @@ public:
 		COMMAND_RANGE_HANDLER(ID_LOCATION_FIRST, ID_LOCATION_FIRST + 49, OnKnownLocation)
 		COMMAND_ID_HANDLER(ID_KEY_PERMISSIONS, OnKeyPermissions)
 		COMMAND_ID_HANDLER(ID_KEY_PROPERTIES, OnProperties)
+		COMMAND_ID_HANDLER(ID_SEARCH_QUICKFIND, OnQuickFind)
 		COMMAND_ID_HANDLER(ID_KEY_GOTO, OnGotoKey)
 		COMMAND_ID_HANDLER(ID_EDIT_ADDRESSBAR, OnEditAddressBar)
 		COMMAND_ID_HANDLER(ID_FILE_EXPORT, OnExport)
@@ -205,6 +210,7 @@ private:
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnTimer(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnSetFocus(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnEditPaint(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnShowWindow(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnMenuSelect(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
@@ -268,6 +274,7 @@ private:
 	LRESULT OnRestoreDefaultFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnShowKeysHandles(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnJumpToHiveFile(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnQuickFind(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -299,6 +306,7 @@ private:
 	AppCommandCallback<DeleteKeyCommand> GetDeleteKeyCommandCallback();
 
 	void UpdateUI();
+	void UpdateFilter();
 	void UpdateList(bool force = false);
 
 	CommandManager m_CmdMgr;
@@ -307,13 +315,14 @@ private:
 	mutable RegistryKey m_CurrentKey;
 	CString m_CurrentPath;
 	CSplitterWindow m_MainSplitter;
+	CQuickFilterBar m_QuickFilter;
 	CMultiPaneStatusBarCtrl m_StatusBar;
 	CListViewCtrl m_List;
 	CContainedWindowT<CEdit> m_AddressBar;
 	COwnerDrawnMenu<CMainFrame> m_Menu;
 	mutable CTreeViewCtrlEx m_Tree;
 	CListViewCtrl m_Details;
-	std::vector<RegistryItem> m_Items;
+	SortedFilteredVector<RegistryItem> m_Items;
 	CTreeItem m_hLocalRoot, m_hStdReg, m_hRealReg;
 	NodeType m_CurrentNodeType{ NodeType::None };
 	int m_CurrentSelectedItem{ -1 };
@@ -328,6 +337,7 @@ private:
 	CFont m_Font;
 	CKeysHandlesDlg m_HandlesDlg;
 	CString m_StatusText;
+	CString m_QuickFilterText;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };

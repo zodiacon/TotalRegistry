@@ -169,6 +169,7 @@
     <ClInclude Include="NtDll.h" />
     <ClInclude Include="NumberValueDlg.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="QuickFilterBar.h" />
     <ClInclude Include="RegExp.h" />
     <ClInclude Include="RegExportImport.h" />
     <ClInclude Include="Registry.h" />
@@ -217,6 +218,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="QuickFilterBar.cpp" />
     <ClCompile Include="RegExp.cpp" />
     <ClCompile Include="RegExportImport.cpp" />
     <ClCompile Include="Registry.cpp" />

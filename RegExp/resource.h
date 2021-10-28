@@ -65,7 +65,8 @@
 #define IDI_REGREMOTE                   172
 #define IDD_CONNECTREG                  173
 #define IDD_HANDLES                     174
-#define IDR_DRIVER						999
+#define IDD_QUICKFILTER                 175
+#define IDR_DRIVER                      999
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
@@ -112,6 +113,8 @@
 #define IDC_USERS                       1043
 #define IDC_LINK                        1045
 #define IDC_HANDLECOUNT                 1050
+#define IDC_FILTER                      1051
+#define IDC_CLEAR                       1052
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -177,6 +180,7 @@
 #define ID_HANDLES_CLOSEHANDLES         32871
 #define ID_EDIT_COPY2                   32872
 #define ID_KEY_PERMISSIONS2             32873
+#define ID_KEY_JUMPTOHIVEFILE           32874
 
 // Next default values for new objects
 // 
@@ -184,8 +188,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        175
-#define _APS_NEXT_COMMAND_VALUE         32874
-#define _APS_NEXT_CONTROL_VALUE         1051
+#define _APS_NEXT_COMMAND_VALUE         32876
+#define _APS_NEXT_CONTROL_VALUE         1053
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

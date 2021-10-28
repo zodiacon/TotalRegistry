@@ -13,5 +13,6 @@ struct Helpers abstract final {
 	static CString GetErrorText(DWORD error = ::GetLastError());
 	static CString GetProcessNameById(DWORD pid);
 	static bool CloseHandle(HANDLE hObject, DWORD pid);
+	static CString GetWin32PathFromNTPath(PCWSTR ntpath);
 };
 
