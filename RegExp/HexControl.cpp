@@ -124,30 +124,31 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 }
 
 LRESULT CHexControl::OnSetFocus(UINT, WPARAM, LPARAM, BOOL&) {
-	CreateSolidCaret(m_InsertMode ? 2 : m_CharWidth, m_CharHeight);
-	ShowCaret();
+	ATLVERIFY(CreateSolidCaret(m_InsertMode ? 2 : m_CharWidth, m_CharHeight));
+	ATLVERIFY(ShowCaret());
 	UpdateCaret();
 
 	return 0;
 }
 
 LRESULT CHexControl::OnKillFocus(UINT, WPARAM, LPARAM, BOOL&) {
-	HideCaret();
+	ATLVERIFY(HideCaret());
 	DestroyCaret();
 	return 0;
 }
 
 LRESULT CHexControl::OnLeftButtonDown(UINT, WPARAM, LPARAM lParam, BOOL&) {
+	SetFocus();
 	m_Selection.Clear();
 
-	SetCapture();
 	int x = GET_X_LPARAM(lParam), y = GET_Y_LPARAM(lParam);
 	auto offset = GetOffsetFromPoint(CPoint(x, y));
 	if (offset >= 0) {
 		m_CaretOffset = offset;
 		UpdateCaret();
 	}
-	RedrawWindow();
+//	RedrawWindow();
+	SetCapture();
 	return 0;
 }
 
@@ -525,15 +526,14 @@ void CHexControl::DrawNumber(CDCHandle dc, int64_t offset, uint64_t value, int d
 
 void CHexControl::UpdateCaret() {
 	auto pt = GetPointFromOffset(m_CaretOffset);
-	HideCaret();
+	ATLVERIFY(HideCaret());
 	if (pt.y >= 0) {
 		SetCaretPos(pt.x, pt.y);
-		ShowCaret();
 	}
 	else {
 		SetCaretPos(-1000, -1000);
-		ShowCaret();
 	}
+	ATLVERIFY(ShowCaret());
 }
 
 void CHexControl::RedrawWindow(RECT* rc) {
