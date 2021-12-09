@@ -15,6 +15,7 @@
 #include "KeysHandlesDlg.h"
 #include "SortedFilteredVector.h"
 #include "QuickFilterBar.h"
+#include "NavigationManager.h"
 
 enum class NodeType {
 	None = 0,
@@ -118,6 +119,8 @@ public:
 		COMMAND_ID_HANDLER(ID_OPTIONS_ALWAYSONTOP, OnAlwaysOnTop)
 		COMMAND_ID_HANDLER(ID_VIEW_SHOWKEYSINLIST, OnShowKeysInList)
 		COMMAND_ID_HANDLER(ID_NEW_KEY, OnNewKey)
+		COMMAND_ID_HANDLER(ID_VIEW_BACK, OnViewGoBack)
+		COMMAND_ID_HANDLER(ID_VIEW_FORWARD, OnViewGoForward)
 		COMMAND_RANGE_HANDLER(ID_NEW_DWORDVALUE, ID_NEW_BINARYVALUE, OnNewValue)
 		COMMAND_ID_HANDLER(ID_TOOLS_SCANKEYHANDLES, OnShowKeysHandles)
 		COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
@@ -275,6 +278,8 @@ private:
 	LRESULT OnShowKeysHandles(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnJumpToHiveFile(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnQuickFind(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnViewGoBack(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnViewGoForward(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
@@ -307,7 +312,7 @@ private:
 
 	void UpdateUI();
 	void UpdateFilter();
-	void UpdateList(bool force = false);
+	void UpdateList(bool newLocation = false);
 
 	CommandManager m_CmdMgr;
 	LocationManager m_Locations;
@@ -338,6 +343,7 @@ private:
 	CKeysHandlesDlg m_HandlesDlg;
 	CString m_StatusText;
 	CString m_QuickFilterText;
+	NavigationManager<CString> m_Navigation;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 };

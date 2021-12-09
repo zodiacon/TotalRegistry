@@ -181,14 +181,16 @@
 #define ID_EDIT_COPY2                   32872
 #define ID_KEY_PERMISSIONS2             32873
 #define ID_KEY_JUMPTOHIVEFILE           32874
+#define ID_VIEW_BACK                    32876
+#define ID_VIEW_FORWARD                 32877
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        175
-#define _APS_NEXT_COMMAND_VALUE         32876
+#define _APS_NEXT_RESOURCE_VALUE        177
+#define _APS_NEXT_COMMAND_VALUE         32881
 #define _APS_NEXT_CONTROL_VALUE         1053
 #define _APS_NEXT_SYMED_VALUE           115
 #endif

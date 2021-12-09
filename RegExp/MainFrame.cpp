@@ -529,7 +529,7 @@ LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
 LRESULT CMainFrame::OnTimer(UINT, WPARAM id, LPARAM, BOOL&) {
 	if (id == 2) {
 		KillTimer(2);
-		UpdateList();
+		UpdateList(true);
 	}
 	return 0;
 }
@@ -613,18 +613,19 @@ LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 	return 0;
 }
 
-LRESULT CMainFrame::OnTreeSelChanged(int, LPNMHDR, BOOL&) {
-	UpdateUI();
-	if (m_UpdateNoDelay) {
+LRESULT CMainFrame::OnTreeSelChanged(int, LPNMHDR hdr, BOOL&) {
+	auto tv = (NMTREEVIEW*)hdr;
+	if (m_UpdateNoDelay || tv->action != TVC_BYKEYBOARD) {
 		m_UpdateNoDelay = false;
-		UpdateList();
+		UpdateList(tv->action != TVC_UNKNOWN);
 	}
-	else {
+	else if(tv->action == TVC_BYKEYBOARD) {
 		//
 		// short delay in case the user is scrolling fast
 		//
 		SetTimer(2, 200, nullptr);
 	}
+	UpdateUI();
 	return 0;
 }
 
@@ -1519,6 +1520,28 @@ LRESULT CMainFrame::OnQuickFind(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnViewGoBack(WORD, WORD, HWND, BOOL&) {
+	auto path = m_Navigation.GoBack();
+	auto hItem = FindItemByPath(path);
+	if (hItem) {
+		m_Tree.SelectItem(hItem);
+		m_Tree.EnsureVisible(hItem);
+		UpdateUI();
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnViewGoForward(WORD, WORD, HWND, BOOL&) {
+	auto path = m_Navigation.GoForward();
+	auto hItem = FindItemByPath(path);
+	if (hItem) {
+		m_Tree.SelectItem(hItem);
+		m_Tree.EnsureVisible(hItem);
+		UpdateUI();
+	}
+	return 0;
+}
+
 LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/) {
 	auto lv = (NMLVDISPINFO*)pnmh;
 	if (lv->item.pszText == nullptr) {
@@ -1628,6 +1651,8 @@ void CMainFrame::InitCommandBar() {
 		{ ID_NEW_QWORDVALUE, IDI_NUM8 },
 		{ ID_NEW_STRINGVALUE, IDI_TEXT },
 		{ ID_HANDLES_CLOSEHANDLES, IDI_DELETE },
+		{ ID_VIEW_BACK, IDI_BACK },
+		{ ID_VIEW_FORWARD, IDI_FORWARD },
 	};
 	for (auto& cmd : cmds) {
 		if (cmd.icon)
@@ -1648,6 +1673,9 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 		BYTE style = BTNS_BUTTON;
 		PCWSTR text = nullptr;
 	} buttons[] = {
+		{ ID_VIEW_BACK, IDI_BACK },
+		{ ID_VIEW_FORWARD, IDI_FORWARD },
+		{ 0 },
 		{ ID_EDIT_READONLY, IDI_LOCK },
 		{ ID_VIEW_REFRESH, IDI_REFRESH },
 		{ ID_VIEW_SHOWKEYSINLIST, IDI_FOLDER_VIEW },
@@ -1969,7 +1997,7 @@ bool CMainFrame::RefreshItem(HTREEITEM hItem) {
 	if (expanded)
 		m_Tree.Expand(hItem, TVE_EXPAND);
 	m_Tree.LockWindowUpdate(FALSE);
-	UpdateList(true);
+	UpdateList();
 	return true;
 }
 
@@ -2218,25 +2246,31 @@ void CMainFrame::InitLocations() {
 	while (menu.DeleteMenu(2, MF_BYPOSITION))
 		;
 
-	if (m_Locations.GetCount() == 0) {
-		const struct {
-			PCWSTR name;
-			PCWSTR path;
-		} locations[] = {
-			{ L"Services", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services)" },
-			{ L"Hardware", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Enum)" },
-			{ L"Device Classes", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Class)" },
-			{ L"Hive List", LR"(HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\hivelist)" },
-			{ L"Image File Execution Options", LR"(HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options)" },
-			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shell)" },
-			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shellex)" },
-			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\AllFileSystemObjects\ShellEx\ContextMenuHandlers)" },
-			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shell)" },
-			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shellex\ContextMenuHandlers)" },
-			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\shell)" },
-			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shell)" },
-			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shellex\ContextMenuHandlers)" }
-		};
+	const struct {
+		PCWSTR name;
+		PCWSTR path;
+	} locations[] = {
+		{ L"Services", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services)" },
+		{ L"Hardware", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Enum)" },
+		{ L"Device Classes", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Class)" },
+		{ L"Hive List", LR"(HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\hivelist)" },
+		{ L"Image File Execution Options", LR"(HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options)" },
+		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shell)" },
+		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shellex)" },
+		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\AllFileSystemObjects\ShellEx\ContextMenuHandlers)" },
+		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shell)" },
+		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shellex\ContextMenuHandlers)" },
+		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\shell)" },
+		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shell)" },
+		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shellex\ContextMenuHandlers)" },
+		{ L"Current Version", LR"(HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion)" },
+		{ L"Current Version (32 bit)", LR"(HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion)" },
+		{ L"Software (Current User)", LR"(HKEY_CURRENT_USER\SOFTWARE)" },
+		{ L"Software (Current User) (32-bit)", LR"(HKEY_CURRENT_USER\SOFTWARE\Wow6432Node)" },
+		{ L"Software (Local Machine)", LR"(HKEY_LOCAL_MACHINE\SOFTWARE)" },
+		{ L"Software (Local Machine) (32-bit)", LR"(HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node)" },
+	};
+	if (m_Locations.GetCount() < _countof(locations)) {
 		for (const auto& [name, path] : locations)
 			m_Locations.Add(name, path);
 		m_Locations.Save();
@@ -2316,6 +2350,9 @@ void CMainFrame::UpdateUI() {
 	if (m_CmdMgr.CanRedo())
 		UISetText(ID_EDIT_REDO, L"&Redo " + m_CmdMgr.GetRedoCommand()->GetCommandName() + L"\tCtrl+Y");
 
+	UIEnable(ID_VIEW_BACK, m_Navigation.CanGoBack());
+	UIEnable(ID_VIEW_FORWARD, m_Navigation.CanGoForward());
+
 	int listItem = m_List.GetSelectionMark();
 	bool listFocus = ::GetFocus() == m_List;
 	bool treeFocus = ::GetFocus() == m_Tree;
@@ -2376,12 +2413,14 @@ void CMainFrame::UpdateFilter() {
 	}
 }
 
-void CMainFrame::UpdateList(bool force) {
+void CMainFrame::UpdateList(bool newLocation) {
 	m_Items.clear();
 	m_List.SetItemCount(0);
 
 	auto hItem = m_Tree.GetSelectedItem();
 	m_CurrentPath = GetFullNodePath(hItem);
+	if (newLocation)
+		m_Navigation.Add(m_CurrentPath);
 	auto& path = m_CurrentPath;
 	m_Settings.LastKey((PCWSTR)path);
 
