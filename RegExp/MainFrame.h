@@ -29,6 +29,8 @@ enum class NodeType {
 	Machine = 0x200,
 	AccessDenied = 0x400,
 	RemoteRegistry = 0x800,
+	Bookmark = 0x1000,
+	Bookmarks = 0x2000,
 };
 DEFINE_ENUM_FLAG_OPERATORS(NodeType);
 
@@ -121,6 +123,7 @@ public:
 		COMMAND_ID_HANDLER(ID_NEW_KEY, OnNewKey)
 		COMMAND_ID_HANDLER(ID_VIEW_BACK, OnViewGoBack)
 		COMMAND_ID_HANDLER(ID_VIEW_FORWARD, OnViewGoForward)
+		COMMAND_ID_HANDLER(ID_VIEW_UP, OnViewGoUp)
 		COMMAND_RANGE_HANDLER(ID_NEW_DWORDVALUE, ID_NEW_BINARYVALUE, OnNewValue)
 		COMMAND_ID_HANDLER(ID_TOOLS_SCANKEYHANDLES, OnShowKeysHandles)
 		COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
@@ -157,6 +160,8 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_STATUSBAR, OnViewStatusBar)
 		COMMAND_ID_HANDLER(ID_OPTIONS_FONT, OnOptionsFont)
 		COMMAND_ID_HANDLER(ID_KEY_JUMPTOHIVEFILE, OnJumpToHiveFile)
+		COMMAND_ID_HANDLER(ID_KEY_ADDBOOKMARK, OnAddBookmark)
+		COMMAND_ID_HANDLER(ID_DELETE_BOOKMARK, OnDeleteBookmark)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		COMMAND_ID_HANDLER(ID_OPTIONS_RESTOREDEFAULTFONT, OnRestoreDefaultFont)
 		CHAIN_MSG_MAP_MEMBER(m_Menu)
@@ -280,9 +285,15 @@ private:
 	LRESULT OnQuickFind(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnViewGoBack(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnViewGoForward(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnViewGoUp(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnAddBookmark(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnDeleteBookmark(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
+	CTreeItem InsertTreeItem(PCWSTR text, int image, NodeType type, HTREEITEM hParent = TVI_ROOT, HTREEITEM hAfter = TVI_SORT);
+	CTreeItem InsertTreeItem(PCWSTR text, int image, int selectedImage, NodeType type, HTREEITEM hParent = TVI_ROOT, HTREEITEM hAfter = TVI_SORT);
+
 	HTREEITEM BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name = nullptr);
 	void InitTree();
 	CString GetFullNodePath(HTREEITEM hItem) const;
@@ -307,6 +318,7 @@ private:
 	void InitDarkTheme();
 	void InitLocations();
 	HTREEITEM BuildKeyPath(const CString& path, bool accessible);
+	CTreeItem AddBookmark(HTREEITEM hItem);
 
 	AppCommandCallback<DeleteKeyCommand> GetDeleteKeyCommandCallback();
 
@@ -328,7 +340,7 @@ private:
 	mutable CTreeViewCtrlEx m_Tree;
 	CListViewCtrl m_Details;
 	SortedFilteredVector<RegistryItem> m_Items;
-	CTreeItem m_hLocalRoot, m_hStdReg, m_hRealReg;
+	CTreeItem m_hLocalRoot, m_hStdReg, m_hRealReg, m_hBookmarks;
 	NodeType m_CurrentNodeType{ NodeType::None };
 	int m_CurrentSelectedItem{ -1 };
 	AppSettings m_Settings;
@@ -343,7 +355,8 @@ private:
 	CKeysHandlesDlg m_HandlesDlg;
 	CString m_StatusText;
 	CString m_QuickFilterText;
-	NavigationManager<CString> m_Navigation;
+	NavigationManager<HTREEITEM> m_Navigation;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
+	bool m_NewLocation{ false };
 };

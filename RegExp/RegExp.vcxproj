@@ -242,6 +242,9 @@
   <ItemGroup>
     <Image Include="Icons\back.ico" />
     <Image Include="Icons\binary.ico" />
+    <Image Include="Icons\bookmarks.ico" />
+    <Image Include="Icons\bookmark_add.ico" />
+    <Image Include="Icons\bookmark_delete.ico" />
     <Image Include="Icons\check.ico" />
     <Image Include="Icons\copy.ico" />
     <Image Include="Icons\cut.ico" />

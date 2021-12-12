@@ -452,6 +452,15 @@
     <Image Include="Icons\regremote.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
+    <Image Include="Icons\bookmarks.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\bookmark_delete.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="Icons\bookmark_add.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="manifest.xml" />

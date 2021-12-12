@@ -66,6 +66,9 @@
 #define IDD_CONNECTREG                  173
 #define IDD_HANDLES                     174
 #define IDD_QUICKFILTER                 175
+#define IDI_BOOKMARKS                   177
+#define IDI_BOOKMARK_ADD                178
+#define IDI_BOOKMARK_DELETE             179
 #define IDR_DRIVER                      999
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
@@ -183,14 +186,17 @@
 #define ID_KEY_JUMPTOHIVEFILE           32874
 #define ID_VIEW_BACK                    32876
 #define ID_VIEW_FORWARD                 32877
+#define ID_VIEW_UP                      32881
+#define ID_KEY_ADDBOOKMARK              32882
+#define ID_DELETE_BOOKMARK              32883
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        177
-#define _APS_NEXT_COMMAND_VALUE         32881
+#define _APS_NEXT_RESOURCE_VALUE        180
+#define _APS_NEXT_COMMAND_VALUE         32884
 #define _APS_NEXT_CONTROL_VALUE         1053
 #define _APS_NEXT_SYMED_VALUE           115
 #endif

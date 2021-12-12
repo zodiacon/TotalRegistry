@@ -163,7 +163,7 @@ bool CMainFrame::GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) {
 	SetActiveWindow();
 	m_UpdateNoDelay = true;
 	m_Tree.SelectItem(hItem);
-	UpdateList();
+	UpdateList(true);
 	if (name && *name) {
 		int index = m_List.FindItem(name, false);
 		if (index >= 0) {
@@ -434,7 +434,8 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	UINT icons[] = {
 		IDR_MAINFRAME, IDI_COMPUTER, IDI_FOLDER, IDI_FOLDER_CLOSED, IDI_FOLDER_LINK,
 		IDI_FOLDER_ACCESSDENIED, IDI_HIVE, IDI_HIVE_ACCESSDENIED, IDI_FOLDER_UP, IDI_BINARY,
-		IDI_TEXT, IDI_REAL_REG, IDI_NUM4, IDI_NUM8, IDI_REGREMOTE
+		IDI_TEXT, IDI_REAL_REG, IDI_NUM4, IDI_NUM8, IDI_REGREMOTE,
+		IDI_BOOKMARKS,
 	};
 	for (auto icon : icons)
 		images.AddIcon(AtlLoadIconImage(icon, 0, 16, 16));
@@ -509,6 +510,14 @@ LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
 	if (GetWindowPlacement(&wp)) {
 		m_Settings.MainWindowPlacement(wp);
 	}
+	//
+	// gather bookmarks
+	//
+	std::vector<CString> bookmarks;
+	for (auto& [name, _] : TreeHelper(m_Tree).GetChildItems(m_hBookmarks))
+		bookmarks.push_back(name);
+	m_Settings.Bookmarks(bookmarks);
+
 	m_Settings.ReadOnly(m_ReadOnly);
 	m_Settings.Save();
 	m_FindDlg.Cancel();
@@ -821,8 +830,14 @@ LRESULT CMainFrame::OnTreeContextMenu(int, LPNMHDR hdr, BOOL&) {
 		CMenu menu;
 		menu.LoadMenu(IDR_CONTEXT);
 		UpdateUI();
+		int subMenu = -1;
 		auto type = GetNodeData(hItem);
-		auto hMenu = menu.GetSubMenu((type & NodeType::RemoteRegistry) == NodeType::RemoteRegistry ? 5 : 0);
+		if ((type & NodeType::Bookmark) == NodeType::Bookmark)
+			subMenu = 7;
+		if (subMenu < 0)
+			subMenu = (type & NodeType::RemoteRegistry) == NodeType::RemoteRegistry ? 5 : 0;
+
+		auto hMenu = menu.GetSubMenu(subMenu);
 		if ((type & NodeType::Hive) == NodeType::Hive) {
 			//
 			// add jump to hive file
@@ -1431,8 +1446,7 @@ LRESULT CMainFrame::OnConnectRemote(WORD, WORD, HWND, BOOL&) {
 			return 0;
 		}
 
-		auto hComputer = m_Tree.InsertItem(dlg.GetComputerName(), 14, 14, TVI_ROOT, TVI_LAST);
-		SetNodeData(hComputer, NodeType::RemoteRegistry);
+		auto hComputer = InsertTreeItem(dlg.GetComputerName(), 14, NodeType::RemoteRegistry, TVI_ROOT, TVI_LAST);
 		auto Item = InsertKeyItem(hComputer, L"HKEY_LOCAL_MACHINE", NodeType::Predefined | NodeType::Key);
 		Item = InsertKeyItem(hComputer, L"HKEY_USERS", NodeType::Predefined | NodeType::Key);
 		m_Tree.Expand(hComputer, TVE_EXPAND);
@@ -1521,8 +1535,8 @@ LRESULT CMainFrame::OnQuickFind(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnViewGoBack(WORD, WORD, HWND, BOOL&) {
-	auto path = m_Navigation.GoBack();
-	auto hItem = FindItemByPath(path);
+	auto hItem = m_Navigation.GoBack();
+	//auto hItem = FindItemByPath(path);
 	if (hItem) {
 		m_Tree.SelectItem(hItem);
 		m_Tree.EnsureVisible(hItem);
@@ -1532,13 +1546,40 @@ LRESULT CMainFrame::OnViewGoBack(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnViewGoForward(WORD, WORD, HWND, BOOL&) {
-	auto path = m_Navigation.GoForward();
-	auto hItem = FindItemByPath(path);
+	auto hItem = m_Navigation.GoForward();
+	//auto hItem = FindItemByPath(path);
 	if (hItem) {
 		m_Tree.SelectItem(hItem);
 		m_Tree.EnsureVisible(hItem);
 		UpdateUI();
 	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnViewGoUp(WORD, WORD, HWND, BOOL&) {
+	auto hItem = m_Tree.GetParentItem(m_Tree.GetSelectedItem());
+	if (hItem) {
+		m_NewLocation = true;
+		m_Tree.SelectItem(hItem);
+		m_Tree.EnsureVisible(hItem);
+	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnAddBookmark(WORD, WORD, HWND, BOOL&) {
+	auto item = AddBookmark(m_Tree.GetSelectedItem());
+	m_NewLocation = true;
+	item.EnsureVisible();
+	item.Select();
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnDeleteBookmark(WORD, WORD, HWND, BOOL&) {
+	auto hItem = m_Tree.GetSelectedItem();
+	ATLASSERT((GetNodeData(hItem) & NodeType::Bookmark) == NodeType::Bookmark);
+	m_Tree.DeleteItem(hItem);
+
 	return 0;
 }
 
@@ -1653,6 +1694,9 @@ void CMainFrame::InitCommandBar() {
 		{ ID_HANDLES_CLOSEHANDLES, IDI_DELETE },
 		{ ID_VIEW_BACK, IDI_BACK },
 		{ ID_VIEW_FORWARD, IDI_FORWARD },
+		{ ID_VIEW_UP, IDI_FOLDER_UP },
+		{ ID_KEY_ADDBOOKMARK, IDI_BOOKMARK_ADD },
+		{ ID_DELETE_BOOKMARK, IDI_BOOKMARK_DELETE },
 	};
 	for (auto& cmd : cmds) {
 		if (cmd.icon)
@@ -1675,6 +1719,7 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 	} buttons[] = {
 		{ ID_VIEW_BACK, IDI_BACK },
 		{ ID_VIEW_FORWARD, IDI_FORWARD },
+		{ ID_VIEW_UP, IDI_FOLDER_UP },
 		{ 0 },
 		{ ID_EDIT_READONLY, IDI_LOCK },
 		{ ID_VIEW_REFRESH, IDI_REFRESH },
@@ -1703,6 +1748,16 @@ void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
 			tb.AddButton(b.id, b.style, TBSTATE_ENABLED, image, b.text, 0);
 		}
 	}
+}
+
+CTreeItem CMainFrame::InsertTreeItem(PCWSTR text, int image, NodeType type, HTREEITEM hParent, HTREEITEM hAfter) {
+	return InsertTreeItem(text, image, image, type, hParent, hAfter);
+}
+
+CTreeItem CMainFrame::InsertTreeItem(PCWSTR text, int image, int selectedImage, NodeType type, HTREEITEM hParent, HTREEITEM hAfter) {
+	auto item = m_Tree.InsertItem(text, image, selectedImage, hParent, hAfter);
+	item.SetData(static_cast<DWORD_PTR>(type));
+	return item;
 }
 
 HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
@@ -1758,17 +1813,25 @@ void CMainFrame::InitTree() {
 	WCHAR name[32];
 	DWORD len = _countof(name);
 	::GetComputerName(name, &len);
-	m_hLocalRoot = m_Tree.InsertItem(name + CString(L" (Local)"), 1, 1, TVI_ROOT, TVI_LAST);
-	m_hLocalRoot.SetData(static_cast<DWORD_PTR>(NodeType::Machine));
-	m_hStdReg = m_Tree.InsertItem(L"Standard Registry", 0, 0, m_hLocalRoot, TVI_LAST);
-	SetNodeData(m_hStdReg, NodeType::StandardRoot);
-	m_hRealReg = m_Tree.InsertItem(L"REGISTRY", 11, 11, m_hLocalRoot, TVI_LAST);
-	SetNodeData(m_hRealReg, NodeType::RegistryRoot | NodeType::Predefined | NodeType::Key);
+	m_hLocalRoot = InsertTreeItem(name + CString(L" (Local)"), 1, NodeType::Machine, TVI_ROOT, TVI_LAST);
+	m_hBookmarks = InsertTreeItem(L"Bookmarks", 15, NodeType::Bookmarks, m_hLocalRoot, TVI_LAST);
+	for (auto& bm : m_Settings.Bookmarks()) {
+		InsertKeyItem(m_hBookmarks, bm, NodeType::Key | NodeType::Bookmark);
+	}
+	m_hStdReg = InsertTreeItem(L"Standard Registry", 0, NodeType::StandardRoot, m_hLocalRoot, TVI_LAST);
+	m_hRealReg = InsertTreeItem(L"REGISTRY", 11, NodeType::RegistryRoot | NodeType::Predefined | NodeType::Key, m_hLocalRoot, TVI_LAST);
 	m_hLocalRoot.Expand(TVE_EXPAND);
 	m_Tree.SelectItem(m_hStdReg);
 }
 
 CString CMainFrame::GetFullNodePath(HTREEITEM hItem) const {
+	auto type = GetNodeData(hItem);
+	if ((type & NodeType::Bookmark) == NodeType::Bookmark) {
+		CString text;
+		m_Tree.GetItemText(hItem, text);
+		return text;
+	}
+
 	CString path;
 	auto hPrev = hItem;
 	CString text;
@@ -1896,8 +1959,7 @@ HKEY CMainFrame::GetKeyFromNode(HTREEITEM hItem) const {
 
 CTreeItem CMainFrame::InsertKeyItem(HTREEITEM hParent, PCWSTR name, NodeType type) {
 	bool accessDenied = (type & NodeType::AccessDenied) == NodeType::AccessDenied;
-	auto item = m_Tree.InsertItem(name, accessDenied ? 5 : 3, accessDenied ? 5 : 2, hParent, TVI_SORT);
-	SetNodeData(item, type);
+	auto item = InsertTreeItem(name, accessDenied ? 5 : 3, accessDenied ? 5 : 2, type, hParent, TVI_SORT);
 	if ((type & NodeType::Key) == NodeType::Key) {
 		auto key = Registry::OpenKey(GetFullNodePath(item), KEY_QUERY_VALUE);
 		if (key) {
@@ -2318,6 +2380,13 @@ HTREEITEM CMainFrame::BuildKeyPath(const CString& path, bool accessible) {
 	return hItem;
 }
 
+CTreeItem CMainFrame::AddBookmark(HTREEITEM hItem) {
+	auto path = GetFullNodePath(hItem);
+	int image = 4, selectedImage = 4;
+	m_Tree.GetItemImage(hItem, image, selectedImage);
+	return InsertKeyItem(m_hBookmarks, path, NodeType::Key | NodeType::Bookmark);
+}
+
 
 AppCommandCallback<DeleteKeyCommand> CMainFrame::GetDeleteKeyCommandCallback() {
 	static const auto cb = [this](auto& cmd, bool execute) {
@@ -2352,6 +2421,9 @@ void CMainFrame::UpdateUI() {
 
 	UIEnable(ID_VIEW_BACK, m_Navigation.CanGoBack());
 	UIEnable(ID_VIEW_FORWARD, m_Navigation.CanGoForward());
+	UIEnable(ID_VIEW_UP, (m_CurrentNodeType & NodeType::Key) == NodeType::Key);
+	UIEnable(ID_KEY_ADDBOOKMARK, (m_CurrentNodeType & (NodeType::Key | NodeType::Bookmark | NodeType::Predefined)) == NodeType::Key);
+	UIEnable(ID_DELETE_BOOKMARK, (m_CurrentNodeType & NodeType::Bookmark) == NodeType::Bookmark);
 
 	int listItem = m_List.GetSelectionMark();
 	bool listFocus = ::GetFocus() == m_List;
@@ -2418,9 +2490,11 @@ void CMainFrame::UpdateList(bool newLocation) {
 	m_List.SetItemCount(0);
 
 	auto hItem = m_Tree.GetSelectedItem();
+	m_CurrentNodeType = GetNodeData(hItem);
 	m_CurrentPath = GetFullNodePath(hItem);
-	if (newLocation)
-		m_Navigation.Add(m_CurrentPath);
+	if (newLocation || m_NewLocation)
+		m_Navigation.Add(hItem);
+	m_NewLocation = false;
 	auto& path = m_CurrentPath;
 	m_Settings.LastKey((PCWSTR)path);
 
