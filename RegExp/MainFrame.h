@@ -355,6 +355,7 @@ private:
 	CKeysHandlesDlg m_HandlesDlg;
 	CString m_StatusText;
 	CString m_QuickFilterText;
+	CString m_LastKey;
 	NavigationManager<HTREEITEM> m_Navigation;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };

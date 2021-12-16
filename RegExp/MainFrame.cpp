@@ -328,8 +328,10 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	::ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
 
-	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp"))
+	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp")) {
 		m_ReadOnly = m_Settings.ReadOnly();
+		m_LastKey = m_Settings.LastKey().c_str();
+	}
 	m_Locations.Load(L"Software\\ScorpioSoftware\\RegExp");
 
 	InitDarkTheme();
@@ -607,6 +609,7 @@ LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 	}
 	m_Tree.LockWindowUpdate(FALSE);
 
+
 	if (!m_StartKey.IsEmpty()) {
 		auto hItem = GotoKey(m_StartKey);
 		if (!hItem) {
@@ -614,8 +617,8 @@ LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 		}
 	}
 
-	if (!m_Settings.LastKey().empty())
-		GotoKey(m_Settings.LastKey().c_str());
+	if (!m_LastKey.IsEmpty())
+		GotoKey(m_LastKey);
 
 	m_Tree.SetFocus();
 
@@ -1952,7 +1955,7 @@ HKEY CMainFrame::GetKeyFromNode(HTREEITEM hItem) const {
 	if (text == L"REGISTRY")
 		return Registry::OpenRealRegistryKey();
 	for (auto& k : Registry::Keys)
-		if (k.text == text)
+		if (wcscmp(k.text, text) == 0)
 			return k.hKey;
 	return nullptr;
 }

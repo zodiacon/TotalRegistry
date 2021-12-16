@@ -92,7 +92,7 @@ USHORT Helpers::GetKeyObjectTypeIndex() {
         auto p = reinterpret_cast<OBJECT_TYPES_INFORMATION*>(buffer.get());
         auto raw = &p->TypeInformation[0];
         for (ULONG i = 0; i < p->NumberOfTypes; i++) {
-            if (raw->TypeName.Buffer == CString(L"Key")) {
+            if (_wcsicmp(raw->TypeName.Buffer, L"Key") == 0) {
                 keyIndex = raw->TypeIndex;
                 break;
             }
