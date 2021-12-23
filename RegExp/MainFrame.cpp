@@ -2048,6 +2048,22 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 						break;
 			}
 			break;
+
+		case REG_BINARY:
+			if (item.Size == sizeof(FILETIME) && (item.Name.Find(L"Date") >= 0 || item.Name.Find(L"date") >= 0)) {
+				//
+				// assume a FILETIME and provide a string representation
+				//
+				FILETIME ft;
+				ULONG size = item.Size;
+				if (ERROR_SUCCESS == m_CurrentKey.QueryBinaryValue(item.Name, &ft, &size)) {
+					WCHAR text[64];
+					if (::SHFormatDateTime(&ft, nullptr, text, _countof(text)))
+						return text;
+					return CTime(ft).Format(L"%c");
+				}
+			}
+			break;
 	}
 	return text;
 }
