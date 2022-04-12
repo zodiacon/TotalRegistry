@@ -6,8 +6,6 @@
 
 #pragma once
 
-#define __cpp_lib_ranges
-
 #include <Windows.h>
 #include <atlbase.h>
 #include <atlapp.h>

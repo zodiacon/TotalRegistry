@@ -10,10 +10,6 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 #define NOMINMAX
 
-#ifndef __cpp_lib_format
-#define __cpp_lib_format
-#endif
-
 #include <atlbase.h>
 #include <atlapp.h>
 #include <atlstr.h>
