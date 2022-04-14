@@ -55,7 +55,7 @@ CString CFindAllDlg::GetColumnText(HWND, int row, int col) const {
     return L"";
 }
 
-int CFindAllDlg::GetRowImage(HWND, int row) const {
+int CFindAllDlg::GetRowImage(HWND, int row, int) const {
     auto& item = m_Items[row];
     if (!item.Data.IsEmpty())
         return 2;
