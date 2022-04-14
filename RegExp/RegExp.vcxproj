@@ -296,11 +296,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WTLHelper\WTLHelper.vcxproj">
-      <Project>{be107d73-39aa-4ea8-b7ba-b0e26c018b98}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Xml Include="manifest.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
