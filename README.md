@@ -1,4 +1,4 @@
-# Registry Explorer
+# Total Registry
 
 Replacement for the Windows built-in *Regedit.exe* tool. Improvements over that tool include:
 
