@@ -12,6 +12,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KRegExp", "KRegExp\KRegExp.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WTLHelper", "WTLHelper\WTLHelper\WTLHelper.vcxproj", "{AE53419F-A769-4548-8E15-E311904DF7DF}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Installer", "Installer\Installer.vdproj", "{79BEBE58-CCAD-483F-8279-BBFF3C880F30}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -72,6 +74,15 @@ Global
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.Release|x64.Build.0 = Release|x64
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.Release|x86.ActiveCfg = Release|Win32
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.Release|x86.Build.0 = Release|Win32
+		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Debug|ARM.ActiveCfg = Debug
+		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Debug|ARM64.ActiveCfg = Debug
+		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Debug|x64.ActiveCfg = Debug
+		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Debug|x86.ActiveCfg = Debug
+		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|ARM.ActiveCfg = Release
+		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|ARM64.ActiveCfg = Release
+		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|x64.ActiveCfg = Release
+		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|x64.Build.0 = Release
+		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
