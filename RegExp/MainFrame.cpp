@@ -334,7 +334,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	::ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
 
-	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp")) {
+	if (m_Settings.Load(L"Software\\ScorpioSoftware\\TotalRegistry")) {
 		m_ReadOnly = m_Settings.ReadOnly();
 		m_LastKey = m_Settings.LastKey().c_str();
 	}
