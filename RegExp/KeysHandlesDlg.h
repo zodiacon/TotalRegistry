@@ -12,13 +12,14 @@ class CKeysHandlesDlg :
 	public CDynamicDialogLayout<CKeysHandlesDlg>,
 	public CAutoUpdateUI<CKeysHandlesDlg>,
 	public CVirtualListView<CKeysHandlesDlg>,
+	public COwnerDrawnMenu<CKeysHandlesDlg>,
 	public CIdleHandler,
 	public CMessageFilter,
 	public CDialogHelper<CKeysHandlesDlg> {
 public:
 	enum { IDD = IDD_HANDLES };
 
-	CKeysHandlesDlg(IMainFrame* frame) : m_pFrame(frame), m_Menu(this) {}
+	CKeysHandlesDlg(IMainFrame* frame) : m_pFrame(frame) {}
 
 	void Refresh();
 	BOOL OnIdle() override;
@@ -28,7 +29,7 @@ public:
 	bool OnRightClickList(HWND, int row, int col, POINT const& pt);
 	bool OnDoubleClickList(HWND, int row, int col, POINT const& pt);
 
-	int GetRowImage(HWND, int row) const;
+	int GetRowImage(HWND, int row, int) const;
 	void DoSort(const SortInfo* si);
 
 	BEGIN_MSG_MAP(CKeysHandlesDlg)
@@ -43,9 +44,9 @@ public:
 		COMMAND_ID_HANDLER(ID_EDIT_COPY2, OnEditCopy)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		CHAIN_MSG_MAP(CVirtualListView<CKeysHandlesDlg>)
+		CHAIN_MSG_MAP(COwnerDrawnMenu<CKeysHandlesDlg>)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CKeysHandlesDlg>)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CKeysHandlesDlg>)
-		CHAIN_MSG_MAP_MEMBER(m_Menu)
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):

@@ -23,7 +23,7 @@ public:
 	void Cancel();
 
 	CString GetColumnText(HWND, int row, int col) const;
-	int GetRowImage(HWND, int row) const;
+	int GetRowImage(HWND, int row, int) const;
 	void DoSort(const SortInfo* si);
 
 	BOOL OnDoubleClickList(HWND, int row, int, const POINT&);

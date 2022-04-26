@@ -29,7 +29,7 @@ bool CKeysHandlesDlg::OnRightClickList(HWND, int row, int col, POINT const& pt) 
 		CMenu menu;
 		menu.LoadMenu(IDR_CONTEXT);
 		auto subMenu = menu.GetSubMenu(6);
-		auto cmd = (UINT)m_Menu.TrackPopupMenu(subMenu, TPM_RETURNCMD, pt.x, pt.y);
+		auto cmd = (UINT)ShowContextMenu(subMenu, TPM_RETURNCMD, pt.x, pt.y);
 		if (cmd)
 			PostMessage(WM_COMMAND, cmd);
 		return true;
@@ -44,7 +44,7 @@ bool CKeysHandlesDlg::OnDoubleClickList(HWND, int row, int col, POINT const& pt)
 	return true;
 }
 
-int CKeysHandlesDlg::GetRowImage(HWND, int row) const {
+int CKeysHandlesDlg::GetRowImage(HWND, int row, int) const {
 	return ImageIconCache::Get().GetIconIndex(m_Handles[row].ProcessId);
 }
 

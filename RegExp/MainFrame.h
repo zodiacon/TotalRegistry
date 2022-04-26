@@ -39,15 +39,15 @@ class CMainFrame :
 	public CAutoUpdateUI<CMainFrame>,
 	public CVirtualListView<CMainFrame>,
 	public CCustomDraw<CMainFrame>,
-	public COwnerDraw<CMainFrame>,
 	public CDwmImpl<CMainFrame>,
+	public COwnerDrawnMenu<CMainFrame>,
 	public IMainFrame,
 	public CMessageFilter,
 	public CIdleHandler {
 public:
 	DECLARE_FRAME_WND_CLASS(L"RegExpWndClass", IDR_MAINFRAME)
 
-	CMainFrame() : m_FindDlg(this), m_HandlesDlg(this), m_AddressBar(this, 2), m_Menu(this), m_QuickFilter(this) {}
+	CMainFrame() : m_FindDlg(this), m_HandlesDlg(this), m_AddressBar(this, 2), m_QuickFilter(this) {}
 
 	const UINT WM_BUILD_TREE = WM_APP + 11;
 	const UINT WM_FIND_UPDATE = WM_APP + 12;
@@ -75,18 +75,17 @@ public:
 	BOOL TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y, HWND hWnd = nullptr) override;
 	CString GetCurrentKeyPath() override;
 	void DisplayError(PCWSTR msg, HWND hWnd = nullptr, DWORD error = ::GetLastError()) const override;
-	bool AddMenu(HMENU hMenu) override;
 	void QuickFilter(PCWSTR text) override;
 
 	CString GetColumnText(HWND, int row, int col) const;
 
-	int GetRowImage(HWND, int row) const;
+	int GetRowImage(HWND, int row, int) const;
 	void DoSort(const SortInfo* si);
 	bool IsSortable(HWND, int col) const;
 	BOOL OnRightClickList(HWND, int row, int col, const POINT&);
 	BOOL OnDoubleClickList(HWND, int row, int col, const POINT& pt);
 
-	void DrawItem(LPDRAWITEMSTRUCT dis);
+	bool DrawItem(LPDRAWITEMSTRUCT dis);
 
 	enum {
 		ID_LOCATION_FIRST = 1500
@@ -95,6 +94,7 @@ public:
 	BEGIN_MSG_MAP(CMainFrame)
 		MESSAGE_HANDLER(WM_TIMER, OnTimer)
 		MESSAGE_HANDLER(WM_SETFOCUS, OnSetFocus)
+		MESSAGE_HANDLER(WM_DRAWITEM, OnDrawItem)
 		NOTIFY_CODE_HANDLER(NM_SETFOCUS, OnFocusChanged)
 		NOTIFY_CODE_HANDLER(TVN_ITEMEXPANDING, OnTreeItemExpanding)
 		NOTIFY_CODE_HANDLER(TVN_SELCHANGED, OnTreeSelChanged)
@@ -106,8 +106,6 @@ public:
 		NOTIFY_HANDLER(TreeId, NM_RCLICK, OnTreeContextMenu)
 		NOTIFY_CODE_HANDLER(TVN_KEYDOWN, OnTreeKeyDown)
 		NOTIFY_CODE_HANDLER(LVN_KEYDOWN, OnListKeyDown)
-		MESSAGE_HANDLER(WM_CREATE, OnCreate)
-		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		MESSAGE_HANDLER(WM_COPYDATA, OnGoToKeyExternal)
 		MESSAGE_HANDLER(WM_BUILD_TREE, OnBuildTree)
 		MESSAGE_HANDLER(WM_FIND_UPDATE, OnFindUpdate)
@@ -163,11 +161,13 @@ public:
 		COMMAND_ID_HANDLER(ID_KEY_ADDBOOKMARK, OnAddBookmark)
 		COMMAND_ID_HANDLER(ID_DELETE_BOOKMARK, OnDeleteBookmark)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
+		MESSAGE_HANDLER(WM_CREATE, OnCreate)
+		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		COMMAND_ID_HANDLER(ID_OPTIONS_RESTOREDEFAULTFONT, OnRestoreDefaultFont)
-		CHAIN_MSG_MAP_MEMBER(m_Menu)
+		CHAIN_MSG_MAP(COwnerDrawnMenu<CMainFrame>)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CCustomDraw<CMainFrame>)
-		CHAIN_MSG_MAP(COwnerDraw<CMainFrame>)
+		//CHAIN_MSG_MAP(COwnerDraw<CMainFrame>)
 		CHAIN_MSG_MAP(CVirtualListView<CMainFrame>)
 		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
 		REFLECT_NOTIFICATIONS_EX()
@@ -217,6 +217,7 @@ private:
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnDrawItem(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnTimer(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnSetFocus(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnEditPaint(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
@@ -336,7 +337,6 @@ private:
 	CMultiPaneStatusBarCtrl m_StatusBar;
 	CListViewCtrl m_List;
 	CContainedWindowT<CEdit> m_AddressBar;
-	COwnerDrawnMenu<CMainFrame> m_Menu;
 	mutable CTreeViewCtrlEx m_Tree;
 	CListViewCtrl m_Details;
 	SortedFilteredVector<RegistryItem> m_Items;

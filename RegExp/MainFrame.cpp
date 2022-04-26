@@ -179,7 +179,7 @@ bool CMainFrame::GoToItem(PCWSTR path, PCWSTR name, PCWSTR data) {
 }
 
 BOOL CMainFrame::TrackPopupMenu(HMENU hMenu, DWORD flags, int x, int y, HWND hWnd) {
-	return m_Menu.TrackPopupMenu(hMenu, flags, x, y, hWnd);
+	return ShowContextMenu(hMenu, flags, x, y);
 }
 
 CString CMainFrame::GetCurrentKeyPath() {
@@ -189,7 +189,7 @@ CString CMainFrame::GetCurrentKeyPath() {
 CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 	auto& item = m_Items[row];
 	CString text;
-	switch (static_cast<ColumnType>(GetColumnManager(h)->GetColumnTag(col))) {
+	switch (GetColumnManager(h)->GetColumnTag<ColumnType>(col)) {
 		case ColumnType::Name:
 			return item.Name.IsEmpty() ? CString(Helpers::DefaultValueName) : item.Name;
 
@@ -227,7 +227,7 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 }
 
 
-int CMainFrame::GetRowImage(HWND h, int row) const {
+int CMainFrame::GetRowImage(HWND h, int row, int) const {
 	switch (m_Items[row].Type) {
 		case REG_KEY:
 			return GetKeyImage(m_Items[row]);
@@ -280,7 +280,7 @@ BOOL CMainFrame::OnRightClickList(HWND h, int row, int col, const POINT& pt) {
 		if (m_Items[row].Type == REG_KEY_UP)
 			return FALSE;
 	}
-	return m_Menu.TrackPopupMenu(menu.GetSubMenu(index), 0, pt.x, pt.y);
+	return ShowContextMenu(menu.GetSubMenu(index), 0, pt.x, pt.y);
 }
 
 BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
@@ -312,15 +312,21 @@ BOOL CMainFrame::OnDoubleClickList(HWND, int row, int col, const POINT& pt) {
 	return FALSE;
 }
 
-void CMainFrame::DrawItem(LPDRAWITEMSTRUCT dis) {
+bool CMainFrame::DrawItem(LPDRAWITEMSTRUCT dis) {
 	if (dis->hwndItem != m_StatusBar) {
 		SetMsgHandled(FALSE);
-		return;
+		return false;
 	}
 
 	::SetTextColor(dis->hDC, ThemeHelper::GetCurrentTheme()->TextColor);
 	::SetBkMode(dis->hDC, TRANSPARENT);
 	::DrawText(dis->hDC, m_StatusText, -1, &dis->rcItem, DT_LEFT | DT_SINGLELINE | DT_VCENTER);
+	return true;
+}
+
+LRESULT CMainFrame::OnDrawItem(UINT, WPARAM, LPARAM lp, BOOL& handled) {
+	handled = DrawItem(reinterpret_cast<LPDRAWITEMSTRUCT>(lp));
+	return 0;
 }
 
 LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
@@ -328,7 +334,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 
 	::ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
 
-	if (m_Settings.Load(L"Software\\ScorpioSoftware\\RegExp")) {
+	if (m_Settings.Load(L"Software\\ScorpioSoftware\\TotalRegistry")) {
 		m_ReadOnly = m_Settings.ReadOnly();
 		m_LastKey = m_Settings.LastKey().c_str();
 	}
@@ -369,7 +375,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 		SetWindowText(text);
 	}
 
-	m_Menu.SetCheckIcon(AtlLoadIconImage(IDI_CHECK, 0, 16, 16));
+	SetCheckIcon(AtlLoadIconImage(IDI_CHECK, 0, 16, 16));
 	InitCommandBar();
 	UIAddMenu(menu);
 	UIAddMenu(IDR_CONTEXT);
@@ -847,7 +853,7 @@ LRESULT CMainFrame::OnTreeContextMenu(int, LPNMHDR hdr, BOOL&) {
 			//
 			hMenu.InsertMenu(0, MF_BYPOSITION, ID_KEY_JUMPTOHIVEFILE, L"Jump &Hive File...");
 		}
-		m_Menu.TrackPopupMenu(hMenu, 0, pt2.x, pt2.y);
+		ShowContextMenu(hMenu, 0, pt2.x, pt2.y);
 	}
 	return 0;
 }
@@ -943,7 +949,7 @@ LRESULT CMainFrame::OnEditCopy(WORD, WORD, HWND, BOOL&) {
 		for (UINT i = 0; i < count; i++) {
 			index = m_List.GetNextItem(index, LVIS_SELECTED);
 			ATLASSERT(index >= 0);
-			text += ListViewHelper::GetRowAsString(m_List, index, L'\t') + L"\n";
+			text += ListViewHelper::GetRowAsString(m_List, index, L"\t") + L"\n";
 			ClipboardItem ci;
 			ci.Path = path;
 			auto& item = m_Items[index];
@@ -1658,7 +1664,7 @@ LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled
 }
 
 void CMainFrame::InitCommandBar() {
-	m_Menu.AddMenu(GetMenu());
+	AddMenu(GetMenu());
 
 	struct {
 		UINT id, icon;
@@ -1703,9 +1709,9 @@ void CMainFrame::InitCommandBar() {
 	};
 	for (auto& cmd : cmds) {
 		if (cmd.icon)
-			m_Menu.AddCommand(cmd.id, cmd.icon);
+			AddCommand(cmd.id, cmd.icon);
 		else
-			m_Menu.AddCommand(cmd.id, cmd.hIcon);
+			AddCommand(cmd.id, cmd.hIcon);
 	}
 }
 
@@ -2001,7 +2007,7 @@ void CMainFrame::InvokeTreeContextMenu(const CPoint& pt) {
 	CMenu menu;
 	menu.LoadMenu(IDR_CONTEXT);
 	UpdateUI();
-	m_Menu.TrackPopupMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
+	ShowContextMenu(menu.GetSubMenu(0), 0, pt2.x, pt2.y);
 }
 
 CString CMainFrame::GetKeyDetails(const RegistryItem& item) const {
@@ -2086,10 +2092,6 @@ void CMainFrame::DisplayError(PCWSTR msg, HWND hWnd, DWORD error) const {
 	CString text;
 	text.Format(L"%s (%s)", msg, (PCWSTR)Helpers::GetErrorText(error));
 	AtlMessageBox(hWnd ? hWnd : m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_ICONERROR);
-}
-
-bool CMainFrame::AddMenu(HMENU hMenu) {
-	return false;
 }
 
 void CMainFrame::QuickFilter(PCWSTR text) {
@@ -2264,8 +2266,8 @@ void CMainFrame::SetDarkMode(bool dark) {
 		}, 0);
 
 	SetStatusText(m_StatusText);
-	ThemeHelper::UpdateMenuColors(m_Menu, dark);
-	m_Menu.UpdateMenu(GetMenu(), true);
+	ThemeHelper::UpdateMenuColors(*this, dark);
+	UpdateMenu(GetMenu(), true);
 	DrawMenuBar();
 
 	m_StatusBar.SetBkColor(theme.BackColor);
@@ -2306,16 +2308,17 @@ void CMainFrame::ShowBand(int index, bool show) {
 void CMainFrame::InitDarkTheme() {
 	m_DarkTheme.BackColor = m_DarkTheme.SysColors[COLOR_WINDOW] = RGB(32, 32, 32);
 	m_DarkTheme.TextColor = m_DarkTheme.SysColors[COLOR_WINDOWTEXT] = RGB(248, 248, 248);
-	m_DarkTheme.SysColors[COLOR_HIGHLIGHT] = RGB(32, 32, 255);
+	m_DarkTheme.SysColors[COLOR_HIGHLIGHT] = RGB(10, 10, 160);
 	m_DarkTheme.SysColors[COLOR_HIGHLIGHTTEXT] = RGB(240, 240, 240);
 	m_DarkTheme.SysColors[COLOR_MENUTEXT] = m_DarkTheme.TextColor;
 	m_DarkTheme.SysColors[COLOR_CAPTIONTEXT] = m_DarkTheme.TextColor;
-	m_DarkTheme.SysColors[COLOR_BTNFACE] = RGB(16, 16, 96);
+	m_DarkTheme.SysColors[COLOR_BTNFACE] = m_DarkTheme.BackColor;
 	m_DarkTheme.SysColors[COLOR_BTNTEXT] = m_DarkTheme.TextColor;
 	m_DarkTheme.SysColors[COLOR_3DLIGHT] = RGB(192, 192, 192);
 	m_DarkTheme.SysColors[COLOR_BTNHIGHLIGHT] = RGB(192, 192, 192);
 	m_DarkTheme.SysColors[COLOR_CAPTIONTEXT] = m_DarkTheme.TextColor;
 	m_DarkTheme.SysColors[COLOR_3DSHADOW] = m_DarkTheme.TextColor;
+	m_DarkTheme.SysColors[COLOR_SCROLLBAR] = m_DarkTheme.BackColor;
 	m_DarkTheme.Name = L"Dark";
 	m_DarkTheme.Menu.BackColor = m_DarkTheme.BackColor;
 	m_DarkTheme.Menu.TextColor = m_DarkTheme.TextColor;
