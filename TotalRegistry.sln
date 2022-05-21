@@ -13,6 +13,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WTLHelper", "WTLHelper\WTLHelper\WTLHelper.vcxproj", "{AE53419F-A769-4548-8E15-E311904DF7DF}"
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Installer", "Installer\Installer.vdproj", "{79BEBE58-CCAD-483F-8279-BBFF3C880F30}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C9050D58-5154-473A-B007-3D4FBB8692F9} = {C9050D58-5154-473A-B007-3D4FBB8692F9}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
