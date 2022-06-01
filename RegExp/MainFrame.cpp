@@ -34,6 +34,9 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && ::GetActiveWindow() == m_FindDlg && m_FindDlg.IsDialogMessage(pMsg))
 		return TRUE;
 
+	if (m_pFindAll && m_pFindAll->IsDialogMessageW(pMsg))
+		return TRUE;
+
 	auto hFocus = ::GetFocus();
 	WCHAR name[8];
 	if (hFocus == m_AddressBar || (::GetClassName(hFocus, name, _countof(name)) && ::_wcsicmp(name, L"EDIT") == 0))
@@ -1096,11 +1099,16 @@ LRESULT CMainFrame::OnKnownLocation(WORD, WORD id, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnFindAll(WORD, WORD, HWND, BOOL&) {
-	auto dlg = new CFindAllDlg(this);
-	dlg->Create(nullptr);
-	dlg->ShowWindow(SW_SHOW);
-	::SetForegroundWindow(dlg->m_hWnd);
-
+	if (!m_pFindAll) {
+		auto dlg = new CFindAllDlg(this);
+		dlg->Create(nullptr);
+		dlg->ShowWindow(SW_SHOW);
+		::SetForegroundWindow(dlg->m_hWnd);
+		m_pFindAll = dlg;
+	}
+	else {
+		m_pFindAll->ShowWindow(SW_SHOW);
+	}
 	return 0;
 }
 

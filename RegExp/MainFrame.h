@@ -17,6 +17,8 @@
 #include "QuickFilterBar.h"
 #include "NavigationManager.h"
 
+class CFindAllDlg;
+
 enum class NodeType {
 	None = 0,
 	Key = 1,
@@ -357,6 +359,7 @@ private:
 	CString m_QuickFilterText;
 	CString m_LastKey;
 	NavigationManager<HTREEITEM> m_Navigation;
+	CFindAllDlg* m_pFindAll{ nullptr };
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 	bool m_NewLocation{ false };

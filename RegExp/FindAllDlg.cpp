@@ -9,7 +9,7 @@ CFindAllDlg::CFindAllDlg(IMainFrame* frame) : m_pFrame(frame) {
 
 LRESULT CFindAllDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
     if (m_Searcher.IsRunning()) {
-        if (AtlMessageBox(m_hWnd, L"Search is still working. Closing this window will cancel the search. Continue?",
+        if (AtlMessageBox(m_hWnd, L"Search is still working. Closing this window will cancel the search. Close anyway?",
             IDS_APP_TITLE, MB_OKCANCEL | MB_ICONWARNING | MB_DEFBUTTON2) == IDNO)
             return 0;
 
@@ -18,7 +18,7 @@ LRESULT CFindAllDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
     }
 
 	UpdateOptions();
-    DestroyWindow();
+    ShowWindow(SW_HIDE);
 	return 0;
 }
 
