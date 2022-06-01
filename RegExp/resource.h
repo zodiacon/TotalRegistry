@@ -119,6 +119,9 @@
 #define IDC_HANDLECOUNT                 1050
 #define IDC_FILTER                      1051
 #define IDC_CLEAR                       1052
+#define IDC_DELETE                      1053
+#define IDC_BUTTON2                     1054
+#define IDC_COPY                        1054
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -198,7 +201,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        181
 #define _APS_NEXT_COMMAND_VALUE         32884
-#define _APS_NEXT_CONTROL_VALUE         1053
+#define _APS_NEXT_CONTROL_VALUE         1055
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

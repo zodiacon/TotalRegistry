@@ -14,5 +14,8 @@ struct Helpers abstract final {
 	static CString GetProcessNameById(DWORD pid);
 	static bool CloseHandle(HANDLE hObject, DWORD pid);
 	static CString GetWin32PathFromNTPath(PCWSTR ntpath);
+	static bool WriteToFile(PCWSTR path, CString const& text);
+	static bool WriteToFile(PCWSTR path, void const* data, DWORD size);
+	static bool ReadFileText(PCWSTR path, CString& text);
 };
 

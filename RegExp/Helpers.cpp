@@ -199,3 +199,31 @@ CString Helpers::GetWin32PathFromNTPath(PCWSTR ntpath) {
 
     return L"";
 }
+
+bool Helpers::WriteToFile(PCWSTR path, CString const& text) {
+    return WriteToFile(path, text, text.GetLength() * sizeof(TCHAR));
+}
+
+bool Helpers::WriteToFile(PCWSTR path, void const* data, DWORD size) {
+    HANDLE hFile = ::CreateFile(path, GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, 0, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return false;
+
+    DWORD bytes;
+    auto ok = ::WriteFile(hFile, data, size, &bytes, nullptr);
+    ::CloseHandle(hFile);
+    return ok;
+}
+
+bool Helpers::ReadFileText(PCWSTR path, CString& text) {
+    HANDLE hFile = ::CreateFile(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return false;
+
+    DWORD bytes;
+    auto size = ::GetFileSize(hFile, nullptr);
+    auto buffer = text.GetBufferSetLength(size / sizeof(WCHAR));
+    auto ok = ::ReadFile(hFile, buffer, size, &bytes, nullptr);
+    ::CloseHandle(hFile);
+    return ok;
+}

@@ -35,6 +35,10 @@ public:
 		COMMAND_ID_HANDLER(IDC_FIND, OnFind)
 		COMMAND_ID_HANDLER(IDCANCEL, OnCloseCmd)
 		COMMAND_ID_HANDLER(IDC_CANCEL, OnCancel)
+		COMMAND_ID_HANDLER(IDC_SAVE, OnSaveResults)
+		COMMAND_ID_HANDLER(IDC_LOAD, OnLoadResults)
+		COMMAND_ID_HANDLER(IDC_DELETE, OnDelete)
+		COMMAND_ID_HANDLER(IDC_COPY, OnCopy)
 		COMMAND_CODE_HANDLER(EN_CHANGE, OnTextChanged)
 		COMMAND_CODE_HANDLER(BN_CLICKED, OnClick)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
@@ -66,6 +70,10 @@ private:
 	LRESULT OnTextChanged(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnClick(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnSearchComplete(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnSaveResults(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnLoadResults(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnCopy(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnDelete(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	IMainFrame* m_pFrame;
 	RegistrySearcher m_Searcher;
