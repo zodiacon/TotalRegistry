@@ -17,7 +17,6 @@ LRESULT CFindAllDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
             return 0;
 
         m_Searcher.Cancel();
-        m_Searcher.WaitForCompletion();
     }
 
 	UpdateOptions();
