@@ -18,7 +18,7 @@ LRESULT CFindAllDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
     }
 
 	UpdateOptions();
-	EndDialog(wID);
+    DestroyWindow();
 	return 0;
 }
 
@@ -37,6 +37,10 @@ void CFindAllDlg::UpdateUI() {
 
 void CFindAllDlg::Cancel() {
     m_Searcher.Cancel();
+}
+
+void CFindAllDlg::OnFinalMessage(HWND) {
+    delete this;
 }
 
 CString CFindAllDlg::GetColumnText(HWND, int row, int col) const {
@@ -80,22 +84,19 @@ void CFindAllDlg::DoSort(const SortInfo* si) {
     std::sort(m_Items.begin(), m_Items.end(), compare);
 }
 
-BOOL CFindAllDlg::OnDoubleClickList(HWND, int row, int, const POINT&) {
+bool CFindAllDlg::OnDoubleClickList(HWND, int row, int, const POINT&) {
     if (row < 0)
-        return FALSE;
+        return false;
 
     auto& item = m_Items[row];
-    m_Searcher.Cancel();
     CWaitCursor wait;
-    ShowWindow(SW_HIDE);
     if (m_pFrame->GoToItem(item.Path, item.Name, item.Data)) {
-        EndDialog(IDOK);
+        // keep dialog alive
+        return true;
     }
     else {
-        ShowWindow(SW_SHOW);
         AtlMessageBox(m_hWnd, L"Unable to locate item", IDS_APP_TITLE, MB_ICONERROR);
     }
-    m_Searcher.WaitForCompletion();
     return 0;
 }
 
@@ -231,7 +232,5 @@ LRESULT CFindAllDlg::OnSearchComplete(UINT msg, WPARAM cancelled, LPARAM, BOOL&)
     GetDlgItem(IDC_FIND).EnableWindow();
     GetDlgItem(IDC_CANCEL).EnableWindow(FALSE);
     m_Progress.ShowWindow(SW_HIDE);
-    if (cancelled)
-        AtlMessageBox(m_hWnd, L"Search complete.", IDS_APP_TITLE, MB_ICONINFORMATION);
     return 0;
 }

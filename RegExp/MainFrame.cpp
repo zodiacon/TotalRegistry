@@ -1096,8 +1096,11 @@ LRESULT CMainFrame::OnKnownLocation(WORD, WORD id, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnFindAll(WORD, WORD, HWND, BOOL&) {
-	CFindAllDlg dlg(this);
-	dlg.DoModal();
+	auto dlg = new CFindAllDlg(this);
+	dlg->Create(nullptr);
+	dlg->ShowWindow(SW_SHOW);
+	::SetForegroundWindow(dlg->m_hWnd);
+
 	return 0;
 }
 
