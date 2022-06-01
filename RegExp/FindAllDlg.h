@@ -21,12 +21,13 @@ public:
 
 	void UpdateUI();
 	void Cancel();
+	void OnFinalMessage(HWND) override;
 
 	CString GetColumnText(HWND, int row, int col) const;
 	int GetRowImage(HWND, int row, int) const;
 	void DoSort(const SortInfo* si);
 
-	BOOL OnDoubleClickList(HWND, int row, int, const POINT&);
+	bool OnDoubleClickList(HWND, int row, int, const POINT&);
 
 	BEGIN_MSG_MAP(CFindAllDlg)
 		MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
