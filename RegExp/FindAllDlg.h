@@ -17,7 +17,7 @@ public:
 
 	const UINT WM_SEARCH_COMPLETE = WM_APP + 1;
 
-	CFindAllDlg(IMainFrame* frame);
+	explicit CFindAllDlg(IMainFrame* frame);
 
 	void UpdateUI();
 	void Cancel();

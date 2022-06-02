@@ -12,7 +12,7 @@ LRESULT CAboutDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lPara
 	VersionResourceHelper vr(path);
 	auto version = vr.GetValue(L"ProductVersion");
 	auto copyright = vr.GetValue(L"LegalCopyright");
-	SetDlgItemText(IDC_VERSION, L"Registry Explorer v" + version);
+	SetDlgItemText(IDC_VERSION, L"Total Registry v" + version);
 	SetDlgItemText(IDC_COPYRIGHT, copyright);
 
 	return TRUE;

@@ -32,7 +32,6 @@ public:
 		COMMAND_RANGE_HANDLER(ID_HEX_8BYTES, ID_HEX_32BYTES, OnBytesPerLine)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CBinaryValueDlg>)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CBinaryValueDlg>)
-		REFLECT_NOTIFICATIONS_EX()
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):
