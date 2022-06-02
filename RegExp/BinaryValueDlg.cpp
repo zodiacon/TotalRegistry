@@ -54,7 +54,6 @@ void CBinaryValueDlg::BuildToolBar(CRect& rc) {
 			tb.AddButton(b.id, b.style | (b.text ? BTNS_SHOWTEXT : 0), b.state, image, b.text, 0);
 		}
 	}
-	UIAddToolBar(tb);
 }
 
 void CBinaryValueDlg::UpdateBufferSize() {

@@ -55,7 +55,7 @@ void CHexControl::DoPaint(CDCHandle dc, RECT& rect) {
 				case 1:	::StringCchPrintf(str, _countof(str), L"%02X", data[j * m_DataSize]); break;
 				case 2:	::StringCchPrintf(str, _countof(str), L"%04X", *(WORD*)&data[j * m_DataSize]); break;
 				case 4:	::StringCchPrintf(str, _countof(str), L"%08X", *(DWORD*)&data[j * m_DataSize]); break;
-				case 8:	::StringCchPrintf(str, _countof(str), L"%0llX", *(DWORD64*)&data[j * m_DataSize]); break;
+				case 8:	::StringCchPrintf(str, _countof(str), L"%016llX", *(DWORD64*)&data[j * m_DataSize]); break;
 			}
 			bool selected = m_Selection.IsSelected(offset + j);
 			dc.SetTextColor(selected ? m_Colors.SelectionText : m_Colors.Text);
