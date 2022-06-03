@@ -310,6 +310,9 @@ CString Registry::GetDataAsString(RegistryKey& key, const RegistryItem& item) {
 		}
 
 		case REG_BINARY:
+		case REG_FULL_RESOURCE_DESCRIPTOR:
+		case REG_RESOURCE_LIST:
+		case REG_RESOURCE_REQUIREMENTS_LIST:
 			CString digit;
 			auto buffer = std::make_unique<BYTE[]>(item.Size);
 			if (buffer == nullptr)

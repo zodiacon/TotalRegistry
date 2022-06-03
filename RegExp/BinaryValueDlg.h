@@ -12,7 +12,7 @@ class CBinaryValueDlg :
 	public CDynamicDialogLayout<CBinaryValueDlg> {
 public:
 	enum { IDD = IDD_BINVALUE };
-	enum { ID_DATA_BYTE = 500, ID_LINE = 520 };
+	enum { ID_DATA_BYTE = 30000, ID_LINE = 30020 };
 
 	CBinaryValueDlg(RegistryKey& key, PCWSTR name, bool readOnly, IMainFrame* frame);
 

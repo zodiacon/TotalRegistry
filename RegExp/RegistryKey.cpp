@@ -184,10 +184,10 @@ LONG RegistryKey::QueryBinaryValue(LPCTSTR pszValueName, void* pValue, ULONG* pn
 	ATLASSERT(pnBytes);
 	ATLASSUME(_hKey);
 
-	lRes = ::RegQueryValueEx(_hKey, pszValueName, NULL, &dwType, static_cast<LPBYTE>(pValue), pnBytes);
+	lRes = ::RegQueryValueEx(_hKey, pszValueName, nullptr, &dwType, static_cast<LPBYTE>(pValue), pnBytes);
 	if (lRes != ERROR_SUCCESS)
 		return lRes;
-	if (dwType != REG_BINARY)
+	if (dwType != REG_BINARY && dwType != REG_RESOURCE_LIST && dwType != REG_RESOURCE_REQUIREMENTS_LIST && dwType != REG_FULL_RESOURCE_DESCRIPTOR)
 		return ERROR_INVALID_DATA;
 
 	return ERROR_SUCCESS;
@@ -209,7 +209,7 @@ LSTATUS RegistryKey::QueryDWORDValue(LPCTSTR pszValueName, DWORD& dwValue) noexc
 	ATLASSUME(_hKey != NULL);
 
 	nBytes = sizeof(DWORD);
-	lRes = ::RegQueryValueEx(_hKey, pszValueName, NULL, &dwType, reinterpret_cast<LPBYTE>(&dwValue),
+	lRes = ::RegQueryValueEx(_hKey, pszValueName, nullptr, &dwType, reinterpret_cast<LPBYTE>(&dwValue),
 		&nBytes);
 	if (lRes != ERROR_SUCCESS)
 		return lRes;
