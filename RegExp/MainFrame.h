@@ -162,6 +162,7 @@ public:
 		COMMAND_ID_HANDLER(ID_KEY_JUMPTOHIVEFILE, OnJumpToHiveFile)
 		COMMAND_ID_HANDLER(ID_KEY_ADDBOOKMARK, OnAddBookmark)
 		COMMAND_ID_HANDLER(ID_DELETE_BOOKMARK, OnDeleteBookmark)
+		COMMAND_ID_HANDLER(ID_LOCATIONS_MANAGE, OnManageLocations)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
@@ -291,6 +292,7 @@ private:
 	LRESULT OnViewGoUp(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnAddBookmark(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnDeleteBookmark(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnManageLocations(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);

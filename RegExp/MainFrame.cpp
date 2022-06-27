@@ -1603,6 +1603,11 @@ LRESULT CMainFrame::OnDeleteBookmark(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnManageLocations(WORD, WORD, HWND, BOOL&) {
+	AtlMessageBox(m_hWnd, L"Not implemented yet :(", IDS_APP_TITLE, MB_ICONINFORMATION);
+	return 0;
+}
+
 LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/) {
 	auto lv = (NMLVDISPINFO*)pnmh;
 	if (lv->item.pszText == nullptr) {
