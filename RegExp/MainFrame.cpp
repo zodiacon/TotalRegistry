@@ -71,7 +71,7 @@ DWORD CMainFrame::OnSubItemPrePaint(int, LPNMCUSTOMDRAW cd) {
 		if (!item.Key) {
 			CString nodeText;
 			m_Tree.GetItemText(m_Tree.GetSelectedItem(), nodeText);
-			if ((item.Type == REG_SZ || item.Type == REG_DWORD) && 
+			if ((item.Type == REG_SZ || item.Type == REG_DWORD) &&
 				(item.Name.Find(L"Color") >= 0 || item.Name.Find(L"Background") >= 0 || item.Name.Find(L"Foreground") >= 0 || nodeText.Find(L"Color") >= 0)) {
 				COLORREF color = CLR_INVALID;
 				if (item.Type == REG_DWORD)
@@ -640,7 +640,7 @@ LRESULT CMainFrame::OnTreeSelChanged(int, LPNMHDR hdr, BOOL&) {
 		m_UpdateNoDelay = false;
 		UpdateList(tv->action != TVC_UNKNOWN);
 	}
-	else if(tv->action == TVC_BYKEYBOARD) {
+	else if (tv->action == TVC_BYKEYBOARD) {
 		//
 		// short delay in case the user is scrolling fast
 		//
@@ -1509,7 +1509,7 @@ LRESULT CMainFrame::OnOptionsFont(WORD, WORD, HWND, BOOL&) {
 LRESULT CMainFrame::OnRestoreDefaultFont(WORD, WORD, HWND, BOOL&) {
 	m_List.SetFont(nullptr);
 	m_Tree.SetFont(nullptr);
-	if(m_Font)
+	if (m_Font)
 		m_Font.DeleteObject();
 	m_Settings.Font(LOGFONT{});
 
@@ -1541,7 +1541,7 @@ LRESULT CMainFrame::OnJumpToHiveFile(WORD, WORD, HWND, BOOL&) {
 
 	WCHAR explorer[MAX_PATH];
 	::ExpandEnvironmentStrings(L"%systemroot%\\explorer.exe", explorer, _countof(explorer));
-	
+
 	auto win32Path = Helpers::GetWin32PathFromNTPath(it->Path.c_str());
 	::ShellExecute(nullptr, L"open", explorer,
 		L"/select,\"" + win32Path + L"\"", nullptr, SW_SHOWNORMAL);
@@ -2065,7 +2065,7 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 					Helpers::GetWindowsDirectory(),
 				};
 				for (auto& path : paths)
-					if (ERROR_FILE_NOT_FOUND != ::RegLoadMUIString(m_CurrentKey.Get(), item.Name, text.GetBufferSetLength(512), 512, 
+					if (ERROR_FILE_NOT_FOUND != ::RegLoadMUIString(m_CurrentKey.Get(), item.Name, text.GetBufferSetLength(512), 512,
 						nullptr, REG_MUI_STRING_TRUNCATE, path.IsEmpty() ? nullptr : (PCWSTR)path))
 						break;
 			}
@@ -2295,11 +2295,25 @@ HTREEITEM CMainFrame::GotoKey(const CString& path, bool knownToExist) {
 	if (spath != L'\\') {
 		if (spath.Find(L'\\') < 0)
 			spath += L"\\";
-		spath.Replace(L"HKLM\\", L"HKEY_LOCAL_MACHINE\\");
-		spath.Replace(L"HKCU\\", L"HKEY_CURRENT_USER\\");
-		spath.Replace(L"HKCR\\", L"HKEY_CLASSES_ROOT\\");
-		spath.Replace(L"HKU\\", L"HKEY_USERS\\");
-		spath.Replace(L"HKCC\\", L"HKEY_CURRENT_CONFIG");
+		int n = spath.Replace(L"HKLM:\\", L"HKEY_LOCAL_MACHINE\\");
+		if (n == 0)
+			n = spath.Replace(L"HKLM\\", L"HKEY_LOCAL_MACHINE\\");
+		if (n == 0)
+			n = spath.Replace(L"HKCU:\\", L"HKEY_CURRENT_USER\\");
+		if (n == 0)
+			n = spath.Replace(L"HKCU\\", L"HKEY_CURRENT_USER\\");
+		if (n == 0)
+			n = spath.Replace(L"HKCR:\\", L"HKEY_CLASSES_ROOT\\");
+		if (n == 0)
+			n = spath.Replace(L"HKCR\\", L"HKEY_CLASSES_ROOT\\");
+		if (n == 0)
+			n = spath.Replace(L"HKU:\\", L"HKEY_USERS\\");
+		if (n == 0)
+			n = spath.Replace(L"HKU\\", L"HKEY_USERS\\");
+		if (n == 0)
+			n = spath.Replace(L"HKCC:\\", L"HKEY_CURRENT_CONFIG");
+		if(n == 0)
+			spath.Replace(L"HKCC\\", L"HKEY_CURRENT_CONFIG");
 	}
 	auto hItem = TreeHelper(m_Tree).FindItem(spath[0] == L'\\' ? m_hRealReg : m_hStdReg, spath);
 	if (!hItem || knownToExist) {
@@ -2390,10 +2404,10 @@ void CMainFrame::InitLocations() {
 			hSubMenu.AppendMenu(MF_BYPOSITION, ID_LOCATION_FIRST + i, name2);
 			replace.push_back({ name, name2 });
 		}
-		else if(hSubMenu) {
+		else if (hSubMenu) {
 			hSubMenu.Detach();
 		}
-		if(!hSubMenu)
+		if (!hSubMenu)
 			menu.AppendMenu(MF_BYPOSITION, ID_LOCATION_FIRST + i, name);
 		i++;
 	}

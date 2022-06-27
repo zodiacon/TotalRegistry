@@ -130,7 +130,8 @@ RegistryKey Registry::OpenKey(const CString& path, DWORD access, bool* root) {
 			ATLASSERT(bs >= 0);
 			keyname = path.Left(bs);
 		}
-		auto pair = std::find_if(std::begin(Keys), std::end(Keys), [&](auto& k) { return wcscmp(k.text, keyname) == 0; });
+		keyname.TrimRight(L":");
+		auto pair = std::find_if(std::begin(Keys), std::end(Keys), [&](auto& k) { return _wcsicmp(k.text, keyname) == 0 || _wcsicmp(k.stext, keyname) == 0; });
 		ATLASSERT(pair != std::end(Keys));
 		if (bs >= 0) {
 			auto error = key.Open(pair->hKey, path.Mid(bs + 1), access);
