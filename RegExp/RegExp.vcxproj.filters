@@ -177,6 +177,9 @@
     <ClInclude Include="QuickFilterBar.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
+    <ClInclude Include="ManageLocationsDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RegExp.cpp">
@@ -303,6 +306,9 @@
       <Filter>Helpers</Filter>
     </ClCompile>
     <ClCompile Include="QuickFilterBar.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="ManageLocationsDlg.cpp">
       <Filter>Dialogs</Filter>
     </ClCompile>
   </ItemGroup>

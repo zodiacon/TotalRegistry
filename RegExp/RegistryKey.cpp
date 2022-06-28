@@ -57,6 +57,13 @@ LSTATUS RegistryKey::Open(HKEY parent, PCWSTR path, DWORD access) {
 	return error;
 }
 
+LSTATUS RegistryKey::Create(HKEY parent, PCWSTR path, DWORD access) {
+	ATLASSERT(_hKey == nullptr);
+	auto error = ::RegCreateKeyEx(parent, path, 0, nullptr, 0, access, nullptr, &_hKey, nullptr);
+	CheckPredefinedKey();
+	return error;
+}
+
 _Use_decl_annotations_
 LSTATUS RegistryKey::SetStringValue(LPCTSTR pszValueName, LPCTSTR pszValue, DWORD dwType) noexcept {
 	ATLASSUME(_hKey);

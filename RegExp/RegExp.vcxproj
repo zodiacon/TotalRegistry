@@ -255,6 +255,7 @@
     <ClInclude Include="LoadHiveDlg.h" />
     <ClInclude Include="LocationManager.h" />
     <ClInclude Include="MainFrame.h" />
+    <ClInclude Include="ManageLocationsDlg.h" />
     <ClInclude Include="MemoryBuffer.h" />
     <ClInclude Include="MultiStringValueDlg.h" />
     <ClInclude Include="NavigationManager.h" />
@@ -304,6 +305,7 @@
     <ClCompile Include="LoadHiveDlg.cpp" />
     <ClCompile Include="LocationManager.cpp" />
     <ClCompile Include="MainFrame.cpp" />
+    <ClCompile Include="ManageLocationsDlg.cpp" />
     <ClCompile Include="MemoryBuffer.cpp" />
     <ClCompile Include="MultiStringValueDlg.cpp" />
     <ClCompile Include="NumberValueDlg.cpp" />

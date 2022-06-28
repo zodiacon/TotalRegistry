@@ -34,6 +34,7 @@ struct RegistryKey {
 	}
 
 	LSTATUS Open(HKEY parent, PCWSTR path, DWORD access = KEY_READ | KEY_WRITE);
+	LSTATUS Create(HKEY parent, PCWSTR path, DWORD access = KEY_WRITE);
 	LSTATUS SetValue(_In_opt_z_ LPCTSTR pszValueName, _In_ DWORD dwType, _In_opt_ const void* pValue, _In_ ULONG nBytes) noexcept;
 	LSTATUS SetBinaryValue(_In_opt_z_ LPCTSTR pszValueName,	_In_opt_ const void* pValue, _In_ ULONG nBytes) noexcept;
 	LSTATUS SetDWORDValue(_In_opt_z_ LPCTSTR pszValueName, _In_ DWORD dwValue) noexcept;

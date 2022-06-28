@@ -29,6 +29,7 @@
 #include "Helpers.h"
 #include "RegExportImport.h"
 #include "ImageIconCache.h"
+#include "ManageLocationsDlg.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && ::GetActiveWindow() == m_FindDlg && m_FindDlg.IsDialogMessage(pMsg))
@@ -341,7 +342,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 		m_ReadOnly = m_Settings.ReadOnly();
 		m_LastKey = m_Settings.LastKey().c_str();
 	}
-	m_Locations.Load(L"Software\\ScorpioSoftware\\RegExp");
+	m_Locations.Load(L"Software\\ScorpioSoftware\\TotalRegistry");
 
 	InitDarkTheme();
 	ThemeHelper::SetCurrentTheme(m_Settings.DarkMode() ? m_DarkTheme : m_DefaultTheme);
@@ -1604,7 +1605,11 @@ LRESULT CMainFrame::OnDeleteBookmark(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnManageLocations(WORD, WORD, HWND, BOOL&) {
-	AtlMessageBox(m_hWnd, L"Not implemented yet :(", IDS_APP_TITLE, MB_ICONINFORMATION);
+	CManageLocationsDlg dlg(this, m_Locations);
+	if (IDOK == dlg.DoModal()) {
+		InitLocations();
+		m_Locations.Save();
+	}
 	return 0;
 }
 
@@ -2352,6 +2357,8 @@ void CMainFrame::InitDarkTheme() {
 	m_DarkTheme.Name = L"Dark";
 	m_DarkTheme.Menu.BackColor = m_DarkTheme.BackColor;
 	m_DarkTheme.Menu.TextColor = m_DarkTheme.TextColor;
+	m_DarkTheme.StatusBar.BackColor = RGB(32, 0, 32);
+	m_DarkTheme.StatusBar.TextColor = m_DarkTheme.TextColor;
 }
 
 void CMainFrame::InitLocations() {
@@ -2360,33 +2367,37 @@ void CMainFrame::InitLocations() {
 	while (menu.DeleteMenu(2, MF_BYPOSITION))
 		;
 
-	const struct {
-		PCWSTR name;
-		PCWSTR path;
-	} locations[] = {
-		{ L"Services", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services)" },
-		{ L"Hardware", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Enum)" },
-		{ L"Device Classes", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Class)" },
-		{ L"Hive List", LR"(HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\hivelist)" },
-		{ L"Image File Execution Options", LR"(HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options)" },
-		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shell)" },
-		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shellex)" },
-		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\AllFileSystemObjects\ShellEx\ContextMenuHandlers)" },
-		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shell)" },
-		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shellex\ContextMenuHandlers)" },
-		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\shell)" },
-		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shell)" },
-		{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shellex\ContextMenuHandlers)" },
-		{ L"Current Version", LR"(HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion)" },
-		{ L"Current Version (32 bit)", LR"(HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion)" },
-		{ L"Software (Current User)", LR"(HKEY_CURRENT_USER\SOFTWARE)" },
-		{ L"Software (Current User) (32-bit)", LR"(HKEY_CURRENT_USER\SOFTWARE\Wow6432Node)" },
-		{ L"Software (Local Machine)", LR"(HKEY_LOCAL_MACHINE\SOFTWARE)" },
-		{ L"Software (Local Machine) (32-bit)", LR"(HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node)" },
-	};
-	if (m_Locations.GetCount() < _countof(locations)) {
-		for (const auto& [name, path] : locations)
+	if (m_Locations.GetCount() == 0) {
+		const struct {
+			PCWSTR name;
+			PCWSTR path;
+		} locations[] = {
+			{ L"Services", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services)" },
+			{ L"Hardware", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Enum)" },
+			{ L"Device Classes", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Class)" },
+			{ L"Hive List", LR"(HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\hivelist)" },
+			{ L"Image File Execution Options", LR"(HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shell)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shellex)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\AllFileSystemObjects\ShellEx\ContextMenuHandlers)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shell)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Folder\shellex\ContextMenuHandlers)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\shell)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shell)" },
+			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\Directory\Background\shellex\ContextMenuHandlers)" },
+			{ L"Current Version", LR"(HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion)" },
+			{ L"Current Version (32 bit)", LR"(HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion)" },
+			{ L"Software (Current User)", LR"(HKEY_CURRENT_USER\SOFTWARE)" },
+			{ L"Software (Current User) (32-bit)", LR"(HKEY_CURRENT_USER\SOFTWARE\Wow6432Node)" },
+			{ L"Software (Local Machine)", LR"(HKEY_LOCAL_MACHINE\SOFTWARE)" },
+			{ L"Software (Local Machine) (32-bit)", LR"(HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node)" },
+		};
+
+		for (auto [name, path] : locations) {
+			if (path == nullptr)
+				path = wcschr(name, L'/') + 1;
 			m_Locations.Add(name, path);
+		}
 		m_Locations.Save();
 	}
 
@@ -2411,9 +2422,7 @@ void CMainFrame::InitLocations() {
 			menu.AppendMenu(MF_BYPOSITION, ID_LOCATION_FIRST + i, name);
 		i++;
 	}
-
-	for (auto& r : replace)
-		m_Locations.Replace(r.first, r.second);
+	AddSubMenu(menu);
 }
 
 HTREEITEM CMainFrame::BuildKeyPath(const CString& path, bool accessible) {

@@ -70,7 +70,9 @@
 #define IDI_BOOKMARK_ADD                178
 #define IDI_BOOKMARK_DELETE             179
 #define IDR_BIN1                        180
+#define IDD_LOCATIONS                   181
 #define IDR_DRIVER                      999
+#define IDC_BUTTON1                     999
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
 #define IDC_SEARCH_KEYS                 1002
@@ -101,7 +103,6 @@
 #define IDC_DECIMAL                     1030
 #define IDC_HEX                         1031
 #define IDC_BINARY                      1032
-#define IDC_BUTTON1                     999
 #define IDC_COLOR                       1033
 #define IDC_BUFFERSIZE                  1035
 #define IDC_EXPORT_STD                  1036
@@ -120,6 +121,9 @@
 #define IDC_DELETE                      1053
 #define IDC_BUTTON2                     1054
 #define IDC_COPY                        1054
+#define IDC_LIST2                       1056
+#define IDC_SET                         1058
+#define IDC_BUTTON3                     1059
 #define ID_FILE_RUNASADMIN              32771
 #define ID_OPTIONS_ALWAYSONTOP          32772
 #define ID_VIEW_GOBACK                  32779
@@ -197,9 +201,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        181
+#define _APS_NEXT_RESOURCE_VALUE        182
 #define _APS_NEXT_COMMAND_VALUE         32884
-#define _APS_NEXT_CONTROL_VALUE         1055
+#define _APS_NEXT_CONTROL_VALUE         1060
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

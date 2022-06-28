@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "LocationManager.h"
 #include "IniFile.h"
+#include "RegistryKey.h"
 
 bool LocationManager::LoadFromRegistry(PCWSTR path) {
     path = GetPath(path);
@@ -48,8 +49,8 @@ bool LocationManager::SaveToRegistry(PCWSTR path) const {
     if (!path)
         return false;
 
-    CRegKey key;
-    key.Create(HKEY_CURRENT_USER, path, nullptr, 0, KEY_WRITE);
+    RegistryKey key;
+    key.Create(HKEY_CURRENT_USER, path);
     if (!key)
         return false;
 
@@ -132,9 +133,13 @@ void LocationManager::Clear() {
     _items.clear();
 }
 
-CString const& LocationManager::GetPathByName(CString const& name) const {
-    auto& path = _items.at(name);
-    return path.IsEmpty() ? name : path;
+CString LocationManager::GetPathByName(CString const& name) const {
+    if (auto it = _items.find(name); it != _items.end())
+        return it->second;
+
+    if (auto it = _items.find((PCWSTR)name + name.Find(L'/') + 1); it != _items.end())
+        return it->second;
+    return L"";
 }
 
 PCWSTR LocationManager::GetPath(PCWSTR path) const {
