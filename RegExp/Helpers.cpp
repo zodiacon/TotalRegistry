@@ -227,3 +227,36 @@ bool Helpers::ReadFileText(PCWSTR path, CString& text) {
     ::CloseHandle(hFile);
     return ok;
 }
+
+CString Helpers::NormalizePath(CString const& path) {
+    CString spath(path);
+    spath.MakeUpper();
+    static const CString regEditPrefix = L"COMPUTER\\";
+    if (spath.Left(regEditPrefix.GetLength()) == regEditPrefix)
+        spath = spath.Mid(regEditPrefix.GetLength());
+
+    if (spath != L'\\') {
+        if (spath.Find(L'\\') < 0)
+            spath += L"\\";
+        int n = spath.Replace(L"HKLM:\\", L"HKEY_LOCAL_MACHINE\\");
+        if (n == 0)
+            n = spath.Replace(L"HKLM\\", L"HKEY_LOCAL_MACHINE\\");
+        if (n == 0)
+            n = spath.Replace(L"HKCU:\\", L"HKEY_CURRENT_USER\\");
+        if (n == 0)
+            n = spath.Replace(L"HKCU\\", L"HKEY_CURRENT_USER\\");
+        if (n == 0)
+            n = spath.Replace(L"HKCR:\\", L"HKEY_CLASSES_ROOT\\");
+        if (n == 0)
+            n = spath.Replace(L"HKCR\\", L"HKEY_CLASSES_ROOT\\");
+        if (n == 0)
+            n = spath.Replace(L"HKU:\\", L"HKEY_USERS\\");
+        if (n == 0)
+            n = spath.Replace(L"HKU\\", L"HKEY_USERS\\");
+        if (n == 0)
+            n = spath.Replace(L"HKCC:\\", L"HKEY_CURRENT_CONFIG");
+        if (n == 0)
+            spath.Replace(L"HKCC\\", L"HKEY_CURRENT_CONFIG");
+    }
+    return spath;
+}

@@ -2295,31 +2295,7 @@ void CMainFrame::SetDarkMode(bool dark) {
 }
 
 HTREEITEM CMainFrame::GotoKey(const CString& path, bool knownToExist) {
-	CString spath(path);
-	spath.MakeUpper();
-	if (spath != L'\\') {
-		if (spath.Find(L'\\') < 0)
-			spath += L"\\";
-		int n = spath.Replace(L"HKLM:\\", L"HKEY_LOCAL_MACHINE\\");
-		if (n == 0)
-			n = spath.Replace(L"HKLM\\", L"HKEY_LOCAL_MACHINE\\");
-		if (n == 0)
-			n = spath.Replace(L"HKCU:\\", L"HKEY_CURRENT_USER\\");
-		if (n == 0)
-			n = spath.Replace(L"HKCU\\", L"HKEY_CURRENT_USER\\");
-		if (n == 0)
-			n = spath.Replace(L"HKCR:\\", L"HKEY_CLASSES_ROOT\\");
-		if (n == 0)
-			n = spath.Replace(L"HKCR\\", L"HKEY_CLASSES_ROOT\\");
-		if (n == 0)
-			n = spath.Replace(L"HKU:\\", L"HKEY_USERS\\");
-		if (n == 0)
-			n = spath.Replace(L"HKU\\", L"HKEY_USERS\\");
-		if (n == 0)
-			n = spath.Replace(L"HKCC:\\", L"HKEY_CURRENT_CONFIG");
-		if(n == 0)
-			spath.Replace(L"HKCC\\", L"HKEY_CURRENT_CONFIG");
-	}
+	auto spath = Helpers::NormalizePath(path);
 	auto hItem = TreeHelper(m_Tree).FindItem(spath[0] == L'\\' ? m_hRealReg : m_hStdReg, spath);
 	if (!hItem || knownToExist) {
 		auto key = Registry::OpenKey(path, KEY_ENUMERATE_SUB_KEYS | KEY_QUERY_VALUE);

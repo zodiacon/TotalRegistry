@@ -90,13 +90,14 @@ CString Registry::StdRegPathToRealPath(const CString& path) {
 	return result;
 }
 
-RegistryKey Registry::OpenKey(const CString& path, DWORD access, bool* root) {
+RegistryKey Registry::OpenKey(const CString& rawpath, DWORD access, bool* root) {
 	if (root)
 		*root = false;
 
+	auto path = Helpers::NormalizePath(rawpath);
 	RegistryKey key;
 	if (path.Left(2) == L"\\\\") {
-		// remote registry
+		// remote Registry
 		auto index = path.Find(L"\\", 2);
 		if (index < 0)
 			return key;
