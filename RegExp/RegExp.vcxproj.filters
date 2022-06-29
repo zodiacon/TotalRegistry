@@ -57,9 +57,6 @@
     <ClInclude Include="NavigationManager.h">
       <Filter>Helpers</Filter>
     </ClInclude>
-    <ClInclude Include="Settings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="AppSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -199,9 +196,6 @@
     </ClCompile>
     <ClCompile Include="Registry.cpp">
       <Filter>Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="Settings.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AppCommandBase.cpp">
       <Filter>Commands</Filter>

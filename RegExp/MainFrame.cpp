@@ -522,9 +522,9 @@ LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
 	//
 	// gather bookmarks
 	//
-	std::vector<CString> bookmarks;
+	std::vector<std::wstring> bookmarks;
 	for (auto& [name, _] : TreeHelper(m_Tree).GetChildItems(m_hBookmarks))
-		bookmarks.push_back(name);
+		bookmarks.push_back((PCWSTR)name);
 	AppSettings::Get().Bookmarks(bookmarks);
 
 	AppSettings::Get().ReadOnly(m_ReadOnly);
@@ -1844,7 +1844,7 @@ void CMainFrame::InitTree() {
 	m_hLocalRoot = InsertTreeItem(name + CString(L" (Local)"), 1, NodeType::Machine, TVI_ROOT, TVI_LAST);
 	m_hBookmarks = InsertTreeItem(L"Bookmarks", 15, NodeType::Bookmarks, m_hLocalRoot, TVI_LAST);
 	for (auto& bm : AppSettings::Get().Bookmarks()) {
-		InsertKeyItem(m_hBookmarks, bm, NodeType::Key | NodeType::Bookmark);
+		InsertKeyItem(m_hBookmarks, bm.c_str(), NodeType::Key | NodeType::Bookmark);
 	}
 	m_hStdReg = InsertTreeItem(L"Standard Registry", 0, NodeType::StandardRoot, m_hLocalRoot, TVI_LAST);
 	m_hRealReg = InsertTreeItem(L"REGISTRY", 11, NodeType::RegistryRoot | NodeType::Predefined | NodeType::Key, m_hLocalRoot, TVI_LAST);

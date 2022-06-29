@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Settings.h"
+#include <Settings.h>
 #include "FindOptions.h"
 
 struct AppSettings : Settings {

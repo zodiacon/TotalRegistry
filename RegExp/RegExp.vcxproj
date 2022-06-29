@@ -274,7 +274,6 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SecurityHelper.h" />
     <ClInclude Include="SecurityInformation.h" />
-    <ClInclude Include="Settings.h" />
     <ClInclude Include="StringValueDlg.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TreeHelper.h" />
@@ -325,7 +324,6 @@
     <ClCompile Include="RenameValueCommand.cpp" />
     <ClCompile Include="SecurityHelper.cpp" />
     <ClCompile Include="SecurityInformation.cpp" />
-    <ClCompile Include="Settings.cpp" />
     <ClCompile Include="StringValueDlg.cpp" />
     <ClCompile Include="TreeHelper.cpp" />
   </ItemGroup>
