@@ -25,7 +25,7 @@ LRESULT CFindAllDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
 }
 
 void CFindAllDlg::UpdateUI() {
-    auto options = m_pFrame->GetSettings().Find();
+    auto options = AppSettings::Get().Find();
     CheckButton(IDC_SEARCH_KEYS, options, FindOptions::SearchKeys);
     CheckButton(IDC_SEARCH_VALUES, options, FindOptions::SearchValues);
     CheckButton(IDC_SEARCH_DATA, options, FindOptions::SearchData);
@@ -127,7 +127,7 @@ FindOptions CFindAllDlg::UpdateOptions() {
     if (IsDlgButtonChecked(IDC_SEARCH_CASE))
         options |= FindOptions::MatchCase;
 
-    m_pFrame->GetSettings().Find(options);
+    AppSettings::Get().Find(options);
     return options;
 }
 

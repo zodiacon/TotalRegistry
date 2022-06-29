@@ -5,8 +5,10 @@
 #include "ThemeHelper.h"
 #include "DriverHelper.h"
 #include "SecurityHelper.h"
+#include "AppSettings.h"
 
 CAppModule _Module;
+AppSettings _Settings;
 
 int Run(LPTSTR lpstrCmdLine = nullptr, int nCmdShow = SW_SHOWDEFAULT) {
 	CMessageLoop theLoop;

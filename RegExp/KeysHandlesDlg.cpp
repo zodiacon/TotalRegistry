@@ -11,7 +11,7 @@
 #include "ThemeHelper.h"
 
 CString CKeysHandlesDlg::GetColumnText(HWND hWnd, int row, int col) const {
-	auto& item = m_Handles[row];
+	auto const& item = m_Handles[row];
 	switch (GetColumnManager(hWnd)->GetColumnTag<ColumnType>(col)) {
 		case ColumnType::PID: return std::format(L"{}", item.ProcessId).c_str();
 		case ColumnType::Access: return std::format(L"0x{:08X}", item.Access).c_str();
@@ -83,7 +83,7 @@ BOOL CKeysHandlesDlg::OnIdle() {
 }
 
 BOOL CKeysHandlesDlg::PreTranslateMessage(MSG* pMsg) {
-	return ::GetActiveWindow() == m_hWnd && (::TranslateAccelerator(m_hWnd, m_hAccel.get(), pMsg));
+	return ::GetActiveWindow() == m_hWnd && ::TranslateAccelerator(m_hWnd, m_hAccel.get(), pMsg) != 0;
 }
 
 void CKeysHandlesDlg::UpdateUI() {
