@@ -30,7 +30,7 @@ public:
 		NOTIFY_CODE_HANDLER(HCN_SIZECHANGED, OnHexBufferSizeChanged)
 		NOTIFY_CODE_HANDLER(TBN_DROPDOWN, OnToolBarDropdown)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CBinaryValueDlg>)
-		REFLECT_NOTIFICATIONS()
+		//REFLECT_NOTIFICATIONS()
 	END_MSG_MAP()
 
 	// Handler prototypes (uncomment arguments if needed):
