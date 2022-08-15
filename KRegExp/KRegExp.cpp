@@ -26,7 +26,7 @@ extern "C" NTSTATUS NTAPI ZwQueryInformationProcess(
 	_Out_opt_ PULONG ReturnLength
 );
 
-extern "C" NTSTATUS ObOpenObjectByName(
+extern "C" NTSTATUS NTAPI ObOpenObjectByName(
 	_In_ POBJECT_ATTRIBUTES ObjectAttributes,
 	_In_ POBJECT_TYPE ObjectType,
 	_In_ KPROCESSOR_MODE AccessMode,
@@ -108,7 +108,7 @@ NTSTATUS RegExpCreateClose(PDEVICE_OBJECT, PIRP Irp) {
 			KdPrint((DRIVER_PREFIX "Process image name: %wZ\n", path));
 			auto bs = wcsrchr(path->Buffer, L'\\');
 			NT_ASSERT(bs);
-			if (bs == nullptr || 0 != _wcsicmp(bs, L"\\RegExp.exe"))
+			if (bs == nullptr || 0 != _wcsicmp(bs, L"\\TotalReg.exe"))
 				status = STATUS_ACCESS_DENIED;
 		}
 		if (NT_SUCCESS(status) && RegCookie.QuadPart) {
