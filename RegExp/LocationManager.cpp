@@ -96,7 +96,7 @@ bool LocationManager::Load(PCWSTR path) {
     ::GetModuleFileName(nullptr, fullpath, _countof(fullpath));
     auto ch = fullpath[3];
     fullpath[3] = 0;
-    if (::GetDriveType(fullpath) == DRIVE_FIXED)
+    if (std::filesystem::exists(ch))
         return LoadFromRegistry(path);
     fullpath[3] = ch;
     wcscpy_s(fullpath + wcslen(fullpath) - 3, _countof(fullpath), L"ini");
