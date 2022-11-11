@@ -94,12 +94,16 @@ bool LocationManager::SaveToFile(PCWSTR path) const {
 bool LocationManager::Load(PCWSTR path) {
     WCHAR fullpath[MAX_PATH];
     ::GetModuleFileName(nullptr, fullpath, _countof(fullpath));
-    auto ch = fullpath[3];
-    fullpath[3] = 0;
-    if (::GetDriveType(fullpath) == DRIVE_FIXED)
-        return LoadFromRegistry(path);
-    fullpath[3] = ch;
     wcscpy_s(fullpath + wcslen(fullpath) - 3, _countof(fullpath), L"ini");
+    if (::GetFileAttributes(fullpath) == INVALID_FILE_ATTRIBUTES) {
+        //
+        // INIT file does not exist, load from Registry
+        //
+        return LoadFromRegistry(path);
+    }
+    //
+    // load from file
+    //
     return LoadFromFile(fullpath);
 }
 
