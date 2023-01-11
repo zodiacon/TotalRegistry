@@ -1092,7 +1092,7 @@ LRESULT CMainFrame::OnKnownLocation(WORD, WORD id, HWND, BOOL&) {
 		m_Tree.SelectItem(hItem);
 	}
 	else {
-		AtlMessageBox(m_hWnd, std::format(L"Location {} not found", name).c_str(), IDS_APP_TITLE, MB_ICONWARNING);
+		AtlMessageBox(m_hWnd, std::format(L"Location {} not found", (PCWSTR)name).c_str(), IDS_APP_TITLE, MB_ICONWARNING);
 		return 0;
 	}
 	return 0;
