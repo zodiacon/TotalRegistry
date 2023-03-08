@@ -294,6 +294,7 @@ private:
 	LRESULT OnDeleteBookmark(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnManageLocations(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
+	void ConnectRemoteRegistry(CString hostname);
 	void InitCommandBar();
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
 	CTreeItem InsertTreeItem(PCWSTR text, int image, NodeType type, HTREEITEM hParent = TVI_ROOT, HTREEITEM hAfter = TVI_SORT);
