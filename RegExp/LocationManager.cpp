@@ -22,7 +22,7 @@ bool LocationManager::LoadFromRegistry(PCWSTR path) {
     if (ERROR_SUCCESS != key.QueryStringValue(L"Locations", data.get(), &chars))
         return false;
 
-    _items.clear();
+    m_Items.clear();
     for (auto p = data.get(); *p; ) {
         auto semi = wcschr(p, L';');
         if (semi == nullptr)
@@ -34,7 +34,10 @@ bool LocationManager::LoadFromRegistry(PCWSTR path) {
         CString path(semi + 1, (int)(cr - semi - 1));
         if (name.IsEmpty())
             name = path;
-        _items.insert({ name, path });
+        //if (name.Left(4) != L"HKEY")
+        //    name = name.Mid(name.Find(L"/") + 1);
+
+        m_Items.insert({ name, path });
         p = cr + 1;
     }
 
@@ -42,7 +45,7 @@ bool LocationManager::LoadFromRegistry(PCWSTR path) {
 }
 
 bool LocationManager::SaveToRegistry(PCWSTR path) const {
-    if (_items.empty())
+    if (m_Items.empty())
         return true;
 
     path = GetPath(path);
@@ -55,7 +58,7 @@ bool LocationManager::SaveToRegistry(PCWSTR path) const {
         return false;
 
     CString text;
-    for (const auto& [name, value] : _items) {
+    for (const auto& [name, value] : m_Items) {
         text += name + L";" + value + L"\n";
     }
     return ERROR_SUCCESS == key.SetStringValue(L"Locations", text);
@@ -73,7 +76,7 @@ bool LocationManager::LoadFromFile(PCWSTR path) {
     auto data = file.ReadSection(L"Locations");
     for (auto& text : data) {
         int n = text.Find(L'=');
-        _items.insert({ n < 0 ? text : text.Left(n), n < 0 ? text : text.Mid(n + 1) });
+        m_Items.insert({ n < 0 ? text : text.Left(n), n < 0 ? text : text.Mid(n + 1) });
     }
 
     return true;
@@ -85,7 +88,7 @@ bool LocationManager::SaveToFile(PCWSTR path) const {
         return false;
 
     IniFile file(path);
-    for (auto& [name, target] : _items) {
+    for (auto& [name, target] : m_Items) {
         file.WriteString(L"Locations", name, target);
     }
     return true;
@@ -94,7 +97,13 @@ bool LocationManager::SaveToFile(PCWSTR path) const {
 bool LocationManager::Load(PCWSTR path) {
     WCHAR fullpath[MAX_PATH];
     ::GetModuleFileName(nullptr, fullpath, _countof(fullpath));
-    wcscpy_s(fullpath + wcslen(fullpath) - 3, _countof(fullpath), L"ini");
+    auto dot = wcsrchr(fullpath, L'.');
+    ATLASSERT(dot);
+    if (!dot)
+        return false;
+
+    *dot = 0;
+    wcscat_s(fullpath, L".ini");
     if (::GetFileAttributes(fullpath) == INVALID_FILE_ATTRIBUTES) {
         //
         // INIT file does not exist, load from Registry
@@ -108,49 +117,52 @@ bool LocationManager::Load(PCWSTR path) {
 }
 
 bool LocationManager::Save() const {
-    if (_path.IsEmpty())
+    if (m_Path.IsEmpty())
         return false;
 
-    return _path[1] == L':' ? SaveToFile() : SaveToRegistry();
+    return m_Path[1] == L':' ? SaveToFile() : SaveToRegistry();
 }
 
 int LocationManager::GetCount() const {
-    return (int)_items.size();
+    return (int)m_Items.size();
 }
 
 bool LocationManager::Replace(CString const& name, CString const& newName) {
-    auto it = _items.find(name);
-    if (it == _items.end())
+    auto it = m_Items.find(name);
+    if (it == m_Items.end())
         return false;
 
     auto path = it->second;
-    _items.erase(it);
-    _items.insert({ newName, path });
+    m_Items.erase(it);
+    m_Items.insert({ newName, path });
     return true;
 }
 
 void LocationManager::Add(CString const& name, CString const& path) {
-    _items.insert({ name, path });
+    m_Items.insert({ name, path });
 }
 
 void LocationManager::Clear() {
-    _items.clear();
+    m_Items.clear();
 }
 
 CString LocationManager::GetPathByName(CString const& name) const {
-    if (auto it = _items.find(name); it != _items.end())
+    if (auto it = m_Items.find(name); it != m_Items.end())
         return it->second;
 
-    if (auto it = _items.find((PCWSTR)name + name.Find(L'/') + 1); it != _items.end())
-        return it->second;
+    for (auto& [n, path] : m_Items) {
+        if (auto index = n.Find(L"/"); index >= 0)
+            if (n.Mid(index + 1) == name)
+                return path;
+    }
     return L"";
 }
 
 PCWSTR LocationManager::GetPath(PCWSTR path) const {
     if (path == nullptr || *path == 0)
-        path = _path;
+        path = m_Path;
 
-    _path = path;
+    m_Path = path;
     if (path == nullptr || *path == 0)
         return nullptr;
 

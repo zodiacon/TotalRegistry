@@ -12,11 +12,11 @@ public:
 	int GetCount() const;
 
 	auto begin() {
-		return _items.begin();
+		return m_Items.begin();
 	}
 
 	auto end() {
-		return _items.end();
+		return m_Items.end();
 	}
 
 	bool Replace(CString const& name, CString const& newName);
@@ -32,7 +32,7 @@ private:
 			return s1.CompareNoCase(s2) < 0;
 		}
 	};
-	std::map<CString, CString, LessNoCase> _items;
-	mutable CString _path;
+	std::map<CString, CString, LessNoCase> m_Items;
+	mutable CString m_Path;
 };
 
