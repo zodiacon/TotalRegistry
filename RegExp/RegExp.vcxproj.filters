@@ -314,7 +314,6 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="cpp.hint" />
-    <None Include="..\x64\Release\KRegExp.Sys" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="RegExp.ico">

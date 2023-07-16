@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DialogHelper.h"
+#include <DialogHelper.h>
 
 class CAboutDlg : 
 	public CDialogImpl<CAboutDlg>,
