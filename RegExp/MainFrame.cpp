@@ -1834,7 +1834,7 @@ CTreeItem CMainFrame::InsertTreeItem(PCWSTR text, int image, int selectedImage, 
 
 HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 	if (name) {
-		hRoot = m_Tree.InsertItem(name, 3, 2, hRoot, TVI_LAST);
+		hRoot = m_Tree.InsertItem(name, 3, 2, hRoot, TVI_SORT);
 		auto path = GetFullNodePath(hRoot);
 		if (Registry::IsHiveKey(path)) {
 			m_Tree.SetItemImage(hRoot, 6, 6);
@@ -1849,10 +1849,10 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 		CRegKey key(hKey);
 		Registry::EnumSubKeys(key, [&](auto name, const auto& ft) {
 			TreeHelper th(m_Tree);
-			auto hItem = th.FindChild(hRoot, name);
+			//auto hItem = th.FindChild(hRoot, name);
 
-			if(!hItem)
-				hItem = m_Tree.InsertItem(name, 3, 2, hRoot, TVI_SORT);
+			//if(!hItem)
+			auto hItem = m_Tree.InsertItem(name, 3, 2, hRoot, TVI_SORT);
 
 			SetNodeData(hItem, NodeType::Key);
 			CRegKey subKey;
@@ -1860,10 +1860,10 @@ HTREEITEM CMainFrame::BuildTree(HTREEITEM hRoot, HKEY hKey, PCWSTR name) {
 			if (error == ERROR_SUCCESS) {
 				DWORD subkeys = Registry::GetSubKeyCount(subKey);
 				if (subkeys) {
-					auto hItem2 = th.FindChild(hItem, L"\\\\");
+					//auto hItem2 = th.FindChild(hItem, L"\\\\");
 
-					if (!hItem2)
-						m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
+					//if (!hItem2)
+					m_Tree.InsertItem(L"\\\\", hItem, TVI_SORT);
 				}
 				subKey.Close();
 				CString linkPath;
