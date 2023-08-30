@@ -677,8 +677,10 @@ LRESULT CMainFrame::OnListItemChanged(int, LPNMHDR, BOOL&) {
 }
 
 LRESULT CMainFrame::OnViewRefresh(WORD, WORD, HWND, BOOL&) {
+	m_Tree.SetRedraw(FALSE);
 	RefreshFull(m_hStdReg);
 	RefreshFull(m_hRealReg);
+	m_Tree.SetRedraw(TRUE);
 	UpdateList();
 	return 0;
 }
@@ -2577,7 +2579,7 @@ void CMainFrame::UpdateFilter() {
 	if (stext.IsEmpty())
 		m_Items.Filter(nullptr);
 	else {
-		auto filter = [&](auto& item, int index) {
+		auto filter = [&](auto& item, size_t index) {
 			if (index == 0 && AppSettings::Get().ShowKeysInList())
 				return true;
 
