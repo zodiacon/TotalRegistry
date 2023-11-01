@@ -5,11 +5,6 @@ VisualStudioVersion = 17.2.32408.312
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TotalReg", "RegExp\RegExp.vcxproj", "{C9050D58-5154-473A-B007-3D4FBB8692F9}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Installer", "Installer\Installer.vdproj", "{79BEBE58-CCAD-483F-8279-BBFF3C880F30}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C9050D58-5154-473A-B007-3D4FBB8692F9} = {C9050D58-5154-473A-B007-3D4FBB8692F9}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WTLHelper", "WTLHelper\WTLHelper\WTLHelper.vcxproj", "{AE53419F-A769-4548-8E15-E311904DF7DF}"
 EndProject
 Global
@@ -22,6 +17,10 @@ Global
 		Release|ARM64 = Release|ARM64
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		ReleaseSigned|ARM = ReleaseSigned|ARM
+		ReleaseSigned|ARM64 = ReleaseSigned|ARM64
+		ReleaseSigned|x64 = ReleaseSigned|x64
+		ReleaseSigned|x86 = ReleaseSigned|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C9050D58-5154-473A-B007-3D4FBB8692F9}.Debug|ARM.ActiveCfg = Debug|x64
@@ -35,16 +34,14 @@ Global
 		{C9050D58-5154-473A-B007-3D4FBB8692F9}.Release|x64.ActiveCfg = Release|x64
 		{C9050D58-5154-473A-B007-3D4FBB8692F9}.Release|x64.Build.0 = Release|x64
 		{C9050D58-5154-473A-B007-3D4FBB8692F9}.Release|x86.ActiveCfg = Release|x64
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Debug|ARM.ActiveCfg = Debug
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Debug|ARM64.ActiveCfg = Debug
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Debug|x64.ActiveCfg = Debug
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Debug|x86.ActiveCfg = Debug
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|ARM.ActiveCfg = Release
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|ARM64.ActiveCfg = Release
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|ARM64.Build.0 = Release
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|x64.ActiveCfg = Release
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|x64.Build.0 = Release
-		{79BEBE58-CCAD-483F-8279-BBFF3C880F30}.Release|x86.ActiveCfg = Release
+		{C9050D58-5154-473A-B007-3D4FBB8692F9}.ReleaseSigned|ARM.ActiveCfg = ReleaseSigned|x64
+		{C9050D58-5154-473A-B007-3D4FBB8692F9}.ReleaseSigned|ARM.Build.0 = ReleaseSigned|x64
+		{C9050D58-5154-473A-B007-3D4FBB8692F9}.ReleaseSigned|ARM64.ActiveCfg = ReleaseSigned|ARM64
+		{C9050D58-5154-473A-B007-3D4FBB8692F9}.ReleaseSigned|ARM64.Build.0 = ReleaseSigned|ARM64
+		{C9050D58-5154-473A-B007-3D4FBB8692F9}.ReleaseSigned|x64.ActiveCfg = ReleaseSigned|x64
+		{C9050D58-5154-473A-B007-3D4FBB8692F9}.ReleaseSigned|x64.Build.0 = ReleaseSigned|x64
+		{C9050D58-5154-473A-B007-3D4FBB8692F9}.ReleaseSigned|x86.ActiveCfg = ReleaseSigned|x64
+		{C9050D58-5154-473A-B007-3D4FBB8692F9}.ReleaseSigned|x86.Build.0 = ReleaseSigned|x64
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.Debug|ARM.ActiveCfg = Debug|x64
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.Debug|ARM.Build.0 = Debug|x64
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.Debug|ARM64.ActiveCfg = Debug|ARM64
@@ -61,6 +58,14 @@ Global
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.Release|x64.Build.0 = Release|x64
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.Release|x86.ActiveCfg = Release|Win32
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.Release|x86.Build.0 = Release|Win32
+		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|ARM.ActiveCfg = ReleaseSigned|x64
+		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|ARM.Build.0 = ReleaseSigned|x64
+		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|ARM64.ActiveCfg = ReleaseSigned|ARM64
+		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|ARM64.Build.0 = ReleaseSigned|ARM64
+		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|x64.ActiveCfg = ReleaseSigned|x64
+		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|x64.Build.0 = ReleaseSigned|x64
+		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|x86.ActiveCfg = ReleaseSigned|Win32
+		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|x86.Build.0 = ReleaseSigned|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
