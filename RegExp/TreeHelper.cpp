@@ -55,7 +55,7 @@ void TreeHelper::DoForEachItem(HTREEITEM hRoot, DWORD mask, std::function<void(H
 		ATLTRACE(L"DoForEachExpanded hItem: 0x%p (%s)\n", hItem, text);
 #endif
 		auto state = _tv.GetItemState(hItem, mask);
-		if (state) {
+		if (mask == 0 || state) {
 			action(hItem, state);
 			DoForEachItem(hItem, mask, action);
 		}

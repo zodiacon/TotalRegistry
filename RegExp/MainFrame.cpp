@@ -677,11 +677,15 @@ LRESULT CMainFrame::OnListItemChanged(int, LPNMHDR, BOOL&) {
 }
 
 LRESULT CMainFrame::OnViewRefresh(WORD, WORD, HWND, BOOL&) {
-	m_Tree.SetRedraw(FALSE);
-	RefreshFull(m_hStdReg);
-	RefreshFull(m_hRealReg);
-	m_Tree.SetRedraw(TRUE);
-	UpdateList();
+	auto hCurrent = m_Tree.GetSelectedItem();
+	TreeHelper th(m_Tree);
+	th.DoForEachItem(m_hStdReg, 0, [this](auto hItem, auto state) {
+		RefreshItem(hItem);
+		});
+	th.DoForEachItem(m_hRealReg, 0, [this](auto hItem, auto state) {
+		RefreshItem(hItem);
+		});
+	m_Tree.EnsureVisible(hCurrent);
 	return 0;
 }
 
@@ -1978,7 +1982,7 @@ void CMainFrame::RefreshFull(HTREEITEM hItem) {
 			}
 			else {
 				// really expanded
-				RefreshFull(hItem);
+				//RefreshFull(hItem);
 				auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
 				if (key) {
 					auto keys = th.GetChildItems(hItem);
@@ -2148,15 +2152,18 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 }
 
 bool CMainFrame::RefreshItem(HTREEITEM hItem) {
-	auto expanded = m_Tree.GetItemState(hItem, TVIS_EXPANDED);
-	m_Tree.LockWindowUpdate();
+	auto expanded = m_Tree.GetItemState(hItem, TVIS_EXPANDED | TVIS_EXPANDEDONCE);
+	if (expanded == 0)
+		return false;
+
+	m_Tree.SetRedraw(FALSE);
 	m_Tree.Expand(hItem, TVE_COLLAPSE | TVE_COLLAPSERESET);
 	TreeHelper th(m_Tree);
 	th.DeleteChildren(hItem);
 	m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
-	if (expanded)
+	if (expanded & TVIS_EXPANDED)
 		m_Tree.Expand(hItem, TVE_EXPAND);
-	m_Tree.LockWindowUpdate(FALSE);
+	m_Tree.SetRedraw();
 	UpdateList();
 	return true;
 }
