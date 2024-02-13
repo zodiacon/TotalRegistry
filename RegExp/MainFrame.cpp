@@ -677,7 +677,7 @@ LRESULT CMainFrame::OnListItemChanged(int, LPNMHDR, BOOL&) {
 }
 
 LRESULT CMainFrame::OnViewRefresh(WORD, WORD, HWND, BOOL&) {
-	auto hCurrent = m_Tree.GetSelectedItem();
+	auto path = GetCurrentKeyPath();
 	TreeHelper th(m_Tree);
 	th.DoForEachItem(m_hStdReg, 0, [this](auto hItem, auto state) {
 		RefreshItem(hItem);
@@ -685,7 +685,7 @@ LRESULT CMainFrame::OnViewRefresh(WORD, WORD, HWND, BOOL&) {
 	th.DoForEachItem(m_hRealReg, 0, [this](auto hItem, auto state) {
 		RefreshItem(hItem);
 		});
-	m_Tree.EnsureVisible(hCurrent);
+	GotoKey(path);
 	return 0;
 }
 
