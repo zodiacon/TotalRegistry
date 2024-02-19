@@ -2463,7 +2463,7 @@ HTREEITEM CMainFrame::BuildKeyPath(const CString& path, bool accessible) {
 	auto hItem = path[0] == L'\\' ? m_hRealReg : m_hStdReg;
 	CString name;
 
-	int start = path[0] == L'\\' ? 2 : 0;
+	int start = path[0] == L'\\' ? 9 : 0;
 
 	if (path.Left(2) == L"\\\\") {
 		// remote Registry
