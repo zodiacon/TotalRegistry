@@ -1640,6 +1640,14 @@ LRESULT CMainFrame::OnManageLocations(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnViewSelectAll(WORD, WORD, HWND, BOOL&) {
+	m_List.SelectAllItems(true);
+	if (!m_Items.empty() && m_Items[0].Name == L"..")
+		m_List.SetItemState(0, 0, LVIS_SELECTED);
+
+	return 0;
+}
+
 LRESULT CMainFrame::OnListEndEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/) {
 	auto lv = (NMLVDISPINFO*)pnmh;
 	if (lv->item.pszText == nullptr) {

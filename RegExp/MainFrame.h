@@ -132,6 +132,7 @@ public:
 		COMMAND_ID_HANDLER(ID_EDIT_FIND, OnEditFind)
 		COMMAND_ID_HANDLER(ID_EDIT_RENAME, OnEditRename)
 		COMMAND_ID_HANDLER(ID_EDIT_DELETE, OnEditDelete)
+		COMMAND_ID_HANDLER(ID_VIEW_SELECTALL, OnViewSelectAll)
 		COMMAND_ID_HANDLER(ID_TREE_REFRESH, OnTreeRefresh)
 		COMMAND_ID_HANDLER(ID_SEARCH_FINDNEXT, OnSearchFindNext)
 		COMMAND_ID_HANDLER(ID_EDIT_UNDO, OnEditUndo)
@@ -293,6 +294,7 @@ private:
 	LRESULT OnAddBookmark(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnDeleteBookmark(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnManageLocations(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnViewSelectAll(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void ConnectRemoteRegistry(CString hostname);
 	void InitCommandBar();
