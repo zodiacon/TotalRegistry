@@ -52,7 +52,7 @@ bool RegExportImport::ExportKey(HKEY hKey, HANDLE hFile, PCWSTR section) const {
 				break;
 			
 			case REG_SZ: {
-				CString text(data.get());
+				CString text((PCWSTR)data.get());
 				text.Replace(L"\"", L"\\\"");
 				WriteString(hFile, sname + L"=\"" + text + L"\"\n");
 				break;
