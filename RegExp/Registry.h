@@ -39,7 +39,7 @@ struct Registry abstract final {
 	static DWORD EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler);
 	static CString QueryStringValue(RegistryKey& key, PCWSTR name);
 	static CString StdRegPathToRealPath(const CString& path);
-	static PCWSTR GetRegTypeAsString(DWORD type);
+	static CString GetRegTypeAsString(DWORD type);
 	static CString GetDataAsString(RegistryKey& key, const RegistryItem& item);
 	static HKEY OpenRealRegistryKey(PCWSTR path = nullptr, DWORD access = KEY_READ);
 	static HKEY CreateRealRegistryKey(PCWSTR path, DWORD access = KEY_READ);

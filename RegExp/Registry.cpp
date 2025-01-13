@@ -244,7 +244,7 @@ bool Registry::Disconnect(PCWSTR computerName) {
 	return true;
 }
 
-PCWSTR Registry::GetRegTypeAsString(DWORD type) {
+CString Registry::GetRegTypeAsString(DWORD type) {
 	switch (type) {
 		case REG_KEY: return L"Key";
 		case REG_SZ: return L"REG_SZ";
@@ -259,7 +259,7 @@ PCWSTR Registry::GetRegTypeAsString(DWORD type) {
 		case REG_RESOURCE_LIST: return L"REG_RESOURCE_LIST";
 		case REG_FULL_RESOURCE_DESCRIPTOR: return L"REG_FULL_RESOURCE_DESCRIPTOR";
 	}
-	return L"";
+	return std::format("{} (0x{:X})", type, type).c_str();
 }
 
 CString Registry::GetDataAsString(RegistryKey& key, const RegistryItem& item) {
