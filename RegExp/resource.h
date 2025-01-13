@@ -196,6 +196,9 @@
 #define ID_KEY_ADDBOOKMARK              32882
 #define ID_DELETE_BOOKMARK              32883
 #define ID_VIEW_SELECTALL               32887
+#define ID_GOTOHIVE_CURRENTUSER         32888
+#define ID_GOTOHIVE_LOCALMACHINE        32889
+#define ID_GOTOHIVE_CLASSESROOT         32890
 
 // Next default values for new objects
 // 
@@ -203,7 +206,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        182
-#define _APS_NEXT_COMMAND_VALUE         32890
+#define _APS_NEXT_COMMAND_VALUE         32891
 #define _APS_NEXT_CONTROL_VALUE         1060
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
