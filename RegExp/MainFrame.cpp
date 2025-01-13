@@ -871,6 +871,40 @@ LRESULT CMainFrame::OnTreeContextMenu(int, LPNMHDR hdr, BOOL&) {
 			//
 			hMenu.InsertMenu(0, MF_BYPOSITION, ID_KEY_JUMPTOHIVEFILE, L"Jump &Hive File...");
 		}
+
+		hMenu.AppendMenu(MF_SEPARATOR);
+		auto path = GetCurrentKeyPath();
+		auto currentHive = path.Mid(0, path.Find(L"\\", 0));
+		if (currentHive == L"HKEY_CURRENT_USER") {
+			auto destination = L"HKEY_LOCAL_MACHINE" + path.Mid(currentHive.GetLength());
+			auto key = Registry::OpenKey(destination, KEY_QUERY_VALUE);
+			if (key)
+				hMenu.AppendMenu(MF_STRING, ID_GOTOHIVE_LOCALMACHINE, L"Goto HKEY_LOCAL_MACHINE");
+			if (path.MakeUpper().Find(L"HKEY_CURRENT_USER\\SOFTWARE\\CLASSES") == 0)
+				hMenu.AppendMenu(MF_STRING, ID_GOTOHIVE_CLASSESROOT, L"Goto HKEY_CLASSES_ROOT");
+		}
+		else if (currentHive == L"HKEY_LOCAL_MACHINE") {
+			auto destination = L"HKEY_CURRENT_USER" + path.Mid(currentHive.GetLength());
+			auto key = Registry::OpenKey(destination, KEY_QUERY_VALUE);
+			if (key)
+				hMenu.AppendMenu(MF_STRING, ID_GOTOHIVE_CURRENTUSER, L"Goto HKEY_CURRENT_USER");
+			if (path.MakeUpper().Find(L"HKEY_LOCAL_MACHINE\\SOFTWARE\\CLASSES") == 0)
+				hMenu.AppendMenu(MF_STRING, ID_GOTOHIVE_CLASSESROOT, L"Goto HKEY_CLASSES_ROOT");
+		}
+		else if (currentHive == L"HKEY_CLASSES_ROOT") {
+			auto destination = L"HKEY_LOCAL_MACHINE\\SOFTWARE\\CLASSES" + path.Mid(currentHive.GetLength());
+			auto key = Registry::OpenKey(destination, KEY_QUERY_VALUE);
+			if (key)
+				hMenu.AppendMenu(MF_STRING, ID_GOTOHIVE_LOCALMACHINE, L"Goto HKEY_LOCAL_MACHINE");
+			destination = L"HKEY_CURRENT_USER\\SOFTWARE\\CLASSES" + path.Mid(currentHive.GetLength());
+			key = Registry::OpenKey(destination, KEY_QUERY_VALUE);
+			if (key)
+				hMenu.AppendMenu(MF_STRING, ID_GOTOHIVE_CURRENTUSER, L"Goto HKEY_CURRENT_USER");
+		}
+		auto lastMenuItem = hMenu.GetMenuItemID(hMenu.GetMenuItemCount()-1);
+		if (lastMenuItem == 0)
+			hMenu.DeleteMenu(hMenu.GetMenuItemCount()-1, MF_BYPOSITION);
+		
 		ShowContextMenu(hMenu, 0, pt2.x, pt2.y);
 	}
 	return 0;
@@ -2723,3 +2757,34 @@ void CMainFrame::UpdateList(bool newLocation) {
 	m_List.RedrawItems(m_List.GetTopIndex(), m_List.GetTopIndex() + m_List.GetCountPerPage());
 }
 
+LRESULT CMainFrame::OnGotoHive(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled) {
+	auto path = GetCurrentKeyPath();
+	CString currentHive = path.Mid(0, path.Find(L"\\", 0));
+	CString destinationHive = L"";
+
+	if (wID == ID_GOTOHIVE_CURRENTUSER) {
+		destinationHive = L"HKEY_CURRENT_USER";
+	}
+	else if (wID == ID_GOTOHIVE_LOCALMACHINE) {
+		destinationHive = L"HKEY_LOCAL_MACHINE";
+	}
+	else {
+		ATLASSERT(wID == ID_GOTOHIVE_CLASSESROOT);
+		destinationHive = L"HKEY_CLASSES_ROOT";
+	}
+
+	if (currentHive == L"HKEY_CLASSES_ROOT" && (destinationHive == L"HKEY_CURRENT_USER" || destinationHive == L"HKEY_LOCAL_MACHINE")) {
+		destinationHive += L"\\SOFTWARE\\CLASSES";
+	}
+
+	if (destinationHive == L"HKEY_CLASSES_ROOT" && (currentHive == L"HKEY_CURRENT_USER" || currentHive == L"HKEY_LOCAL_MACHINE")) {
+		currentHive += L"\\SOFTWARE\\CLASSES";
+	}
+
+	path = destinationHive + path.Mid(currentHive.GetLength());
+	if (currentHive != destinationHive) {
+		GotoKey(path, false);
+	}
+
+	return 0;
+}

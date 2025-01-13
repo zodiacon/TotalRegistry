@@ -164,6 +164,9 @@ public:
 		COMMAND_ID_HANDLER(ID_KEY_ADDBOOKMARK, OnAddBookmark)
 		COMMAND_ID_HANDLER(ID_DELETE_BOOKMARK, OnDeleteBookmark)
 		COMMAND_ID_HANDLER(ID_LOCATIONS_MANAGE, OnManageLocations)
+		COMMAND_ID_HANDLER(ID_GOTOHIVE_CURRENTUSER, OnGotoHive)
+		COMMAND_ID_HANDLER(ID_GOTOHIVE_LOCALMACHINE, OnGotoHive)
+		COMMAND_ID_HANDLER(ID_GOTOHIVE_CLASSESROOT, OnGotoHive)
 		MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
@@ -295,6 +298,7 @@ private:
 	LRESULT OnDeleteBookmark(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnManageLocations(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnViewSelectAll(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnGotoHive(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void ConnectRemoteRegistry(CString hostname);
 	void InitCommandBar();
