@@ -18,5 +18,6 @@ struct Helpers abstract final {
 	static bool WriteToFile(PCWSTR path, void const* data, DWORD size);
 	static bool ReadFileText(PCWSTR path, CString& text);
 	static CString NormalizePath(CString const& path);
+	static CString GuidToString(GUID const& guid);
 };
 

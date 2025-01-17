@@ -2188,6 +2188,16 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 					return CTime(ft).Format(L"%c");
 				}
 			}
+			else if (item.Size == sizeof(GUID)) {
+				//
+				// dump as GUID
+				//
+				GUID guid;
+				ULONG size = item.Size;
+				if (ERROR_SUCCESS == m_CurrentKey.QueryBinaryValue(item.Name, &guid, &size)) {
+					return Helpers::GuidToString(guid);
+				}
+			}
 			break;
 	}
 	return text;
@@ -2454,6 +2464,7 @@ void CMainFrame::InitLocations() {
 			{ L"Device Classes", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Class)" },
 			{ L"Hive List", LR"(HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\hivelist)" },
 			{ L"Image File Execution Options", LR"(HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options)" },
+			{ L"Known DLLs", LR"(HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\KnownDLLs)" },
 			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shell)" },
 			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\*\shellex)" },
 			{ LR"(Explorer Context Menu/HKEY_CLASSES_ROOT\AllFileSystemObjects\ShellEx\ContextMenuHandlers)" },

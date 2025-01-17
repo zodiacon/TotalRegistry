@@ -260,3 +260,8 @@ CString Helpers::NormalizePath(CString const& path) {
     }
     return spath;
 }
+
+CString Helpers::GuidToString(GUID const& guid) {
+    WCHAR text[64];
+    return 0 == ::StringFromGUID2(guid, text, _countof(text)) ? L"" : text;
+}
