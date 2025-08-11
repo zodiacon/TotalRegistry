@@ -194,6 +194,8 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 			return item.Name.IsEmpty() ? CString(Helpers::DefaultValueName) : item.Name;
 
 		case ColumnType::Type:
+			if (item.Name == L"..")
+				return L"";
 			return Registry::GetRegTypeAsString(item.Type);
 
 		case ColumnType::Value:
