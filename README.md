@@ -15,9 +15,36 @@ Replacement for the Windows built-in *Regedit.exe* tool. Improvements over that 
 * Connect to remote Registry
 * View open key handles
 
-## Build instructions
+## Build Instructions
 
-Build the solution file with Visual Studio 2022. Can be built with Visual Studio 2019 as well (change toolset to v142 and C++ compiler version to C++ latest or C++20).
+### Prerequisites
+- Visual Studio 2022 (or 2019 with toolset v142)
+- [vcpkg](https://vcpkg.io/) package manager
+
+### Steps
+
+1. **Clone with submodules:**
+   ```bash
+   git clone --recursive https://github.com/zodiacon/TotalRegistry.git
+   cd TotalRegistry
+   ```
+
+2. **Install dependencies via vcpkg:**
+   ```bash
+   vcpkg install
+   ```
+   Or enable vcpkg manifest mode in Visual Studio project properties.
+
+3. **Build:**
+   Open `TotalRegistry.sln` in Visual Studio 2022 and build (Debug/Release x64).
+
+### Dependencies
+- [detours](https://github.com/microsoft/Detours) - Microsoft Detours library
+- [wil](https://github.com/microsoft/wil) - Windows Implementation Libraries
+- [WTL 10](https://github.com/allenk/WTL-Wizard-VS2022) - Windows Template Library headers
+
+### Notes
+- Can be built with Visual Studio 2019 (change toolset to v142 and C++ compiler version to C++20).
 
 ![](https://github.com/zodiacon/RegExp/blob/master/regexp1.png)
 
