@@ -2190,7 +2190,21 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 					return CTime(ft).Format(L"%c");
 				}
 			}
-			else if (item.Size == sizeof(GUID)) {
+			if (item.Size >= SECURITY_DESCRIPTOR_MIN_LENGTH) {
+				ULONG size = item.Size;
+				auto buffer = std::make_unique<BYTE[]>(size);
+				if (ERROR_SUCCESS == m_CurrentKey.QueryBinaryValue(item.Name, buffer.get(), &size) && ::IsValidSecurityDescriptor(buffer.get())) {
+					PWSTR sddl;
+					if (::ConvertSecurityDescriptorToStringSecurityDescriptor(buffer.get(), SDDL_REVISION,
+						DACL_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION, &sddl, nullptr)) {
+						CString result(sddl);
+						::LocalFree(sddl);
+						return result;
+					}
+				}
+			}
+
+			if (item.Size == sizeof(GUID)) {
 				//
 				// dump as GUID
 				//

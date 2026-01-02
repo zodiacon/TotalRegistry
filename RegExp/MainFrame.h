@@ -42,7 +42,6 @@ class CMainFrame :
 	public CAutoUpdateUI<CMainFrame>,
 	public CVirtualListView<CMainFrame>,
 	public CCustomDraw<CMainFrame>,
-	public CDwmImpl<CMainFrame>,
 	public COwnerDrawnMenu<CMainFrame>,
 	public IMainFrame,
 	public CMessageFilter,
