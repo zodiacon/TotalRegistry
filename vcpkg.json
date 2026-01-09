@@ -1,0 +1,9 @@
+{
+  "name": "totalregistry",
+  "version-string": "1.0.0",
+  "builtin-baseline": "5422eb983d4ca8bc4851ac9771d6e74554efc5c8",
+  "dependencies": [
+    "detours",
+    "wil"
+  ]
+}
