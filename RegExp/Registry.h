@@ -34,7 +34,7 @@ struct HandleInfo {
 	CString ProcessName;
 };
 
-struct Registry abstract final {
+struct Registry final {
 	static DWORD EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&)> handler);
 	static DWORD EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler);
 	static CString QueryStringValue(RegistryKey& key, PCWSTR name);
