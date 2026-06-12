@@ -1,7 +1,7 @@
 #pragma once
 
 #include "DialogHelper.h"
-#include "HexControl.h"
+#include "SimpleHexControl.h"
 #include "MemoryBuffer.h"
 #include "IMainFrame.h"
 #include "RegistryKey.h"
@@ -27,7 +27,7 @@ public:
 		COMMAND_RANGE_HANDLER(ID_HEX_8BYTES, ID_HEX_32BYTES, OnBytesPerLine)
 		COMMAND_ID_HANDLER(IDOK, OnCloseCmd)
 		COMMAND_ID_HANDLER(IDCANCEL, OnCloseCmd)
-		NOTIFY_CODE_HANDLER(HCN_SIZECHANGED, OnHexBufferSizeChanged)
+		NOTIFY_CODE_HANDLER(NMHX_VALUE_CHANGED, OnHexBufferSizeChanged)
 		NOTIFY_CODE_HANDLER(TBN_DROPDOWN, OnToolBarDropdown)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CBinaryValueDlg>)
 		//REFLECT_NOTIFICATIONS()
@@ -54,7 +54,7 @@ private:
 	RegistryKey& m_Key;
 	CString m_Name;
 	CHexControl m_Hex;
-	MemoryBuffer m_Buffer;
+	std::unique_ptr<MemoryBuffer> m_Buffer;
 	std::vector<BYTE> m_Value;
 	DWORD m_Type{ 0 };
 	IMainFrame* m_pFrame;

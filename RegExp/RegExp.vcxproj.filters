@@ -25,9 +25,6 @@
     <Filter Include="Commands">
       <UniqueIdentifier>{23380c9c-8279-4afc-b45c-4326d156ae3e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Controls">
-      <UniqueIdentifier>{11047e3c-6aa8-446c-a3c6-24a6d7c3af4f}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h">
@@ -114,14 +111,8 @@
     <ClInclude Include="DeleteValueCommand.h">
       <Filter>Commands</Filter>
     </ClInclude>
-    <ClInclude Include="HexControl.h">
-      <Filter>Controls</Filter>
-    </ClInclude>
     <ClInclude Include="BinaryValueDlg.h">
       <Filter>Dialogs</Filter>
-    </ClInclude>
-    <ClInclude Include="MemoryBuffer.h">
-      <Filter>Controls</Filter>
     </ClInclude>
     <ClInclude Include="SecurityInformation.h">
       <Filter>Helpers</Filter>
@@ -245,14 +236,8 @@
     <ClCompile Include="DeleteValueCommand.cpp">
       <Filter>Commands</Filter>
     </ClCompile>
-    <ClCompile Include="HexControl.cpp">
-      <Filter>Controls</Filter>
-    </ClCompile>
     <ClCompile Include="BinaryValueDlg.cpp">
       <Filter>Dialogs</Filter>
-    </ClCompile>
-    <ClCompile Include="MemoryBuffer.cpp">
-      <Filter>Controls</Filter>
     </ClCompile>
     <ClCompile Include="SecurityInformation.cpp">
       <Filter>Helpers</Filter>

@@ -141,7 +141,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\WTLHelper</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\WTLHelper;..\WTLHelper\HexControl</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -159,7 +159,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\WTLHelper</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\WTLHelper;..\WTLHelper\HexControl</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -179,7 +179,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\WTLHelper</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\WTLHelper;..\WTLHelper\HexControl</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -197,7 +197,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper;..\WTLHelper\HexControl</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -221,7 +221,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper;..\WTLHelper\HexControl</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -247,7 +247,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper;..\WTLHelper\HexControl</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -276,7 +276,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper;..\WTLHelper\HexControl</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -304,7 +304,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper;..\WTLHelper\HexControl</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -333,7 +333,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\WTLHelper\WTLHelper;..\WTLHelper\HexControl</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -371,7 +371,6 @@
     <ClInclude Include="FindOptions.h" />
     <ClInclude Include="GotoKeyDlg.h" />
     <ClInclude Include="Helpers.h" />
-    <ClInclude Include="HexControl.h" />
     <ClInclude Include="ImageIconCache.h" />
     <ClInclude Include="IMainFrame.h" />
     <ClInclude Include="KeysHandlesDlg.h" />
@@ -379,7 +378,6 @@
     <ClInclude Include="LocationManager.h" />
     <ClInclude Include="MainFrame.h" />
     <ClInclude Include="ManageLocationsDlg.h" />
-    <ClInclude Include="MemoryBuffer.h" />
     <ClInclude Include="MultiStringValueDlg.h" />
     <ClInclude Include="NavigationManager.h" />
     <ClInclude Include="CreateValueCommand.h" />
@@ -421,14 +419,12 @@
     <ClCompile Include="FindDlg.cpp" />
     <ClCompile Include="GotoKeyDlg.cpp" />
     <ClCompile Include="Helpers.cpp" />
-    <ClCompile Include="HexControl.cpp" />
     <ClCompile Include="ImageIconCache.cpp" />
     <ClCompile Include="KeysHandlesDlg.cpp" />
     <ClCompile Include="LoadHiveDlg.cpp" />
     <ClCompile Include="LocationManager.cpp" />
     <ClCompile Include="MainFrame.cpp" />
     <ClCompile Include="ManageLocationsDlg.cpp" />
-    <ClCompile Include="MemoryBuffer.cpp" />
     <ClCompile Include="MultiStringValueDlg.cpp" />
     <ClCompile Include="NumberValueDlg.cpp" />
     <ClCompile Include="pch.cpp">
@@ -514,6 +510,9 @@
   <ItemGroup>
     <ProjectReference Include="..\WTLHelper\WTLHelper\WTLHelper.vcxproj">
       <Project>{ae53419f-a769-4548-8e15-e311904df7df}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\WTLHelper\HexControl\HexControl.vcxproj">
+      <Project>{ef5c2f6b-5fcd-446c-be8d-1485407cd65a}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

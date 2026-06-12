@@ -250,7 +250,7 @@ CString Registry::GetRegTypeAsString(DWORD type) {
 		case REG_SZ: return L"REG_SZ";
 		case REG_DWORD: return L"REG_DWORD";
 		case REG_MULTI_SZ: return L"REG_MULTI_SZ";
-		case REG_QWORD: return L"REG_QDWORD";
+		case REG_QWORD: return L"REG_QWORD";
 		case REG_EXPAND_SZ: return L"REG_EXPAND_SZ";
 		case REG_NONE: return L"REG_NONE";
 		case REG_LINK: return L"REG_LINK";

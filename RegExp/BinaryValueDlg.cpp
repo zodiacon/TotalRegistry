@@ -58,7 +58,7 @@ void CBinaryValueDlg::BuildToolBar(CRect& rc) {
 
 void CBinaryValueDlg::UpdateBufferSize() {
 	CString text;
-	auto bytes = (ULONG)m_Buffer.GetSize();
+	auto bytes = (ULONG)m_Buffer->GetSize();
 	text.Format(L"Size: %u bytes", bytes);
 	SetDlgItemText(IDC_BUFFERSIZE, text);
 }
@@ -95,12 +95,12 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 		return 0;
 	}
 
-	m_Buffer.Init(m_Value.data(), (uint32_t)m_Value.size());
+	m_Buffer = std::make_unique<MemoryBuffer>(m_Value.data(), (uint32_t)m_Value.size());
 
 	UpdateBufferSize();
 
 	m_Hex.SetReadOnly(m_ReadOnly);
-	m_Hex.SetBufferManager(&m_Buffer);
+	m_Hex.SetBufferManager(m_Buffer.get());
 	m_Hex.SetBytesPerLine(8);
 	m_Hex.SetBiasOffset(0);
 	m_Hex.SetFocus();
@@ -129,14 +129,14 @@ LRESULT CBinaryValueDlg::OnSize(UINT, WPARAM, LPARAM, BOOL& handled) {
 
 LRESULT CBinaryValueDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
 	if (IDOK == wID && !m_ReadOnly) {
-		if (m_Buffer.GetSize() != m_Value.size())
+		if (m_Buffer->GetSize() != m_Value.size())
 			m_Modified = true;
 		else {
-			m_Modified = 0 != ::memcmp(m_Value.data(), m_Buffer.GetRawData(0), m_Value.size());
+			m_Modified = 0 != ::memcmp(m_Value.data(), m_Buffer->GetRawData(0), m_Value.size());
 		}
 		if (m_Modified) {
-			m_Value.resize(m_Buffer.GetSize());
-			m_Buffer.GetData(0, m_Value.data(), (DWORD)m_Buffer.GetSize());
+			m_Value.resize(m_Buffer->GetSize());
+			m_Buffer->GetData(0, m_Value.data(), (DWORD)m_Buffer->GetSize());
 		}
 	}
 	EndDialog(wID);

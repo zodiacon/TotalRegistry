@@ -254,9 +254,9 @@ CString Helpers::NormalizePath(CString const& path) {
         if (n == 0)
             n = spath.Replace(L"HKU\\", L"HKEY_USERS\\");
         if (n == 0)
-            n = spath.Replace(L"HKCC:\\", L"HKEY_CURRENT_CONFIG");
+            n = spath.Replace(L"HKCC:\\", L"HKEY_CURRENT_CONFIG\\");
         if (n == 0)
-            spath.Replace(L"HKCC\\", L"HKEY_CURRENT_CONFIG");
+            spath.Replace(L"HKCC\\", L"HKEY_CURRENT_CONFIG\\");
     }
     return spath;
 }

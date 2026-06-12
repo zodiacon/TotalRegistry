@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.2.32408.312
+# Visual Studio Version 18
+VisualStudioVersion = 18.7.11903.348 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TotalReg", "RegExp\RegExp.vcxproj", "{C9050D58-5154-473A-B007-3D4FBB8692F9}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WTLHelper", "WTLHelper\WTLHelper\WTLHelper.vcxproj", "{AE53419F-A769-4548-8E15-E311904DF7DF}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexControl", "WTLHelper\HexControl\HexControl.vcxproj", "{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -66,6 +68,30 @@ Global
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|x64.Build.0 = ReleaseSigned|x64
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|x86.ActiveCfg = ReleaseSigned|Win32
 		{AE53419F-A769-4548-8E15-E311904DF7DF}.ReleaseSigned|x86.Build.0 = ReleaseSigned|Win32
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Debug|ARM.ActiveCfg = Debug|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Debug|ARM.Build.0 = Debug|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Debug|ARM64.ActiveCfg = Debug|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Debug|ARM64.Build.0 = Debug|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Debug|x64.ActiveCfg = Debug|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Debug|x64.Build.0 = Debug|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Debug|x86.ActiveCfg = Debug|Win32
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Debug|x86.Build.0 = Debug|Win32
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Release|ARM.ActiveCfg = Release|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Release|ARM.Build.0 = Release|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Release|ARM64.ActiveCfg = Release|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Release|ARM64.Build.0 = Release|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Release|x64.ActiveCfg = Release|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Release|x64.Build.0 = Release|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Release|x86.ActiveCfg = Release|Win32
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.Release|x86.Build.0 = Release|Win32
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|ARM.ActiveCfg = ReleaseSigned|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|ARM.Build.0 = ReleaseSigned|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|ARM64.ActiveCfg = ReleaseSigned|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|ARM64.Build.0 = ReleaseSigned|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|x64.ActiveCfg = ReleaseSigned|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|x64.Build.0 = ReleaseSigned|x64
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|x86.ActiveCfg = ReleaseSigned|Win32
+		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|x86.Build.0 = ReleaseSigned|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
