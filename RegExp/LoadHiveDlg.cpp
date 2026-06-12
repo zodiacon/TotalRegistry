@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Resource.h"
 #include "LoadHiveDlg.h"
-#include "ThemeHelper.h"
+#include "WTLHelper.h"
 
 HKEY CLoadHiveDlg::GetSelectedKey() const {
     return m_hKey;
@@ -34,13 +34,13 @@ LRESULT CLoadHiveDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
 }
 
 LRESULT CLoadHiveDlg::OnBrowse(WORD, WORD wID, HWND, BOOL&) {
-    ThemeHelper::Suspend();
+    WTLHelper::SuspendHook();
     CSimpleFileDialog dlg(TRUE, L"dat", nullptr, OFN_EXPLORER | OFN_ENABLESIZING | OFN_FILEMUSTEXIST,
         L"All Files\0*.*\0", m_hWnd);
     if (dlg.DoModal() == IDOK) {
         SetDlgItemText(IDC_PATH, dlg.m_szFileName);
     }
-    ThemeHelper::Resume();
+    WTLHelper::ResumeHook();
     return 0;
 }
 

@@ -8,7 +8,7 @@
 #include "SecurityHelper.h"
 #include "ListViewhelper.h"
 #include "ClipboardHelper.h"
-#include "ThemeHelper.h"
+#include "WTLHelper.h"
 
 CString CKeysHandlesDlg::GetColumnText(HWND hWnd, int row, int col) const {
 	auto const& item = m_Handles[row];
@@ -29,7 +29,7 @@ bool CKeysHandlesDlg::OnRightClickList(HWND, int row, int col, POINT const& pt) 
 		CMenu menu;
 		menu.LoadMenu(IDR_CONTEXT);
 		auto subMenu = menu.GetSubMenu(6);
-		auto cmd = (UINT)ShowContextMenu(subMenu, TPM_RETURNCMD, pt.x, pt.y);
+		auto cmd = (UINT)m_pFrame->TrackPopupMenu(subMenu, TPM_RETURNCMD, pt.x, pt.y, m_hWnd);
 		if (cmd)
 			PostMessage(WM_COMMAND, cmd);
 		return true;
@@ -131,9 +131,6 @@ void CKeysHandlesDlg::BuildToolBar() {
 				image = tbImages.AddIcon(hIcon);
 			}
 			tb.AddButton(b.id, b.style | (b.text ? BTNS_SHOWTEXT : 0), b.state, image, b.text, 0);
-			if(hIcon)
-				m_Menu.AddCommand(b.id, hIcon);
-
 		}
 	}
 	UIAddToolBar(tb);
@@ -164,7 +161,6 @@ LRESULT CKeysHandlesDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	_Module.GetMessageLoop()->AddIdleHandler(this);
 	_Module.GetMessageLoop()->AddMessageFilter(this);
 
-	ThemeHelper::UpdateMenuColors(m_Menu, !ThemeHelper::IsDefault());
 	UIAddMenu(IDR_CONTEXT);
 	UpdateUI();
 
@@ -235,9 +231,9 @@ LRESULT CKeysHandlesDlg::OnPermissions(WORD, WORD wID, HWND, BOOL&) {
 		hDup = SecurityHelper::DupHandle(ULongToHandle(item.Handle), item.ProcessId, READ_CONTROL);
 	if (hDup) {
 		CSecurityInformation si(hDup, item.Name, false);
-		ThemeHelper::Suspend();
+		WTLHelper::SuspendHook();
 		::EditSecurity(m_hWnd, &si);
-		ThemeHelper::Resume();
+		WTLHelper::ResumeHook();
 		::CloseHandle(hDup);
 	}
 	else {

@@ -9,8 +9,7 @@
 #include "EnumStrings.h"
 #include "DeleteKeyCommand.h"
 #include "DeleteValueCommand.h"
-#include "OwnerDrawnMenu.h"
-#include "Theme.h"
+#include "WTLHelper.h"
 #include "LocationManager.h"
 #include "KeysHandlesDlg.h"
 #include "SortedFilteredVector.h"
@@ -42,7 +41,6 @@ class CMainFrame :
 	public CAutoUpdateUI<CMainFrame>,
 	public CVirtualListView<CMainFrame>,
 	public CCustomDraw<CMainFrame>,
-	public COwnerDrawnMenu<CMainFrame>,
 	public IMainFrame,
 	public CMessageFilter,
 	public CIdleHandler {
@@ -170,7 +168,6 @@ public:
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		COMMAND_ID_HANDLER(ID_OPTIONS_RESTOREDEFAULTFONT, OnRestoreDefaultFont)
-		CHAIN_MSG_MAP(COwnerDrawnMenu<CMainFrame>)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CCustomDraw<CMainFrame>)
 		//CHAIN_MSG_MAP(COwnerDraw<CMainFrame>)
@@ -300,7 +297,8 @@ private:
 	LRESULT OnGotoHive(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	void ConnectRemoteRegistry(CString hostname);
-	void InitCommandBar();
+	void InitMenu(HMENU hMenu);
+	BOOL ShowContextMenu(HMENU hMenu, DWORD flags, int x, int y, HWND hWnd = nullptr);
 	void InitToolBar(CToolBarCtrl& tb, int size = 24);
 	CTreeItem InsertTreeItem(PCWSTR text, int image, NodeType type, HTREEITEM hParent = TVI_ROOT, HTREEITEM hAfter = TVI_SORT);
 	CTreeItem InsertTreeItem(PCWSTR text, int image, int selectedImage, NodeType type, HTREEITEM hParent = TVI_ROOT, HTREEITEM hAfter = TVI_SORT);
@@ -326,7 +324,6 @@ private:
 	void SetDarkMode(bool dark);
 	HTREEITEM GotoKey(const CString& path, bool knownToExist = false);
 	void ShowBand(int index, bool show);
-	void InitDarkTheme();
 	void InitLocations();
 	HTREEITEM BuildKeyPath(const CString& path, bool accessible);
 	CTreeItem AddBookmark(HTREEITEM hItem);
@@ -359,7 +356,6 @@ private:
 	HANDLE m_hSingleInstMutex{ nullptr };
 	CString m_StartKey;
 	CComObject<CEnumStrings>* m_AutoCompleteStrings{ nullptr };
-	Theme m_DarkTheme, m_DefaultTheme{ true };
 	CFont m_Font;
 	CKeysHandlesDlg m_HandlesDlg;
 	CString m_StatusText;

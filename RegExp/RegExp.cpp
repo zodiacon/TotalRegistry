@@ -2,7 +2,7 @@
 #include "pch.h"
 #include "RegExp.h"
 #include "MainFrame.h"
-#include "ThemeHelper.h"
+#include "WTLHelper.h"
 #include "DriverHelper.h"
 #include "SecurityHelper.h"
 #include "AppSettings.h"
@@ -44,7 +44,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ LPWSTR lp
 	ATLASSERT(SUCCEEDED(hRes));
 
 	::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
-	ThemeHelper::Init();
+	AppSettings::Get().Load(L"Software\\ScorpioSoftware\\TotalRegistry");
+	WTLHelper::InitDarkMode(AppSettings::Get().DarkMode() ? DarkModeKind::Dark : DarkModeKind::Light);
 
 	int nRet = Run(lpCmdLine, nCmdShow);
 

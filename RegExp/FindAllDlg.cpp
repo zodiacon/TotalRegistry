@@ -4,7 +4,7 @@
 #include "SortHelper.h"
 #include "Helpers.h"
 #include <ListViewhelper.h>
-#include <ThemeHelper.h>
+#include <WTLHelper.h>
 #include <ClipboardHelper.h>
 
 CFindAllDlg::CFindAllDlg(IMainFrame* frame) : m_pFrame(frame) {
@@ -240,7 +240,7 @@ LRESULT CFindAllDlg::OnSearchComplete(UINT msg, WPARAM cancelled, LPARAM, BOOL&)
 LRESULT CFindAllDlg::OnSaveResults(WORD, WORD wID, HWND, BOOL&) {
     CSimpleFileDialog dlg(FALSE, L"txt", nullptr, OFN_EXPLORER | OFN_ENABLESIZING | OFN_OVERWRITEPROMPT,
         L"Text Files (*.txt)\0*.txt\0All Files\0*.*\0", m_hWnd);
-    ThemeHelper::Suspend();
+    WTLHelper::SuspendHook();
     if (dlg.DoModal() == IDOK) {
         CString text;
         for (int i = 0; i < (int)m_Items.size(); i++)
@@ -248,14 +248,14 @@ LRESULT CFindAllDlg::OnSaveResults(WORD, WORD wID, HWND, BOOL&) {
         if (!Helpers::WriteToFile(dlg.m_szFileName, text))
             m_pFrame->DisplayError(L"Error saving results");
     }
-    ThemeHelper::Resume();
+    WTLHelper::ResumeHook();
     return 0;
 }
 
 LRESULT CFindAllDlg::OnLoadResults(WORD, WORD wID, HWND, BOOL&) {
     CSimpleFileDialog dlg(TRUE, L"txt", nullptr, OFN_EXPLORER | OFN_ENABLESIZING,
         L"Text Files (*.txt)\0*.txt\0All Files\0*.*\0", m_hWnd);
-    ThemeHelper::Suspend();
+    WTLHelper::SuspendHook();
     if (dlg.DoModal() == IDOK) {
         CString text;
         if(!Helpers::ReadFileText(dlg.m_szFileName, text))
@@ -277,7 +277,7 @@ LRESULT CFindAllDlg::OnLoadResults(WORD, WORD wID, HWND, BOOL&) {
             m_List.RedrawItems(m_List.GetTopIndex(), m_List.GetTopIndex() + m_List.GetCountPerPage());
         }
     }
-    ThemeHelper::Resume();
+    WTLHelper::ResumeHook();
     return 0;
 }
 

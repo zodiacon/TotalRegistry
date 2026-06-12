@@ -5,14 +5,12 @@
 #include "Registry.h"
 #include <wil\resource.h>
 #include "IMainFrame.h"
-#include "OwnerDrawnMenu.h"
 
 class CKeysHandlesDlg :
 	public CDialogImpl<CKeysHandlesDlg>,
 	public CDynamicDialogLayout<CKeysHandlesDlg>,
 	public CAutoUpdateUI<CKeysHandlesDlg>,
 	public CVirtualListView<CKeysHandlesDlg>,
-	public COwnerDrawnMenu<CKeysHandlesDlg>,
 	public CIdleHandler,
 	public CMessageFilter,
 	public CDialogHelper<CKeysHandlesDlg> {
@@ -44,7 +42,6 @@ public:
 		COMMAND_ID_HANDLER(ID_EDIT_COPY2, OnEditCopy)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		CHAIN_MSG_MAP(CVirtualListView<CKeysHandlesDlg>)
-		CHAIN_MSG_MAP(COwnerDrawnMenu<CKeysHandlesDlg>)
 		CHAIN_MSG_MAP(CDynamicDialogLayout<CKeysHandlesDlg>)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CKeysHandlesDlg>)
 	END_MSG_MAP()
@@ -78,5 +75,4 @@ private:
 	bool m_HideInaccesible{ false };
 	wil::unique_haccel m_hAccel;
 	IMainFrame* m_pFrame;
-	COwnerDrawnMenu<CKeysHandlesDlg> m_Menu;
 };

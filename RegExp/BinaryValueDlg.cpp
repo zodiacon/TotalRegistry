@@ -2,8 +2,8 @@
 #include "resource.h"
 #include "BinaryValueDlg.h"
 #include "Helpers.h"
-#include "ThemeHelper.h"
-#include "Theme.h"
+#include "WTLHelper.h"
+#include "DarkMode/DarkModeSubclass.h"
 
 CBinaryValueDlg::CBinaryValueDlg(RegistryKey& key, PCWSTR name, bool readOnly, IMainFrame* frame)
 	: m_Key(key), m_Name(name), m_ReadOnly(readOnly), m_pFrame(frame) {
@@ -75,11 +75,11 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 	m_Hex.Create(m_hWnd, &rc, nullptr, 
 		WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, WS_EX_CLIENTEDGE, IDC_HEX);
 	rc.OffsetRect(0, -30);
-	if (!ThemeHelper::IsDefault()) {
-		auto theme = ThemeHelper::GetCurrentTheme();
+	if (WTLHelper::IsDarkMode()) {
 		auto& colors = m_Hex.GetColors();
-		colors.Offset = theme->TextColor;
-		colors.Ascii = theme->TextColor;
+		colors.Offset = DarkMode::getTextColor();
+		colors.Ascii = DarkMode::getTextColor();
+		colors.Ruler = RGB(0, 128, 255);
 	}
 
 	BuildToolBar(rc);
@@ -107,7 +107,7 @@ LRESULT CBinaryValueDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 
 	SetDlgItemText(IDC_NAME, m_Name.IsEmpty() ? Helpers::DefaultValueName : m_Name);
 
-	return 0;
+	return FALSE;
 }
 
 LRESULT CBinaryValueDlg::OnDestroy(UINT, WPARAM, LPARAM, BOOL& handled) {

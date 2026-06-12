@@ -24,7 +24,8 @@
 #include "ExportDlg.h"
 #include "LoadHiveDlg.h"
 #include "GotoKeyDlg.h"
-#include "ThemeHelper.h"
+#include "WTLHelper.h"
+#include "DarkMode/DarkModeSubclass.h"
 #include "ConnectRegistryDlg.h"
 #include "Helpers.h"
 #include "RegExportImport.h"
@@ -101,7 +102,7 @@ void CMainFrame::SetStartKey(const CString& key) {
 }
 
 void CMainFrame::SetStatusText(PCWSTR text) {
-	m_StatusBar.SetText((int)StatusPane::Key, m_StatusText = text, SBT_NOBORDERS | (ThemeHelper::IsDefault() ? 0 : SBT_OWNERDRAW));
+	m_StatusBar.SetText((int)StatusPane::Key, m_StatusText = text, SBT_NOBORDERS | (WTLHelper::IsDarkMode() ? SBT_OWNERDRAW : 0));
 }
 
 HWND CMainFrame::GetHwnd() const {
@@ -320,7 +321,7 @@ bool CMainFrame::DrawItem(LPDRAWITEMSTRUCT dis) {
 		return false;
 	}
 
-	::SetTextColor(dis->hDC, ThemeHelper::GetCurrentTheme()->TextColor);
+	::SetTextColor(dis->hDC, WTLHelper::IsDarkMode() ? DarkMode::getTextColor() : ::GetSysColor(COLOR_WINDOWTEXT));
 	::SetBkMode(dis->hDC, TRANSPARENT);
 	::DrawText(dis->hDC, m_StatusText, -1, &dis->rcItem, DT_LEFT | DT_SINGLELINE | DT_VCENTER);
 	return true;
@@ -342,8 +343,6 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 		m_LastKey = AppSettings::Get().LastKey().c_str();
 	}
 
-	InitDarkTheme();
-	ThemeHelper::SetCurrentTheme(AppSettings::Get().DarkMode() ? m_DarkTheme : m_DefaultTheme);
 	InitLocations();
 
 	m_hSingleInstMutex = ::CreateMutex(nullptr, FALSE, L"RegExpSingleInstanceMutex");
@@ -377,8 +376,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 		SetWindowText(text);
 	}
 
-	SetCheckIcon(AtlLoadIconImage(IDI_CHECK, 0, 16, 16));
-	InitCommandBar();
+	InitMenu(GetMenu());
 	UIAddMenu(menu);
 	UIAddMenu(IDR_CONTEXT);
 
@@ -1215,9 +1213,9 @@ LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
 	}
 	else {
 		CSecurityInformation si(key, path, readonly);
-		ThemeHelper::Suspend();
+		WTLHelper::SuspendHook();
 		::EditSecurity(m_hWnd, &si);
-		ThemeHelper::Resume();
+		WTLHelper::ResumeHook();
 	}
 	SecurityHelper::EnablePrivilege(SE_TAKE_OWNERSHIP_NAME, false);
 	return 0;
@@ -1318,7 +1316,7 @@ LRESULT CMainFrame::OnImport(WORD, WORD, HWND, BOOL&) {
 		DisplayBackupRestorePrivilegeError();
 		return 0;
 	}
-	ThemeHelper::Suspend();
+	WTLHelper::SuspendHook();
 	CSimpleFileDialog dlg(TRUE, L"dat", nullptr, OFN_FILEMUSTEXIST | OFN_ENABLESIZING | OFN_EXPLORER,
 		L"All Files\0*.*\0", m_hWnd);
 	if (dlg.DoModal() == IDOK) {
@@ -1329,7 +1327,7 @@ LRESULT CMainFrame::OnImport(WORD, WORD, HWND, BOOL&) {
 			RefreshItem(m_Tree.GetSelectedItem());
 		}
 	}
-	ThemeHelper::Resume();
+	WTLHelper::ResumeHook();
 
 	SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
 	SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, false);
@@ -1556,7 +1554,7 @@ LRESULT CMainFrame::OnDisconnectRemote(WORD, WORD, HWND, BOOL&) {
 LRESULT CMainFrame::OnOptionsFont(WORD, WORD, HWND, BOOL&) {
 	LOGFONT lf;
 	CFontHandle(m_List.GetFont()).GetLogFont(lf);
-	ThemeHelper::Suspend();
+	WTLHelper::SuspendHook();
 	CFontDialog dlg(&lf);
 	if (dlg.DoModal() == IDOK) {
 		dlg.GetCurrentFont(&lf);
@@ -1567,7 +1565,7 @@ LRESULT CMainFrame::OnOptionsFont(WORD, WORD, HWND, BOOL&) {
 		m_Tree.SetFont(m_Font);
 		AppSettings::Get().Font(lf);
 	}
-	ThemeHelper::Resume();
+	WTLHelper::ResumeHook();
 	return 0;
 }
 
@@ -1777,13 +1775,8 @@ void CMainFrame::ConnectRemoteRegistry(CString hostname) {
 	m_Tree.EnsureVisible(hComputer);
 }
 
-void CMainFrame::InitCommandBar() {
-	AddMenu(GetMenu());
-
-	struct {
-		UINT id, icon;
-		HICON hIcon = nullptr;
-	} cmds[] = {
+void CMainFrame::InitMenu(HMENU hMenu) {
+	MenuItemData cmds[] = {
 		{ ID_FILE_RUNASADMIN, 0, IconHelper::GetShieldIcon() },
 		{ ID_EDIT_COPY, IDI_COPY },
 		{ ID_VIEW_REFRESH, IDI_REFRESH },
@@ -1821,12 +1814,12 @@ void CMainFrame::InitCommandBar() {
 		{ ID_KEY_ADDBOOKMARK, IDI_BOOKMARK_ADD },
 		{ ID_DELETE_BOOKMARK, IDI_BOOKMARK_DELETE },
 	};
-	for (auto& cmd : cmds) {
-		if (cmd.icon)
-			AddCommand(cmd.id, cmd.icon);
-		else
-			AddCommand(cmd.id, cmd.hIcon);
-	}
+	WTLHelper::InitMenu(hMenu, cmds, _countof(cmds));
+}
+
+BOOL CMainFrame::ShowContextMenu(HMENU hMenu, DWORD flags, int x, int y, HWND hWnd) {
+	InitMenu(hMenu);
+	return ::TrackPopupMenu(hMenu, flags, x, y, 0, hWnd ? hWnd : m_hWnd, nullptr);
 }
 
 void CMainFrame::InitToolBar(CToolBarCtrl& tb, int size) {
@@ -2384,26 +2377,27 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item, int index) {
 }
 
 void CMainFrame::SetDarkMode(bool dark) {
-	ThemeHelper::SetCurrentTheme(dark ? m_DarkTheme : m_DefaultTheme);
+	WTLHelper::SwitchToMode(dark ? DarkModeKind::Dark : DarkModeKind::Light, m_hWnd);
 
-	auto& theme = *ThemeHelper::GetCurrentTheme();
-	m_List.SetBkColor(theme.BackColor);
-	m_List.SetTextBkColor(theme.BackColor);
-	m_List.SetTextColor(theme.TextColor);
+	auto back = dark ? DarkMode::getBackgroundColor() : ::GetSysColor(COLOR_WINDOW);
+	auto text = dark ? DarkMode::getTextColor() : ::GetSysColor(COLOR_WINDOWTEXT);
+	m_List.SetBkColor(back);
+	m_List.SetTextBkColor(back);
+	m_List.SetTextColor(text);
 
-	m_Tree.SetBkColor(theme.BackColor);
-	m_Tree.SetTextColor(theme.TextColor);
+	m_Tree.SetBkColor(back);
+	m_Tree.SetTextColor(text);
 
 	CReBarCtrl rb(m_hWndToolBar);
 	::SetWindowTheme(rb, dark ? L" " : nullptr, dark ? L"" : nullptr);
-	rb.SetBkColor(dark ? RGB(32, 32, 32) : CLR_INVALID);
+	rb.SetBkColor(dark ? back : CLR_INVALID);
 	REBARBANDINFO rbi = { sizeof(rbi) };
 	rbi.fMask = RBBIM_COLORS | RBBIM_CHILD;
 	for (UINT i = 0; i < rb.GetBandCount(); i++) {
 		if (rb.GetBandInfo(i, &rbi)) {
 			ATLASSERT(rbi.hwndChild);
-			rbi.clrBack = dark ? RGB(32, 32, 32) : ::GetSysColor(COLOR_MENU);
-			rbi.clrFore = dark ? RGB(240, 240, 240) : ::GetSysColor(COLOR_WINDOWTEXT);
+			rbi.clrBack = dark ? back : ::GetSysColor(COLOR_MENU);
+			rbi.clrFore = dark ? text : ::GetSysColor(COLOR_WINDOWTEXT);
 			rb.SetBandInfo(i, &rbi);
 		}
 	}
@@ -2414,11 +2408,10 @@ void CMainFrame::SetDarkMode(bool dark) {
 		}, 0);
 
 	SetStatusText(m_StatusText);
-	ThemeHelper::UpdateMenuColors(*this, dark);
-	UpdateMenu(GetMenu(), true);
+	InitMenu(GetMenu());
 	DrawMenuBar();
 
-	m_StatusBar.SetBkColor(theme.BackColor);
+	m_StatusBar.SetBkColor(back);
 }
 
 HTREEITEM CMainFrame::GotoKey(const CString& path, bool knownToExist) {
@@ -2441,27 +2434,6 @@ void CMainFrame::ShowBand(int index, bool show) {
 	CReBarCtrl rb(m_hWndToolBar);
 	rb.ShowBand(index, show);
 	UpdateLayout();
-}
-
-void CMainFrame::InitDarkTheme() {
-	m_DarkTheme.BackColor = m_DarkTheme.SysColors[COLOR_WINDOW] = RGB(32, 32, 32);
-	m_DarkTheme.TextColor = m_DarkTheme.SysColors[COLOR_WINDOWTEXT] = RGB(248, 248, 248);
-	m_DarkTheme.SysColors[COLOR_HIGHLIGHT] = RGB(10, 10, 160);
-	m_DarkTheme.SysColors[COLOR_HIGHLIGHTTEXT] = RGB(240, 240, 240);
-	m_DarkTheme.SysColors[COLOR_MENUTEXT] = m_DarkTheme.TextColor;
-	m_DarkTheme.SysColors[COLOR_CAPTIONTEXT] = m_DarkTheme.TextColor;
-	m_DarkTheme.SysColors[COLOR_BTNFACE] = m_DarkTheme.BackColor;
-	m_DarkTheme.SysColors[COLOR_BTNTEXT] = m_DarkTheme.TextColor;
-	m_DarkTheme.SysColors[COLOR_3DLIGHT] = RGB(192, 192, 192);
-	m_DarkTheme.SysColors[COLOR_BTNHIGHLIGHT] = RGB(192, 192, 192);
-	m_DarkTheme.SysColors[COLOR_CAPTIONTEXT] = m_DarkTheme.TextColor;
-	m_DarkTheme.SysColors[COLOR_3DSHADOW] = m_DarkTheme.TextColor;
-	m_DarkTheme.SysColors[COLOR_SCROLLBAR] = m_DarkTheme.BackColor;
-	m_DarkTheme.Name = L"Dark";
-	m_DarkTheme.Menu.BackColor = m_DarkTheme.BackColor;
-	m_DarkTheme.Menu.TextColor = m_DarkTheme.TextColor;
-	m_DarkTheme.StatusBar.BackColor = RGB(32, 0, 32);
-	m_DarkTheme.StatusBar.TextColor = m_DarkTheme.TextColor;
 }
 
 void CMainFrame::InitLocations() {
@@ -2525,7 +2497,6 @@ void CMainFrame::InitLocations() {
 			menu.AppendMenu(MF_BYPOSITION, ID_LOCATION_FIRST + i, name);
 		i++;
 	}
-	AddSubMenu(menu);
 }
 
 HTREEITEM CMainFrame::BuildKeyPath(const CString& path, bool accessible) {
