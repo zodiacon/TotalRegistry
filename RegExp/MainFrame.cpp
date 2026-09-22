@@ -1219,9 +1219,7 @@ LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
 	}
 	else {
 		CSecurityInformation si(key, path, readonly);
-		WTLHelper::SuspendHook();
 		::EditSecurity(m_hWnd, &si);
-		WTLHelper::ResumeHook();
 	}
 	SecurityHelper::EnablePrivilege(SE_TAKE_OWNERSHIP_NAME, false);
 	return 0;
