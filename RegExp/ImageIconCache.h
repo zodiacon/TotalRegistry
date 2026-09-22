@@ -9,6 +9,6 @@ struct ImageIconCache {
 
 private:
 	ImageIconCache();
-	mutable CImageListManaged _images;
-	mutable std::map<CString, int> _icons;
+	mutable CImageListManaged m_Images;
+	mutable std::map<CString, int> m_Icons;
 };

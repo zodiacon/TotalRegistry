@@ -12,7 +12,7 @@ public:
 	}
 
 private:
-	LONG _size;
-	std::unique_ptr<BYTE[]> _data;
-	DWORD _type;
+	LONG m_Size;
+	std::unique_ptr<BYTE[]> m_Data;
+	DWORD m_Type;
 };

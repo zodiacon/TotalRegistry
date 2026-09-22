@@ -9,6 +9,6 @@ struct CopyValueCommand : RegAppCommandBase<CopyValueCommand> {
 	bool Undo() override;
 
 private:
-	CString _targetPath;
-	CString _targetName;
+	CString m_TargetPath;
+	CString m_TargetName;
 };

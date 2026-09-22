@@ -3,41 +3,41 @@
 #include "Registry.h"
 
 void RegistrySearcher::SetStartKey(PCWSTR startKey) {
-	std::lock_guard locker(_lock);
-	_startKey = startKey;
+	std::lock_guard locker(m_Lock);
+	m_StartKey = startKey;
 }
 
 void RegistrySearcher::SetOptions(FindOptions options) {
-	std::lock_guard locker(_lock);
-	_options = options;
+	std::lock_guard locker(m_Lock);
+	m_Options = options;
 }
 
 void RegistrySearcher::SetText(PCWSTR text) {
-	std::lock_guard locker(_lock);
-	_searchText = text;
+	std::lock_guard locker(m_Lock);
+	m_SearchText = text;
 }
 
 bool RegistrySearcher::Find(RegistrySearcherCallback callback) {
 	ATLASSERT(callback);
-	_cb = callback;
-	_inProgress = true;
-	_cancel = false;
-	_hCancelEvent.reset(::CreateEvent(nullptr, TRUE, FALSE, nullptr));
-	_hContinueEvent.reset(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
-	_hDoneEvent.reset(::CreateEvent(nullptr, TRUE, FALSE, nullptr));
+	m_Callback = callback;
+	m_InProgress = true;
+	m_Cancel = false;
+	m_hCancelEvent.reset(::CreateEvent(nullptr, TRUE, FALSE, nullptr));
+	m_hContinueEvent.reset(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
+	m_hDoneEvent.reset(::CreateEvent(nullptr, TRUE, FALSE, nullptr));
 
-	_hThread.reset(::CreateThread(nullptr, 0, [](auto p) {
+	m_hThread.reset(::CreateThread(nullptr, 0, [](auto p) {
 		return ((RegistrySearcher*)p)->DoSearch();
 		}, this, 0, nullptr));
-	::SetThreadPriority(_hThread.get(), THREAD_PRIORITY_LOWEST);
+	::SetThreadPriority(m_hThread.get(), THREAD_PRIORITY_LOWEST);
 
 	return true;
 }
 
 bool RegistrySearcher::Cancel() {
 	if (IsRunning()) {
-		::SetEvent(_hCancelEvent.get());
-		_inProgress = false;
+		::SetEvent(m_hCancelEvent.get());
+		m_InProgress = false;
 		return true;
 	}
 	return false;
@@ -45,53 +45,53 @@ bool RegistrySearcher::Cancel() {
 
 bool RegistrySearcher::Continue() {
 	if (IsRunning()) {
-		::SetEvent(_hContinueEvent.get());
+		::SetEvent(m_hContinueEvent.get());
 		return true;
 	}
 	return false;
 }
 
 bool RegistrySearcher::IsRunning() const {
-	return _inProgress.load();
+	return m_InProgress.load();
 }
 
 bool RegistrySearcher::IsCancelled() const {
-	return _cancel.load();
+	return m_Cancel.load();
 }
 
 bool RegistrySearcher::WaitForCompletion(DWORD timeout) {
-	return WAIT_OBJECT_0 == ::WaitForSingleObject(_hDoneEvent.get(), timeout);
+	return WAIT_OBJECT_0 == ::WaitForSingleObject(m_hDoneEvent.get(), timeout);
 }
 
 bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
-	if (WAIT_OBJECT_0 == ::WaitForSingleObject(_hCancelEvent.get(), 0)) {
-		_cancel = true;
+	if (WAIT_OBJECT_0 == ::WaitForSingleObject(m_hCancelEvent.get(), 0)) {
+		m_Cancel = true;
 		return false;
 	}
 
-	bool searchValues = (_options & FindOptions::SearchValues) == FindOptions::SearchValues;
-	bool searchKeys = (_options & FindOptions::SearchKeys) == FindOptions::SearchKeys;
-	bool searchData = (_options & FindOptions::SearchData) == FindOptions::SearchData;
-	bool caseSensitive = (_options & FindOptions::MatchCase) == FindOptions::MatchCase;
-	bool wholeWords = (_options & FindOptions::MatchWholeWords) == FindOptions::MatchWholeWords;
+	bool searchValues = (m_Options & FindOptions::SearchValues) == FindOptions::SearchValues;
+	bool searchKeys = (m_Options & FindOptions::SearchKeys) == FindOptions::SearchKeys;
+	bool searchData = (m_Options & FindOptions::SearchData) == FindOptions::SearchData;
+	bool caseSensitive = (m_Options & FindOptions::MatchCase) == FindOptions::MatchCase;
+	bool wholeWords = (m_Options & FindOptions::MatchWholeWords) == FindOptions::MatchWholeWords;
 	{
-		std::lock_guard locker(_lock);
+		std::lock_guard locker(m_Lock);
 		if (!caseSensitive)
-			_searchText.MakeUpper();
+			m_SearchText.MakeUpper();
 	}
 
 	auto compare = [&](auto& text, auto& search) {
 		int n = text.Find(search);
 		if (n >= 0) {
-			return !wholeWords || ((n == 0 || isspace(text[n - 1]) && (n + _searchText.GetLength() == text.GetLength() || isspace(text[n + _searchText.GetLength()]))));
+			return !wholeWords || ((n == 0 || isspace(text[n - 1]) && (n + m_SearchText.GetLength() == text.GetLength() || isspace(text[n + m_SearchText.GetLength()]))));
 		};
 		return false;
 	};
 
 	if (searchValues || searchData) {
 		Registry::EnumKeyValues(hKey, [&](auto type, auto name, auto size) {
-			if (WAIT_OBJECT_0 == ::WaitForSingleObject(_hCancelEvent.get(), 0)) {
-				_cancel = true;
+			if (WAIT_OBJECT_0 == ::WaitForSingleObject(m_hCancelEvent.get(), 0)) {
+				m_Cancel = true;
 				return false;
 			}
 
@@ -100,7 +100,7 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 				if (!caseSensitive)
 					text.MakeUpper();
 
-				if (compare(text, _searchText)) {
+				if (compare(text, m_SearchText)) {
 					if (Notify(path, name, nullptr))
 						return false;
 				}
@@ -117,7 +117,7 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 							CString text(buffer.get());
 							if (!caseSensitive)
 								text.MakeUpper();
-							if (compare(text, _searchText)) {
+							if (compare(text, m_SearchText)) {
 								if (Notify(path, name, buffer.get()))
 									return false;
 							}
@@ -136,7 +136,7 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 								CString text(p);
 								if (!caseSensitive)
 									text.MakeUpper();
-								if (compare(text, _searchText)) {
+								if (compare(text, m_SearchText)) {
 									if (Notify(path, name, buffer.get()))
 										return false;
 								}
@@ -148,19 +148,19 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 			return true;
 			});
 	}
-	if (_cancel)
+	if (m_Cancel)
 		return false;
 
 	Registry::EnumSubKeys(hKey, [&](auto name, const auto&) {
-		if (WAIT_OBJECT_0 == ::WaitForSingleObject(_hCancelEvent.get(), 0)) {
-			_cancel = true;
+		if (WAIT_OBJECT_0 == ::WaitForSingleObject(m_hCancelEvent.get(), 0)) {
+			m_Cancel = true;
 			return false;
 		}
 		if (searchKeys) {
 			CString text(name);
 			if (!caseSensitive)
 				text.MakeUpper();
-			if (text.Find(_searchText) >= 0) {
+			if (text.Find(m_SearchText) >= 0) {
 				if (Notify(path + (path.IsEmpty() ? L"" : L"\\") + name, nullptr, nullptr))
 					return false;
 			}
@@ -169,49 +169,49 @@ bool RegistrySearcher::FindNextWorker(HKEY hKey, const CString& path) {
 		subKey.Open(hKey, name, KEY_READ);
 		if (subKey)
 			FindNextWorker(subKey.Get(), path + (path.IsEmpty() ? L"" : L"\\") + name);
-		if (_cancel)
+		if (m_Cancel)
 			return false;
 		return true;
 		});
 
-	if (_cancel)
+	if (m_Cancel)
 		return false;
 
 	return true;
 }
 
 bool RegistrySearcher::Notify(PCWSTR path, PCWSTR name, PCWSTR data) {
-	if (!_cancel)
-		_cb(path, name, data);
-	HANDLE h[]{ _hCancelEvent.get(), _hContinueEvent.get() };
+	if (!m_Cancel)
+		m_Callback(path, name, data);
+	HANDLE h[]{ m_hCancelEvent.get(), m_hContinueEvent.get() };
 	if (WAIT_OBJECT_0 == ::WaitForMultipleObjects(_countof(h), h, FALSE, INFINITE)) {
-		_cancel = true;
+		m_Cancel = true;
 		return true;
 	}
-	if ((_options & FindOptions::MatchCase) == FindOptions::None)
-		_searchText.MakeUpper();
+	if ((m_Options & FindOptions::MatchCase) == FindOptions::None)
+		m_SearchText.MakeUpper();
 
 	return false;
 }
 
 DWORD RegistrySearcher::DoSearch() {
-	if ((_options & (FindOptions::SearchStdRegistry | FindOptions::SearchSelected)) == FindOptions::SearchStdRegistry) {
+	if ((m_Options & (FindOptions::SearchStdRegistry | FindOptions::SearchSelected)) == FindOptions::SearchStdRegistry) {
 		for (auto key : Registry::Keys) {
 			FindNextWorker(key.hKey, key.text);
-			if (_cancel)
+			if (m_Cancel)
 				break;
 		}
 	}
-	if (!_cancel && (_options & (FindOptions::SearchRealRegistry | FindOptions::SearchSelected)) == FindOptions::SearchRealRegistry) {
+	if (!m_Cancel && (m_Options & (FindOptions::SearchRealRegistry | FindOptions::SearchSelected)) == FindOptions::SearchRealRegistry) {
 		FindNextWorker(Registry::OpenRealRegistryKey(), L"\\REGISTRY");
 	}
-	if (!_cancel && (_options & FindOptions::SearchSelected) == FindOptions::SearchSelected) {
-		FindNextWorker(Registry::OpenKey(_startKey, KEY_READ).Get(), _startKey);
+	if (!m_Cancel && (m_Options & FindOptions::SearchSelected) == FindOptions::SearchSelected) {
+		FindNextWorker(Registry::OpenKey(m_StartKey, KEY_READ).Get(), m_StartKey);
 	}
 
-	_cb(nullptr, nullptr, nullptr);
-	::SetEvent(_hDoneEvent.get());
-	_inProgress = false;
+	m_Callback(nullptr, nullptr, nullptr);
+	::SetEvent(m_hDoneEvent.get());
+	m_InProgress = false;
 
 	return 0;
 }

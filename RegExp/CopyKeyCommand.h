@@ -11,5 +11,5 @@ struct CopyKeyCommand : public RegAppCommandBase<CopyKeyCommand> {
 	bool Undo() override;
 
 private:
-	CString _targetPath;
+	CString m_TargetPath;
 };

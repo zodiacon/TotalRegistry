@@ -12,6 +12,6 @@ struct CreateValueCommand : RegAppCommandBase<CreateValueCommand> {
 	DWORD GetSize() const;
 
 private:
-	DWORD _type;
-	DWORD _size{ 0 };
+	DWORD m_Type;
+	DWORD m_Size{ 0 };
 };

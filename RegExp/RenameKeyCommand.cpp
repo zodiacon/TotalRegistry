@@ -3,18 +3,18 @@
 #include "Registry.h"
 
 RenameKeyCommand::RenameKeyCommand(PCWSTR path, PCWSTR name, PCWSTR newName, AppCommandCallback<RenameKeyCommand> cb)
-	: RegAppCommandBase(L"Rename Key", path, name, cb), _newName(newName) {
+	: RegAppCommandBase(L"Rename Key", path, name, cb), m_NewName(newName) {
 }
 
 bool RenameKeyCommand::Execute() {
-	auto key = Registry::OpenKey(_path, KEY_ALL_ACCESS);
+	auto key = Registry::OpenKey(m_Path, KEY_ALL_ACCESS);
 	if (!key)
 		return false;
 
-	if (Registry::RenameKey(key.Get(), _name, _newName)) {
+	if (Registry::RenameKey(key.Get(), m_Name, m_NewName)) {
 		if (!InvokeCallback(true))
 			return false;
-		std::swap(_name, _newName);
+		std::swap(m_Name, m_NewName);
 		return true;
 	}
 
@@ -26,7 +26,7 @@ bool RenameKeyCommand::Undo() {
 }
 
 const CString& RenameKeyCommand::GetNewName() const {
-	return _newName;
+	return m_NewName;
 }
 
 CString RenameKeyCommand::GetCommandName() const {

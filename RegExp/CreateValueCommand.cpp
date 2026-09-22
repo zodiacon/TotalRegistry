@@ -3,7 +3,7 @@
 #include "Registry.h"
 
 CreateValueCommand::CreateValueCommand(PCWSTR path, PCWSTR name, DWORD type, AppCommandCallback<CreateValueCommand> cb) 
-	: RegAppCommandBase(L"Create Value " + CString(name), path, name, cb), _type(type) {
+	: RegAppCommandBase(L"Create Value " + CString(name), path, name, cb), m_Type(type) {
 }
 
 bool CreateValueCommand::Execute() {
@@ -25,7 +25,7 @@ bool CreateValueCommand::Execute() {
 			break;
 	}
 	BYTE dummy[8] = { 0 };
-	auto error = key.SetValue(GetName(), GetType(), dummy, _size = size);
+	auto error = key.SetValue(GetName(), GetType(), dummy, m_Size = size);
 	::SetLastError(error);
 	if (ERROR_SUCCESS != error)
 		return false;
@@ -47,9 +47,9 @@ bool CreateValueCommand::Undo() {
 }
 
 DWORD CreateValueCommand::GetType() const {
-	return _type;
+	return m_Type;
 }
 
 DWORD CreateValueCommand::GetSize() const {
-	return _size;
+	return m_Size;
 }

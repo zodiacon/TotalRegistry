@@ -79,6 +79,6 @@ struct Registry final {
 	};
 
 private:
-	inline static std::map<CString, RemoteRegistry> _remotes;
-	inline static std::vector<Hive> _hives;
+	inline static std::map<CString, RemoteRegistry> m_Remotes;
+	inline static std::vector<Hive> m_Hives;
 };

@@ -25,13 +25,13 @@ protected:
 
 private:
 	DWORD DoSearch();
-	wil::unique_handle _hThread;
-	FindOptions _options{ FindOptions::None };
-	RegistrySearcherCallback _cb;
-	CString _searchText;
-	std::mutex _lock;
-	CString _startKey;
-	wil::unique_handle _hCancelEvent, _hContinueEvent, _hDoneEvent;
-	std::atomic<bool> _inProgress{ false };
-	std::atomic<bool> _cancel{ false };
+	wil::unique_handle m_hThread;
+	FindOptions m_Options{ FindOptions::None };
+	RegistrySearcherCallback m_Callback;
+	CString m_SearchText;
+	std::mutex m_Lock;
+	CString m_StartKey;
+	wil::unique_handle m_hCancelEvent, m_hContinueEvent, m_hDoneEvent;
+	std::atomic<bool> m_InProgress{ false };
+	std::atomic<bool> m_Cancel{ false };
 };

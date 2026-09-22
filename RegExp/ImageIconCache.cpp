@@ -2,16 +2,16 @@
 #include "ImageIconCache.h"
 
 int ImageIconCache::GetIconIndex(CString const& path) const {
-	if (auto it = _icons.find(path); it != _icons.end())
+	if (auto it = m_Icons.find(path); it != m_Icons.end())
 		return it->second;
 
 	auto hIcon = ::ExtractIcon(ModuleHelper::GetModuleInstance(), path, 0);
 	if (hIcon) {
 		int index;
-		_icons.insert({ path, index = _images.AddIcon(hIcon) });
+		m_Icons.insert({ path, index = m_Images.AddIcon(hIcon) });
 		return index;
 	}
-	_icons.insert({ path, 0 });
+	m_Icons.insert({ path, 0 });
 	return 0;
 }
 
@@ -28,7 +28,7 @@ int ImageIconCache::GetIconIndex(DWORD pid) const {
 }
 
 HIMAGELIST ImageIconCache::GetImageList() const {
-	return _images.m_hImageList;
+	return m_Images.m_hImageList;
 }
 
 ImageIconCache& ImageIconCache::Get() {
@@ -37,10 +37,10 @@ ImageIconCache& ImageIconCache::Get() {
 }
 
 void ImageIconCache::Destroy() {
-	_images.Destroy();
+	m_Images.Destroy();
 }
 
 ImageIconCache::ImageIconCache() {
-	_images.Create(16, 16, ILC_COLOR32 | ILC_COLOR | ILC_MASK, 50, 10);
-	_images.AddIcon(AtlLoadSysIcon(IDI_APPLICATION));
+	m_Images.Create(16, 16, ILC_COLOR32 | ILC_COLOR | ILC_MASK, 50, 10);
+	m_Images.AddIcon(AtlLoadSysIcon(IDI_APPLICATION));
 }

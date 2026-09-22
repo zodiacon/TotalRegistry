@@ -11,19 +11,19 @@ bool DeleteValueCommand::Execute() {
 	if (!key)
 		return false;
 
-	_size = 0;
-	auto error = key.QueryValue(GetName(), &_type, nullptr, &_size);
+	m_Size = 0;
+	auto error = key.QueryValue(GetName(), &m_Type, nullptr, &m_Size);
 	::SetLastError(error);
 	if (error != ERROR_SUCCESS)
 		return false;
 
-	if (_size) {
-		_data = std::make_unique<BYTE[]>(_size);
-		if (!_data) {
+	if (m_Size) {
+		m_Data = std::make_unique<BYTE[]>(m_Size);
+		if (!m_Data) {
 			::SetLastError(ERROR_OUTOFMEMORY);
 			return false;
 		}
-		error = key.QueryValue(GetName(), &_type, _data.get(), &_size);
+		error = key.QueryValue(GetName(), &m_Type, m_Data.get(), &m_Size);
 		::SetLastError(error);
 		if (ERROR_SUCCESS != error)
 			return false;
@@ -42,7 +42,7 @@ bool DeleteValueCommand::Undo() {
 	if (!key)
 		return false;
 
-	auto error = key.SetValue(GetName(), _type, _data.get(), _size);
+	auto error = key.SetValue(GetName(), m_Type, m_Data.get(), m_Size);
 	::SetLastError(error);
 	if (ERROR_SUCCESS != error)
 		return false;

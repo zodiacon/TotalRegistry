@@ -24,8 +24,8 @@ private:
 	// Inherited via IACList
 	HRESULT __stdcall Expand(PCWSTR pszExpand) override;
 
-	CString _path;
-	std::vector<CString> _strings;
-	size_t _current{ 0 };
+	CString m_Path;
+	std::vector<CString> m_Strings;
+	size_t m_Current{ 0 };
 
 };

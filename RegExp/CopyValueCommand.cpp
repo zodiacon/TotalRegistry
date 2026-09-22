@@ -3,7 +3,7 @@
 #include "Registry.h"
 
 CopyValueCommand::CopyValueCommand(PCWSTR path, PCWSTR name, PCWSTR targetPath, AppCommandCallback<CopyValueCommand> cb) 
-	: RegAppCommandBase(L"Paste value " + CString(name), path, name, cb), _targetPath(targetPath) {
+	: RegAppCommandBase(L"Paste value " + CString(name), path, name, cb), m_TargetPath(targetPath) {
 }
 
 bool CopyValueCommand::Execute() {
@@ -11,7 +11,7 @@ bool CopyValueCommand::Execute() {
 	if (!key)
 		return false;
 
-	auto target = Registry::OpenKey(_targetPath, KEY_WRITE | KEY_READ);
+	auto target = Registry::OpenKey(m_TargetPath, KEY_WRITE | KEY_READ);
 	if (!target)
 		return false;
 
@@ -22,28 +22,28 @@ bool CopyValueCommand::Execute() {
 	while (ERROR_SUCCESS == (error = target.QueryValue(tname, nullptr, nullptr, &size))) {
 		// value already exists
 		if (i++ == 1)
-			tname = "Copy Of" + _name;
+			tname = "Copy Of" + m_Name;
 		else
-			tname.Format(L"Copy(%d) Of %s", i, _name);
+			tname.Format(L"Copy(%d) Of %s", i, m_Name);
 	}
 	if (error != ERROR_FILE_NOT_FOUND) {
 		::SetLastError(error);
 		return false;
 	}
-	_targetName = tname;
+	m_TargetName = tname;
 
-	if (!Registry::CopyValue(key.Get(), target.Get(), GetName(), _targetName))
+	if (!Registry::CopyValue(key.Get(), target.Get(), GetName(), m_TargetName))
 		return false;
 
 	return InvokeCallback(true);
 }
 
 bool CopyValueCommand::Undo() {
-	auto target = Registry::OpenKey(_targetPath, KEY_WRITE);
+	auto target = Registry::OpenKey(m_TargetPath, KEY_WRITE);
 	if (!target)
 		return false;
 
-	auto error = target.DeleteValue(_targetName);
+	auto error = target.DeleteValue(m_TargetName);
 	::SetLastError(error);
 	if (ERROR_SUCCESS != error)
 		return false;

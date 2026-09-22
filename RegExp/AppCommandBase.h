@@ -3,14 +3,14 @@
 const CString DeletedPathBackup(L"SOFTWARE\\ScorpioSoftware\\RegExp\\__Deleted__\\");
 
 struct AppCommand abstract {
-	explicit AppCommand(const CString& name) : _cmdname(name) {}
+	explicit AppCommand(const CString& name) : m_CmdName(name) {}
 
 	virtual CString GetCommandName() const {
-		return _cmdname;
+		return m_CmdName;
 	}
 
 	void SetCommandName(PCWSTR name) {
-		_cmdname = name;
+		m_CmdName = name;
 	}
 
 	virtual ~AppCommand() = default;
@@ -18,7 +18,7 @@ struct AppCommand abstract {
 	virtual bool Undo() = 0;
 
 private:
-	CString _cmdname;
+	CString m_CmdName;
 };
 
 template<typename TCommand>
@@ -26,37 +26,37 @@ using AppCommandCallback = std::function<bool(TCommand&, bool)>;
 
 template<typename T>
 struct AppCommandBase abstract : AppCommand {
-	explicit AppCommandBase(const CString& name, AppCommandCallback<T> cb = nullptr) : AppCommand(name), _cb(cb) {}
+	explicit AppCommandBase(const CString& name, AppCommandCallback<T> cb = nullptr) : AppCommand(name), m_Callback(cb) {}
 
 	void SetCallback(AppCommandCallback<T> cb) {
-		_cb = cb;
+		m_Callback = cb;
 	}
 
 protected:
 	virtual bool InvokeCallback(bool execute) {
-		if (_cb)
-			return _cb(static_cast<T&>(*this), execute);
+		if (m_Callback)
+			return m_Callback(static_cast<T&>(*this), execute);
 		return true;
 	}
 
 private:
-	AppCommandCallback<T> _cb;
+	AppCommandCallback<T> m_Callback;
 };
 
 template<typename T>
 struct RegAppCommandBase : AppCommandBase<T> {
 	RegAppCommandBase(const CString& cmdname, PCWSTR path, PCWSTR name, AppCommandCallback<T> cb = nullptr) 
-		: AppCommandBase<T>(cmdname, cb), _path(path), _name(name) {}
+		: AppCommandBase<T>(cmdname, cb), m_Path(path), m_Name(name) {}
 
 	const CString& GetPath() const {
-		return _path;
+		return m_Path;
 	}
 	const CString& GetName() const {
-		return _name;
+		return m_Name;
 	}
 
 protected:
-	CString _path, _name;
+	CString m_Path, m_Name;
 };
 
 struct AppCommandList final : AppCommandBase<AppCommandList> {
@@ -71,5 +71,5 @@ struct AppCommandList final : AppCommandBase<AppCommandList> {
 	bool Undo() override;
 
 private:
-	std::vector<std::shared_ptr<AppCommand>> _commands;
+	std::vector<std::shared_ptr<AppCommand>> m_Commands;
 };

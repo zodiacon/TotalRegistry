@@ -9,6 +9,6 @@ struct DeleteKeyCommand : RegAppCommandBase<DeleteKeyCommand> {
 	bool Undo() override;
 
 private:
-	CString _savePath;
+	CString m_SavePath;
 };
 

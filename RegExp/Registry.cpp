@@ -103,7 +103,7 @@ RegistryKey Registry::OpenKey(const CString& rawpath, DWORD access, bool* root) 
 			return key;
 
 		auto name = path.Mid(2, index - 2);
-		auto& rr = _remotes[name];
+		auto& rr = m_Remotes[name];
 		index = path.Find(L"\\HKEY_LOCAL_MACHINE");
 		HKEY hRoot = index >= 0 ? rr.hLocal : rr.hUsers;
 		if (index < 0)
@@ -178,23 +178,23 @@ bool Registry::RenameKey(HKEY hKey, PCWSTR name, PCWSTR newName) {
 
 const std::vector<Hive>& Registry::GetHiveList(bool refresh) {
 	if (refresh)
-		_hives.clear();
-	if (!_hives.empty())
-		return _hives;
+		m_Hives.clear();
+	if (!m_Hives.empty())
+		return m_Hives;
 
 	RegistryKey key;
 	key.Open(HKEY_LOCAL_MACHINE, L"SYSTEM\\CurrentControlSet\\Control\\hivelist", KEY_QUERY_VALUE);
 	if(!key)
-		return _hives;
+		return m_Hives;
 
 	EnumKeyValues(key, [&](auto type, auto name, auto size) {
 		if (type == REG_SZ && name && *name) {
 			auto value = QueryStringValue(key, name);
-			_hives.push_back({ name, (PCWSTR)value });
+			m_Hives.push_back({ name, (PCWSTR)value });
 		}
 		return true;
 		});
-	return _hives;
+	return m_Hives;
 }
 
 bool Registry::IsHiveKey(const CString& path) {
@@ -225,7 +225,7 @@ bool Registry::ConnectRegistry(PCWSTR computerName) {
 	rr.hLocal = hLocal;
 	rr.hUsers = hUsers;
 	rr.ComputerName = computerName;
-	_remotes.insert({ computerName, rr });
+	m_Remotes.insert({ computerName, rr });
 	ATLASSERT(IsKeyValid(rr.hLocal));
 	ATLASSERT(IsKeyValid(rr.hUsers));
 
@@ -233,14 +233,14 @@ bool Registry::ConnectRegistry(PCWSTR computerName) {
 }
 
 bool Registry::Disconnect(PCWSTR computerName) {
-	auto it = _remotes.find(computerName);
-	if (it == _remotes.end())
+	auto it = m_Remotes.find(computerName);
+	if (it == m_Remotes.end())
 		return false;
 
 	auto& rr = it->second;
 	::RegCloseKey(rr.hLocal);
 	::RegCloseKey(rr.hUsers);
-	_remotes.erase(it);
+	m_Remotes.erase(it);
 	return true;
 }
 

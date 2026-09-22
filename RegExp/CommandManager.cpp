@@ -3,19 +3,19 @@
 #include "AppCommandBase.h"
 
 void CommandManager::Enable(bool enable) {
-	_enabled = enable;
+	m_Enabled = enable;
 }
 
 bool CommandManager::IsEnabled() const {
-	return _enabled;
+	return m_Enabled;
 }
 
 bool CommandManager::CanUndo() const {
-	return !_undoList.empty();
+	return !m_UndoList.empty();
 }
 
 bool CommandManager::CanRedo() const {
-	return !_redoList.empty();
+	return !m_RedoList.empty();
 }
 
 bool CommandManager::AddCommand(std::shared_ptr<AppCommand> command, bool execute) {
@@ -23,11 +23,11 @@ bool CommandManager::AddCommand(std::shared_ptr<AppCommand> command, bool execut
 		if (!command->Execute())
 			return false;
 
-	if (!_enabled)
+	if (!m_Enabled)
 		return true;
 
-	_undoList.push_back(command);
-	_redoList.clear();
+	m_UndoList.push_back(command);
+	m_RedoList.clear();
 	return true;
 }
 
@@ -35,11 +35,11 @@ bool CommandManager::Undo() {
 	if (!CanUndo())
 		return false;
 
-	auto cmd = _undoList.back();
+	auto cmd = m_UndoList.back();
 	auto success = cmd->Undo();
 	if (success) {
-		_redoList.push_back(cmd);
-		_undoList.pop_back();
+		m_RedoList.push_back(cmd);
+		m_UndoList.pop_back();
 	}
 	return success;
 }
@@ -48,24 +48,24 @@ bool CommandManager::Redo() {
 	if (!CanRedo())
 		return false;
 
-	auto command = _redoList.back();
+	auto command = m_RedoList.back();
 	auto success = command->Execute();
 	if (success) {
-		_redoList.pop_back();
-		_undoList.push_back(command);
+		m_RedoList.pop_back();
+		m_UndoList.push_back(command);
 	}
 	return success;
 }
 
 void CommandManager::Clear() {
-	_undoList.clear();
-	_redoList.clear();
+	m_UndoList.clear();
+	m_RedoList.clear();
 }
 
 AppCommand* CommandManager::GetUndoCommand() const {
-	return _undoList.empty() ? nullptr : _undoList.back().get();
+	return m_UndoList.empty() ? nullptr : m_UndoList.back().get();
 }
 
 AppCommand* CommandManager::GetRedoCommand() const {
-	return _redoList.empty() ? nullptr : _redoList.back().get();
+	return m_RedoList.empty() ? nullptr : m_RedoList.back().get();
 }

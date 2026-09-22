@@ -2,13 +2,13 @@
 #include "TreeHelper.h"
 
 HTREEITEM TreeHelper::FindChild(HTREEITEM item, PCWSTR name) const {
-	item = _tv.GetChildItem(item);
+	item = m_TV.GetChildItem(item);
 	while (item) {
 		CString text;
-		_tv.GetItemText(item, text);
+		m_TV.GetItemText(item, text);
 		if (text.CompareNoCase(name) == 0)
 			return item;
-		item = _tv.GetNextSiblingItem(item);
+		item = m_TV.GetNextSiblingItem(item);
 	}
 	return nullptr;
 }
@@ -25,7 +25,7 @@ HTREEITEM TreeHelper::FindItem(HTREEITEM hParent, PCWSTR path) {
 		auto name = spath.Tokenize(L"\\", start);
 		if (name.IsEmpty())
 			break;
-		_tv.Expand(hParent, TVE_EXPAND);
+		m_TV.Expand(hParent, TVE_EXPAND);
 		hItem = FindChild(hParent, name);
 		if (!hItem)
 			break;
@@ -36,10 +36,10 @@ HTREEITEM TreeHelper::FindItem(HTREEITEM hParent, PCWSTR path) {
 
 int TreeHelper::DeleteChildren(HTREEITEM hItem) {
 	int count = 0;
-	hItem = _tv.GetChildItem(hItem);
+	hItem = m_TV.GetChildItem(hItem);
 	while (hItem) {
-		auto hNext = _tv.GetNextSiblingItem(hItem);
-		if (_tv.DeleteItem(hItem))
+		auto hNext = m_TV.GetNextSiblingItem(hItem);
+		if (m_TV.DeleteItem(hItem))
 			count++;
 		hItem = hNext;
 	}
@@ -48,29 +48,29 @@ int TreeHelper::DeleteChildren(HTREEITEM hItem) {
 
 void TreeHelper::DoForEachItem(HTREEITEM hRoot, DWORD mask, std::function<void(HTREEITEM, DWORD)> action) {
 	CString text;
-	auto hItem = _tv.GetChildItem(hRoot);
+	auto hItem = m_TV.GetChildItem(hRoot);
 	while (hItem) {
 #ifdef _DEBUG
-		_tv.GetItemText(hItem, text);
+		m_TV.GetItemText(hItem, text);
 		ATLTRACE(L"DoForEachExpanded hItem: 0x%p (%s)\n", hItem, text);
 #endif
-		auto state = _tv.GetItemState(hItem, mask);
+		auto state = m_TV.GetItemState(hItem, mask);
 		if (mask == 0 || state) {
 			action(hItem, state);
 			DoForEachItem(hItem, mask, action);
 		}
-		hItem = _tv.GetNextSiblingItem(hItem);
+		hItem = m_TV.GetNextSiblingItem(hItem);
 	}
 }
 
 std::map<CString, HTREEITEM> TreeHelper::GetChildItems(HTREEITEM hItem) {
 	std::map<CString, HTREEITEM> items;
-	hItem = _tv.GetChildItem(hItem);
+	hItem = m_TV.GetChildItem(hItem);
 	while (hItem) {
 		CString text;
-		_tv.GetItemText(hItem, text);
+		m_TV.GetItemText(hItem, text);
 		items.insert({ text, hItem });
-		hItem = _tv.GetNextSiblingItem(hItem);
+		hItem = m_TV.GetNextSiblingItem(hItem);
 	}
 	return items;
 }

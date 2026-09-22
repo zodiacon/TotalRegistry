@@ -762,15 +762,17 @@ LRESULT CMainFrame::OnTreeBeginEdit(int, LPNMHDR hdr, BOOL&) {
 
 LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 	auto& item = ((NMTVDISPINFO*)hdr)->item;
+	auto op = m_CurrentOperation;
+	m_CurrentOperation = Operation::None;
 	if (item.pszText == nullptr) {
 		//
 		// cancelled
 		//
-		if (m_CurrentOperation == Operation::CreateKey)
+		if (op == Operation::CreateKey)
 			m_Tree.DeleteItem(item.hItem);
 		return FALSE;
 	}
-	switch (m_CurrentOperation) {
+	switch (op) {
 		case Operation::CreateKey:
 		{
 			auto hItem = item.hItem;
@@ -796,8 +798,12 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 				return true;
 			};
 			cmd->SetCallback(cb);
-			if (AppSettings::Get().ShowKeysInList())
-				UpdateList();
+			//
+			// the label is committed only after returning, but selecting the item
+			// refreshes the list using the item's text, so set it now
+			//
+			m_Tree.SetItemText(hItem, item.pszText);
+			m_Tree.SelectItem(hItem);
 			return TRUE;
 		}
 		case Operation::RenameKey:
@@ -2378,6 +2384,16 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item, int index) {
 
 void CMainFrame::SetDarkMode(bool dark) {
 	WTLHelper::SwitchToMode(dark ? DarkModeKind::Dark : DarkModeKind::Light, m_hWnd);
+
+	//
+	// the find dialog is an owned top-level window (not a descendant), so it's not updated by SwitchToMode
+	//
+	if (m_FindDlg) {
+		DarkMode::setDarkTitleBarEx(m_FindDlg, true);
+		DarkMode::setChildCtrlsTheme(m_FindDlg);
+		m_FindDlg.SendMessageToDescendants(WTLHelper::ThemeChangedMessage, 0, static_cast<LPARAM>(WTLHelper::DarkModeType()));
+		m_FindDlg.RedrawWindow(nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_FRAME);
+	}
 
 	auto back = dark ? DarkMode::getBackgroundColor() : ::GetSysColor(COLOR_WINDOW);
 	auto text = dark ? DarkMode::getTextColor() : ::GetSysColor(COLOR_WINDOWTEXT);

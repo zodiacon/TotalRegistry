@@ -19,8 +19,8 @@ public:
 	AppCommand* GetRedoCommand() const;
 
 private:
-	std::vector<std::shared_ptr<AppCommand>> _undoList;
-	std::vector<std::shared_ptr<AppCommand>> _redoList;
-	bool _enabled{ true };
+	std::vector<std::shared_ptr<AppCommand>> m_UndoList;
+	std::vector<std::shared_ptr<AppCommand>> m_RedoList;
+	bool m_Enabled{ true };
 };
 

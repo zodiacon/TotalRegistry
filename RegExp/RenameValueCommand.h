@@ -15,5 +15,5 @@ struct RenameValueCommand : RegAppCommandBase<RenameValueCommand> {
 	CString GetCommandName() const override;
 
 private:
-	CString _newName;
+	CString m_NewName;
 };

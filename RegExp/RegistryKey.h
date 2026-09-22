@@ -18,19 +18,19 @@ struct RegistryKey {
 	bool IsValid() const;
 
 	operator bool() const {
-		return _hKey != nullptr;
+		return m_hKey != nullptr;
 	}
 
 	HKEY* AddressOf() {
-		return &_hKey;
+		return &m_hKey;
 	}
 
 	operator HKEY() const {
-		return _hKey;
+		return m_hKey;
 	}
 
 	HKEY Get() const {
-		return _hKey;
+		return m_hKey;
 	}
 
 	LSTATUS Open(HKEY parent, PCWSTR path, DWORD access = KEY_READ | KEY_WRITE);
@@ -55,7 +55,7 @@ struct RegistryKey {
 private:
 	void CheckPredefinedKey();
 
-	HKEY _hKey;
-	bool _own;
+	HKEY m_hKey;
+	bool m_Own;
 };
 

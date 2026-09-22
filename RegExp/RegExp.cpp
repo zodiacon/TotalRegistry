@@ -44,8 +44,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ LPWSTR lp
 	ATLASSERT(SUCCEEDED(hRes));
 
 	::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
-	AppSettings::Get().Load(L"Software\\ScorpioSoftware\\TotalRegistry");
-	WTLHelper::InitDarkMode(AppSettings::Get().DarkMode() ? DarkModeKind::Dark : DarkModeKind::Light);
+	if (AppSettings::Get().Load(L"Software\\ScorpioSoftware\\TotalRegistry"))
+		WTLHelper::InitDarkMode(AppSettings::Get().DarkMode() ? DarkModeKind::Dark : DarkModeKind::Light);
+	else 
+		WTLHelper::InitDarkMode();
 
 	int nRet = Run(lpCmdLine, nCmdShow);
 

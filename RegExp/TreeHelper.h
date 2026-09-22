@@ -1,7 +1,7 @@
 #pragma once
 
 struct TreeHelper {
-	explicit TreeHelper(CTreeViewCtrlEx& tv) : _tv(tv) {}
+	explicit TreeHelper(CTreeViewCtrlEx& tv) : m_TV(tv) {}
 	HTREEITEM FindChild(HTREEITEM item, PCWSTR name) const;
 	HTREEITEM FindItem(HTREEITEM hParent, PCWSTR name);
 	int DeleteChildren(HTREEITEM hItem);
@@ -9,5 +9,5 @@ struct TreeHelper {
 	std::map<CString, HTREEITEM> GetChildItems(HTREEITEM hItem);
 
 private:
-	CTreeViewCtrlEx& _tv;
+	CTreeViewCtrlEx& m_TV;
 };
