@@ -49,21 +49,24 @@ HKEY Registry::CreateRealRegistryKey(PCWSTR path, DWORD access) {
 	return (HKEY)hKey;
 }
 
-DWORD Registry::EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler) {
+DWORD Registry::EnumKeyValues(HKEY key, const std::function<bool(DWORD, PCWSTR, DWORD)>& handler) {
 	ATLASSERT(IsKeyValid(key));
-	WCHAR name[256];
+	// value names can be up to 16383 characters
+	const DWORD maxName = 16384;
+	auto name = std::make_unique<WCHAR[]>(maxName);
 	DWORD type;
 	int i;
 	DWORD error;
 	for (i = 0; ; ++i) {
-		DWORD lname = _countof(name);
+		DWORD lname = maxName;
 		DWORD size = 0;
-		error = ::RegEnumValue(key, i, name, &lname, nullptr, &type, nullptr, &size);
+		error = ::RegEnumValue(key, i, name.get(), &lname, nullptr, &type, nullptr, &size);
 		if (ERROR_NO_MORE_ITEMS == error)
 			break;
 		else if (error != ERROR_SUCCESS)
 			break;
-		handler(type, name, size);
+		if (!handler(type, name.get(), size))
+			break;
 	}
 
 	if (error != ERROR_NO_MORE_ITEMS)

@@ -319,6 +319,8 @@ private:
 	CString GetValueDetails(const RegistryItem& item) const;
 	bool RefreshItem(HTREEITEM hItem);
 	void DisplayBackupRestorePrivilegeError();
+	void ImportRegFile(CString const& fileName);
+	void ImportHiveFile(CString const& fileName);
 	int GetKeyImage(const RegistryItem& item) const;
 	INT_PTR ShowValueProperties(RegistryItem& item, int index);
 	void SetDarkMode(bool dark);

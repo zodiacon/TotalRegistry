@@ -90,6 +90,12 @@
     <ClInclude Include="DeleteKeyCommand.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="ImportRegFileCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="RestoreKeyCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
     <ClInclude Include="FindAllDlg.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
@@ -222,6 +228,12 @@
       <Filter>Dialogs</Filter>
     </ClCompile>
     <ClCompile Include="DeleteKeyCommand.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="ImportRegFileCommand.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="RestoreKeyCommand.cpp">
       <Filter>Commands</Filter>
     </ClCompile>
     <ClCompile Include="ChangeValueCommand.cpp">

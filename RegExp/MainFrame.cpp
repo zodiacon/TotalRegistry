@@ -29,6 +29,8 @@
 #include "ConnectRegistryDlg.h"
 #include "Helpers.h"
 #include "RegExportImport.h"
+#include "ImportRegFileCommand.h"
+#include "RestoreKeyCommand.h"
 #include "ImageIconCache.h"
 #include "ManageLocationsDlg.h"
 
@@ -1316,27 +1318,98 @@ LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
 }
 
 LRESULT CMainFrame::OnImport(WORD, WORD, HWND, BOOL&) {
-	if (!SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true) || !SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, true)) {
-		DisplayBackupRestorePrivilegeError();
+	if (m_ReadOnly)
 		return 0;
-	}
-	WTLHelper::SuspendHook();
-	CSimpleFileDialog dlg(TRUE, L"dat", nullptr, OFN_FILEMUSTEXIST | OFN_ENABLESIZING | OFN_EXPLORER,
-		L"All Files\0*.*\0", m_hWnd);
-	if (dlg.DoModal() == IDOK) {
-		auto error = ::RegRestoreKey(m_CurrentKey.Get(), dlg.m_szFileName, REG_FORCE_RESTORE);
-		if (ERROR_SUCCESS != error)
-			DisplayError(L"Failed to import file", nullptr, error);
-		else {
-			RefreshItem(m_Tree.GetSelectedItem());
-		}
-	}
-	WTLHelper::ResumeHook();
 
-	SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
-	SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, false);
+	WTLHelper::SuspendHook();
+	CSimpleFileDialog dlg(TRUE, L"reg", nullptr, OFN_FILEMUSTEXIST | OFN_ENABLESIZING | OFN_EXPLORER,
+		L"Registry Files (*.reg)\0*.reg\0Hive Files (*.dat;*.hiv)\0*.dat;*.hiv\0All Files\0*.*\0", m_hWnd);
+	auto ok = dlg.DoModal() == IDOK;
+	WTLHelper::ResumeHook();
+	if (!ok)
+		return 0;
+
+	//
+	// hive files start with "regf", anything else is treated as a .reg file
+	//
+	CString fileName(dlg.m_szFileName);
+	char signature[4]{};
+	DWORD bytes = 0;
+	wil::unique_hfile hFile(::CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr));
+	if (hFile)
+		::ReadFile(hFile.get(), signature, sizeof(signature), &bytes, nullptr);
+	hFile.reset();
+
+	if (bytes == sizeof(signature) && memcmp(signature, "regf", sizeof(signature)) == 0)
+		ImportHiveFile(fileName);
+	else
+		ImportRegFile(fileName);
+	UpdateUI();
 
 	return 0;
+}
+
+void CMainFrame::ImportRegFile(CString const& fileName) {
+	std::vector<RegFileKey> keys;
+	CString error;
+	if (!RegExportImport::Parse(fileName, keys, error)) {
+		AtlMessageBox(m_hWnd, (PCWSTR)(L"Failed to import file: " + error), IDS_APP_TITLE, MB_ICONERROR);
+		return;
+	}
+
+	CString text;
+	text.Format(L"Import %d key(s) from %s into the Registry?", (int)keys.size(), (PCWSTR)fileName);
+	if (AtlMessageBox(m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES)
+		return;
+
+	auto cmd = std::make_shared<ImportRegFileCommand>(fileName, std::move(keys), [this](auto&, auto) {
+		SendMessage(WM_COMMAND, ID_VIEW_REFRESH);
+		return true;
+		});
+	CWaitCursor wait;
+	auto success = m_CmdMgr.AddCommand(cmd);
+	wait.Restore();
+
+	auto& errors = cmd->GetErrors();
+	if (errors.empty()) {
+		AtlMessageBox(m_hWnd, L"Import successful.", IDS_APP_TITLE, MB_ICONINFORMATION);
+		return;
+	}
+
+	const size_t maxErrors = 10;
+	CString msg(success ? L"Some keys or values could not be imported:\n\n" : L"Failed to import file:\n\n");
+	for (size_t i = 0; i < errors.size() && i < maxErrors; i++)
+		msg += errors[i] + L"\n";
+	if (errors.size() > maxErrors)
+		msg.AppendFormat(L"(and %d more)", int(errors.size() - maxErrors));
+	AtlMessageBox(m_hWnd, (PCWSTR)msg, IDS_APP_TITLE, success ? MB_ICONWARNING : MB_ICONERROR);
+}
+
+void CMainFrame::ImportHiveFile(CString const& fileName) {
+	auto hItem = m_Tree.GetSelectedItem();
+	if ((GetNodeData(hItem) & NodeType::Key) != NodeType::Key) {
+		AtlMessageBox(m_hWnd, L"Select the key to import the hive file into.", IDS_APP_TITLE, MB_ICONINFORMATION);
+		return;
+	}
+
+	auto path = GetFullNodePath(hItem);
+	if (AtlMessageBox(m_hWnd, (PCWSTR)(L"All values and subkeys of\n" + path + L"\nwill be replaced with the contents of the hive file.\n\nContinue?"),
+		IDS_APP_TITLE, MB_YESNO | MB_ICONWARNING | MB_DEFBUTTON2) != IDYES)
+		return;
+
+	auto cmd = std::make_shared<RestoreKeyCommand>(path, fileName, [this](auto&, auto) {
+		SendMessage(WM_COMMAND, ID_VIEW_REFRESH);
+		return true;
+		});
+	CWaitCursor wait;
+	if (!m_CmdMgr.AddCommand(cmd)) {
+		auto error = ::GetLastError();
+		wait.Restore();
+		if (error == ERROR_PRIVILEGE_NOT_HELD)
+			DisplayBackupRestorePrivilegeError();
+		else
+			DisplayError(L"Failed to import file", nullptr, error);
+	}
 }
 
 LRESULT CMainFrame::OnLoadHive(WORD, WORD, HWND, BOOL&) {
@@ -2631,6 +2704,7 @@ void CMainFrame::UpdateUI() {
 
 	for (auto id = ID_NEW_DWORDVALUE; id <= ID_NEW_BINARYVALUE; id++)
 		UIEnable(id, !m_ReadOnly);
+	UIEnable(ID_FILE_IMPORT, !m_ReadOnly);
 	UIEnable(ID_SEARCH_FINDNEXT, m_FindDlg.IsFindNextAvailable());
 }
 

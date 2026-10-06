@@ -36,7 +36,7 @@ struct HandleInfo {
 
 struct Registry final {
 	static DWORD EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&)> handler);
-	static DWORD EnumKeyValues(HKEY key, const std::function<void(DWORD, PCWSTR, DWORD)>& handler);
+	static DWORD EnumKeyValues(HKEY key, const std::function<bool(DWORD, PCWSTR, DWORD)>& handler);
 	static CString QueryStringValue(RegistryKey& key, PCWSTR name);
 	static CString StdRegPathToRealPath(const CString& path);
 	static CString GetRegTypeAsString(DWORD type);

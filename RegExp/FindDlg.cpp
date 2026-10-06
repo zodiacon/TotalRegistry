@@ -98,7 +98,7 @@ LRESULT CFindDlg::OnFind(WORD, WORD wID, HWND, BOOL&) {
     m_Searcher.SetText(text);
     m_Searcher.SetOptions(options);
     SetDlgItemText(IDC_STATUS, L"Searching...");
-    if (m_Searcher.IsRunning()) {
+    if (m_Searcher.CanContinue()) {
         m_Searcher.Continue();
         return 0;
     }

@@ -187,7 +187,7 @@ LRESULT CFindAllDlg::OnFind(WORD, WORD wID, HWND, BOOL&) {
     GetDlgItemText(IDC_TEXT, text);
     m_Searcher.SetText(text);
     m_Searcher.SetOptions(options);
-    if (m_Searcher.IsRunning()) {
+    if (m_Searcher.CanContinue()) {
         m_Searcher.Continue();
         return 0;
     }
