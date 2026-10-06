@@ -35,6 +35,9 @@
 #include "ImageIconCache.h"
 #include "ManageLocationsDlg.h"
 
+// Registry::Keys entries from this index on are shown only with Options / Show Extra Hives
+const size_t ExtraHivesStart = 5;
+
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && ::GetActiveWindow() == m_FindDlg && m_FindDlg.IsDialogMessage(pMsg))
 		return TRUE;
@@ -601,16 +604,14 @@ LRESULT CMainFrame::OnAbout(WORD, WORD, HWND, BOOL&) {
 
 LRESULT CMainFrame::OnBuildTree(UINT, WPARAM, LPARAM, BOOL&) {
 	InitTree();
-	auto showExtra = AppSettings::Get().ShowExtraHives();
 	m_Tree.LockWindowUpdate();
 
-	int i = 0;
-	for (auto& k : Registry::Keys) {
-		if (!showExtra && ++i == 6)
-			break;
+	for (size_t i = 0; i < ExtraHivesStart; i++) {
+		auto& k = Registry::Keys[i];
 		auto hItem = BuildTree(m_hStdReg, k.hKey, k.text);
 		SetNodeData(hItem, NodeType::Key | NodeType::Predefined);
 	}
+	ShowExtraHives(AppSettings::Get().ShowExtraHives());
 	m_Tree.Expand(m_hStdReg, TVE_EXPAND);
 
 	auto hKey = Registry::OpenRealRegistryKey();
@@ -707,11 +708,36 @@ LRESULT CMainFrame::OnTreeItemExpanding(int, LPNMHDR hdr, BOOL&) {
 }
 
 LRESULT CMainFrame::OnShowExtraHives(WORD, WORD id, HWND, BOOL&) {
-	auto show = AppSettings::Get().ShowExtraHives();
-	AppSettings::Get().ShowExtraHives(!show);
-	UISetCheck(id, !show);
+	auto show = !AppSettings::Get().ShowExtraHives();
+	AppSettings::Get().ShowExtraHives(show);
+	UISetCheck(id, show);
+	ShowExtraHives(show);
+	if (m_Tree.GetSelectedItem() == m_hStdReg)
+		UpdateList();
 
 	return 0;
+}
+
+void CMainFrame::ShowExtraHives(bool show) {
+	TreeHelper th(m_Tree);
+	for (size_t i = ExtraHivesStart; i < std::size(Registry::Keys); i++) {
+		auto& k = Registry::Keys[i];
+		auto hItem = th.FindChild(m_hStdReg, k.text);
+		if (show && !hItem) {
+			hItem = BuildTree(m_hStdReg, k.hKey, k.text);
+			SetNodeData(hItem, NodeType::Key | NodeType::Predefined);
+		}
+		else if (!show && hItem) {
+			// don't leave the selection in a removed subtree
+			for (auto hSel = m_Tree.GetSelectedItem(); hSel; hSel = m_Tree.GetParentItem(hSel)) {
+				if (hSel == hItem) {
+					m_Tree.SelectItem(m_hStdReg);
+					break;
+				}
+			}
+			m_Tree.DeleteItem(hItem);
+		}
+	}
 }
 
 LRESULT CMainFrame::OnShowKeysInList(WORD, WORD id, HWND, BOOL&) {
