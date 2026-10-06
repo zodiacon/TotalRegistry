@@ -2,6 +2,7 @@
 
 #include "AppCommandBase.h"
 #include "RegExportImport.h"
+#include "KeyBackup.h"
 
 struct ImportRegFileCommand : AppCommandBase<ImportRegFileCommand> {
 	ImportRegFileCommand(PCWSTR fileName, std::vector<RegFileKey> keys, AppCommandCallback<ImportRegFileCommand> cb = nullptr);
@@ -26,6 +27,7 @@ private:
 		DWORD ValueType{ REG_NONE };
 		std::vector<BYTE> Data;
 		bool Existed{ false };
+		std::unique_ptr<KeyBackup> Backup;
 	};
 
 	void ImportKey(RegFileKey const& key);

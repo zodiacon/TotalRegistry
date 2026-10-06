@@ -3,29 +3,6 @@
 #include "Registry.h"
 #include "SecurityHelper.h"
 
-namespace {
-	struct BackupRestorePrivileges {
-		BackupRestorePrivileges() {
-			m_Enabled = SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, true) && SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, true);
-			if (!m_Enabled)
-				::SetLastError(ERROR_PRIVILEGE_NOT_HELD);
-		}
-		~BackupRestorePrivileges() {
-			// preserve the error of the operation for the caller
-			auto error = ::GetLastError();
-			SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
-			SecurityHelper::EnablePrivilege(SE_RESTORE_NAME, false);
-			::SetLastError(error);
-		}
-		explicit operator bool() const {
-			return m_Enabled;
-		}
-
-	private:
-		bool m_Enabled;
-	};
-}
-
 RestoreKeyCommand::RestoreKeyCommand(PCWSTR path, PCWSTR fileName, AppCommandCallback<RestoreKeyCommand> cb)
 	: RegAppCommandBase(L"Import " + CString(fileName).Mid(CString(fileName).ReverseFind(L'\\') + 1), path, fileName, cb) {
 }

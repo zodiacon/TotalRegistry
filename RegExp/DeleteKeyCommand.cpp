@@ -12,49 +12,50 @@ bool DeleteKeyCommand::Execute() {
 	if (!key)
 		return false;
 
-	if (m_SavePath.IsEmpty()) {
-		LARGE_INTEGER li;
-		::QueryPerformanceCounter(&li);
-		m_SavePath.Format(L"%llX", li.QuadPart);
-	}
-	CRegKey keyBackup;
-	auto error = keyBackup.Create(HKEY_CURRENT_USER, DeletedPathBackup + m_SavePath, nullptr, 0, MAXIMUM_ALLOWED);
-	::SetLastError(error);
-	if (!keyBackup)
-		return false;
-	// BUG: RegCopyTree fails if key is one of the predefined keys
-	::SetLastError(error = ::RegCopyTree(key.Get(), m_Name, keyBackup));
-	if (ERROR_SUCCESS != error)
-		return false;
-
-	::SetLastError(error = ::RegDeleteTree(key.Get(), m_Name));
+	bool remote = m_Path.Left(2) == L"\\\\";
+	auto error = m_Backup.Save(key.Get(), m_Name, !remote);
 	if (ERROR_SUCCESS != error) {
+		::SetLastError(error);
+		return false;
+	}
+
+	error = ::RegDeleteTree(key.Get(), m_Name);
+	if (ERROR_SUCCESS != error) {
+		// the delete may have removed part of the tree, put it back since this command won't be undoable
+		RestoreBackup(key.Get());
+		m_Backup.Discard();
+		::SetLastError(error);
 		return false;
 	}
 	return InvokeCallback(true);
 }
 
 bool DeleteKeyCommand::Undo() {
-	auto key = Registry::OpenKey(m_Path, KEY_CREATE_SUB_KEY);
+	auto key = Registry::OpenKey(m_Path, MAXIMUM_ALLOWED);
 	if (!key)
 		return false;
 
-	DWORD error;
-	CRegKey keyBackup;
-	::SetLastError(error = keyBackup.Open(HKEY_CURRENT_USER, DeletedPathBackup + m_SavePath, KEY_READ));
-	if (!keyBackup)
+	auto error = RestoreBackup(key.Get());
+	if (error != ERROR_SUCCESS) {
+		::SetLastError(error);
 		return false;
+	}
+	m_Backup.Discard();
+	return InvokeCallback(false);
+}
 
+LSTATUS DeleteKeyCommand::RestoreBackup(HKEY hParent) {
 	CRegKey newKey;
 	DWORD disp;
-	error = newKey.Create(key.Get(), m_Name, nullptr, 0, KEY_ALL_ACCESS, nullptr, &disp);
-	::SetLastError(error);
+	auto error = newKey.Create(hParent, m_Name, nullptr, 0, KEY_ALL_ACCESS, nullptr, &disp);
 	if (error != ERROR_SUCCESS)
-		return false;
+		return error;
 
-	::SetLastError(error = ::RegCopyTree(keyBackup, nullptr, newKey));
-	if (error != ERROR_SUCCESS)
-		return false;
-
-	return InvokeCallback(false);
+	error = m_Backup.Restore(newKey);
+	if (error != ERROR_SUCCESS && disp == REG_CREATED_NEW_KEY) {
+		// don't leave an empty key behind
+		newKey.Close();
+		::RegDeleteTree(hParent, m_Name);
+	}
+	return error;
 }

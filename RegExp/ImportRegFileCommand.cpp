@@ -122,18 +122,13 @@ bool ImportRegFileCommand::Undo() {
 
 			case UndoType::RestoreDeletedKey:
 			{
-				// Name holds the backup key path
-				CRegKey key, backup;
+				CRegKey key;
 				CString created;
 				error = CreateKey(entry.Path, key, created, KEY_ALL_ACCESS);
 				if (error == ERROR_SUCCESS)
-					error = backup.Open(HKEY_CURRENT_USER, entry.Name, KEY_READ);
+					error = entry.Backup->Restore(key);
 				if (error == ERROR_SUCCESS)
-					error = ::RegCopyTree(backup, nullptr, key);
-				if (error == ERROR_SUCCESS) {
-					backup.Close();
-					::RegDeleteTree(HKEY_CURRENT_USER, entry.Name);
-				}
+					entry.Backup->Discard();
 				break;
 			}
 		}
@@ -207,20 +202,11 @@ void ImportRegFileCommand::DeleteKey(CString const& path) {
 		return;		// nothing to delete
 	key.Close();
 
-	//
 	// back up the key so it can be restored by undo
-	//
-	LARGE_INTEGER li;
-	::QueryPerformanceCounter(&li);
-	CString backupPath;
-	backupPath.Format(L"%sImport%llX", (PCWSTR)DeletedPathBackup, li.QuadPart);
-	CRegKey backup;
-	error = backup.Create(HKEY_CURRENT_USER, backupPath, nullptr, 0, KEY_ALL_ACCESS);
-	if (error == ERROR_SUCCESS)
-		error = ::RegCopyTree(parent, name, backup);
+	UndoEntry entry{ UndoType::RestoreDeletedKey, path };
+	entry.Backup = std::make_unique<KeyBackup>();
+	error = entry.Backup->Save(parent, name);
 	if (error != ERROR_SUCCESS) {
-		backup.Close();
-		::RegDeleteTree(HKEY_CURRENT_USER, backupPath);
 		AddError(path, nullptr, error);
 		return;
 	}
@@ -229,7 +215,7 @@ void ImportRegFileCommand::DeleteKey(CString const& path) {
 	if (error != ERROR_SUCCESS)
 		AddError(path, nullptr, error);
 	// even a failed delete may have deleted some of the tree, so keep the backup for undo
-	m_UndoLog.push_back({ UndoType::RestoreDeletedKey, path, backupPath });
+	m_UndoLog.push_back(std::move(entry));
 }
 
 void ImportRegFileCommand::AddError(CString const& path, PCWSTR name, DWORD error) {

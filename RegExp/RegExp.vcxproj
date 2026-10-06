@@ -363,6 +363,7 @@
     <ClInclude Include="CreateKeyCommand.h" />
     <ClInclude Include="DeleteKeyCommand.h" />
     <ClInclude Include="ImportRegFileCommand.h" />
+    <ClInclude Include="KeyBackup.h" />
     <ClInclude Include="RestoreKeyCommand.h" />
     <ClInclude Include="DeleteValueCommand.h" />
     <ClInclude Include="DriverHelper.h" />
@@ -414,6 +415,7 @@
     <ClCompile Include="CreateValueCommand.cpp" />
     <ClCompile Include="DeleteKeyCommand.cpp" />
     <ClCompile Include="ImportRegFileCommand.cpp" />
+    <ClCompile Include="KeyBackup.cpp" />
     <ClCompile Include="RestoreKeyCommand.cpp" />
     <ClCompile Include="DeleteValueCommand.cpp" />
     <ClCompile Include="DriverHelper.cpp" />

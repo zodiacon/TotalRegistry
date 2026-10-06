@@ -96,6 +96,9 @@
     <ClInclude Include="RestoreKeyCommand.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="KeyBackup.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
     <ClInclude Include="FindAllDlg.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
@@ -234,6 +237,9 @@
       <Filter>Commands</Filter>
     </ClCompile>
     <ClCompile Include="RestoreKeyCommand.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyBackup.cpp">
       <Filter>Commands</Filter>
     </ClCompile>
     <ClCompile Include="ChangeValueCommand.cpp">

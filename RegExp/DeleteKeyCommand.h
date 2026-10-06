@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AppCommandBase.h"
+#include "KeyBackup.h"
 
 struct DeleteKeyCommand : RegAppCommandBase<DeleteKeyCommand> {
 	DeleteKeyCommand(PCWSTR path, PCWSTR name, AppCommandCallback<DeleteKeyCommand> cb = nullptr);
@@ -9,6 +10,7 @@ struct DeleteKeyCommand : RegAppCommandBase<DeleteKeyCommand> {
 	bool Undo() override;
 
 private:
-	CString m_SavePath;
-};
+	LSTATUS RestoreBackup(HKEY hParent);
 
+	KeyBackup m_Backup;
+};

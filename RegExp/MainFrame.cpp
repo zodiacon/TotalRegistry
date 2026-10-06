@@ -31,6 +31,7 @@
 #include "RegExportImport.h"
 #include "ImportRegFileCommand.h"
 #include "RestoreKeyCommand.h"
+#include "KeyBackup.h"
 #include "ImageIconCache.h"
 #include "ManageLocationsDlg.h"
 
@@ -335,7 +336,7 @@ LRESULT CMainFrame::OnDrawItem(UINT, WPARAM, LPARAM lp, BOOL& handled) {
 }
 
 LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
-	::RegDeleteTree(HKEY_CURRENT_USER, DeletedPathBackup.Left(DeletedPathBackup.GetLength() - 1));
+	KeyBackup::DeleteOrphans();
 
 	::ChangeWindowMessageFilterEx(m_hWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
 
