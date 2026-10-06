@@ -517,6 +517,11 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled) {
 	if (m_HandlesDlg)
 		m_HandlesDlg.DestroyWindow();
+	if (m_pFindAll) {
+		// cancels its search; the dialog deletes itself
+		m_pFindAll->DestroyWindow();
+		m_pFindAll = nullptr;
+	}
 
 	ImageIconCache::Get().Destroy();
 

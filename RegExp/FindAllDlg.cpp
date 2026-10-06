@@ -165,6 +165,7 @@ LRESULT CFindAllDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 }
 
 LRESULT CFindAllDlg::OnDestroy(UINT, WPARAM, LPARAM, BOOL& handled) {
+    m_Searcher.Cancel();
     Helpers::SaveWindowPosition(m_hWnd, L"FindAllDlgRect");
     handled = FALSE;
     return 0;
@@ -193,19 +194,48 @@ LRESULT CFindAllDlg::OnFind(WORD, WORD wID, HWND, BOOL&) {
     }
 
     m_Searcher.SetStartKey(m_pFrame->GetCurrentKeyPath());
-    m_Searcher.Find([&](auto path, auto name, auto data) {
+    auto searchId = ++m_SearchId;
+    auto hWnd = m_hWnd;
+    auto pending = m_Pending = std::make_shared<PendingResults>();
+    m_Searcher.Find([=](auto path, auto name, auto data) {
+        // runs on the search thread: never touch this object, which may be gone
         if (path == nullptr) {
-            PostMessage(WM_SEARCH_COMPLETE, m_Searcher.IsCancelled());
+            ::PostMessage(hWnd, WM_SEARCH_COMPLETE, searchId, 0);
+            return;
         }
-        else {
-            ListItem item{ path, name, data };
-            m_Items.push_back(item);
-            m_List.SetItemCountEx(static_cast<int>(m_Items.size()), LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
-            m_Searcher.Continue();
+        bool notify;
+        {
+            std::lock_guard locker(pending->Lock);
+            notify = pending->Items.empty();
+            pending->Items.push_back(ListItem{ path, name, data });
         }
-        });
+        // post only when a new batch starts, as a flood of posted messages would starve WM_QUIT
+        if (notify)
+            ::PostMessage(hWnd, WM_SEARCH_RESULT, 0, 0);
+        }, false);
 
     return 0;
+}
+
+LRESULT CFindAllDlg::OnSearchResult(UINT, WPARAM, LPARAM, BOOL&) {
+    AddPendingResults();
+    return 0;
+}
+
+void CFindAllDlg::AddPendingResults() {
+    if (!m_Pending)
+        return;
+
+    std::vector<ListItem> items;
+    {
+        std::lock_guard locker(m_Pending->Lock);
+        items.swap(m_Pending->Items);
+    }
+    if (items.empty())
+        return;
+
+    m_Items.insert(m_Items.end(), std::make_move_iterator(items.begin()), std::make_move_iterator(items.end()));
+    m_List.SetItemCountEx(static_cast<int>(m_Items.size()), LVSICF_NOSCROLL | LVSICF_NOINVALIDATEALL);
 }
 
 LRESULT CFindAllDlg::OnCancel(WORD, WORD wID, HWND, BOOL&) {
@@ -230,7 +260,11 @@ LRESULT CFindAllDlg::OnClick(WORD, WORD wID, HWND, BOOL&) {
     return 0;
 }
 
-LRESULT CFindAllDlg::OnSearchComplete(UINT msg, WPARAM cancelled, LPARAM, BOOL&) {
+LRESULT CFindAllDlg::OnSearchComplete(UINT msg, WPARAM searchId, LPARAM, BOOL&) {
+    if (searchId != m_SearchId)
+        return 0;
+
+    AddPendingResults();
     GetDlgItem(IDC_FIND).EnableWindow();
     GetDlgItem(IDC_CANCEL).EnableWindow(FALSE);
     m_Progress.ShowWindow(SW_HIDE);

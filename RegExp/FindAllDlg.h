@@ -15,7 +15,8 @@ class CFindAllDlg :
 public:
 	enum { IDD = IDD_FINDALL };
 
-	const UINT WM_SEARCH_COMPLETE = WM_APP + 1;
+	static constexpr UINT WM_SEARCH_COMPLETE = WM_APP + 1;	// wParam: search ID
+	static constexpr UINT WM_SEARCH_RESULT = WM_APP + 2;	// new results are pending
 
 	explicit CFindAllDlg(IMainFrame* frame);
 
@@ -32,6 +33,7 @@ public:
 	BEGIN_MSG_MAP(CFindAllDlg)
 		MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
 		MESSAGE_HANDLER(WM_SEARCH_COMPLETE, OnSearchComplete)
+		MESSAGE_HANDLER(WM_SEARCH_RESULT, OnSearchResult)
 		COMMAND_ID_HANDLER(IDC_FIND, OnFind)
 		COMMAND_ID_HANDLER(IDCANCEL, OnCloseCmd)
 		COMMAND_ID_HANDLER(IDC_CANCEL, OnCancel)
@@ -59,6 +61,16 @@ private:
 		CString Data;
 	};
 
+	//
+	// results found by the search thread, waiting to be added to the list by the UI thread
+	// shared with the search thread, which never touches the dialog itself; each search gets its own
+	//
+	struct PendingResults {
+		std::mutex Lock;
+		std::vector<ListItem> Items;
+	};
+
+	void AddPendingResults();
 	bool CheckButton(UINT id, FindOptions options, FindOptions value);
 	FindOptions UpdateOptions();
 
@@ -70,6 +82,7 @@ private:
 	LRESULT OnTextChanged(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnClick(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnSearchComplete(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnSearchResult(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnSaveResults(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnLoadResults(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnCopy(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
@@ -80,4 +93,7 @@ private:
 	CListViewCtrl m_List;
 	CProgressBarCtrl m_Progress;
 	std::vector<ListItem> m_Items;
+	std::shared_ptr<PendingResults> m_Pending;
+	// identifies the current search, so a completion of an earlier one still in the message queue is ignored
+	WPARAM m_SearchId{ 0 };
 };

@@ -7,10 +7,15 @@
 using RegistrySearcherCallback = std::function<void(PCWSTR, PCWSTR, PCWSTR)>;
 
 struct RegistrySearcher {
+	// a search still running is cancelled, and makes no more callbacks
+	~RegistrySearcher();
+
 	void SetStartKey(PCWSTR startKey);
 	void SetOptions(FindOptions options);
 	void SetText(PCWSTR text);
-	bool Find(RegistrySearcherCallback callback);
+
+	// with pauseOnResult, the search waits for Continue after each result
+	bool Find(RegistrySearcherCallback callback, bool pauseOnResult = true);
 
 	bool Cancel();
 	bool Continue();
@@ -35,7 +40,8 @@ private:
 		wil::unique_handle hCancelEvent, hContinueEvent, hDoneEvent;
 		std::atomic<bool> Running{ true };
 		std::atomic<bool> Cancelled{ false };
-		std::atomic<bool> Abandoned{ false };	// replaced by a newer search, no more callbacks
+		std::atomic<bool> Abandoned{ false };	// replaced by a newer search or the searcher is gone, no more callbacks
+		bool PauseOnResult{ true };
 	};
 
 	static DWORD DoSearch(Search& search);

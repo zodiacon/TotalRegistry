@@ -17,9 +17,19 @@ void RegistrySearcher::SetText(PCWSTR text) {
 	m_SearchText = text;
 }
 
-bool RegistrySearcher::Find(RegistrySearcherCallback callback) {
+RegistrySearcher::~RegistrySearcher() {
+	std::lock_guard locker(m_Lock);
+	if (m_Search) {
+		m_Search->Abandoned = true;
+		m_Search->Cancelled = true;
+		::SetEvent(m_Search->hCancelEvent.get());
+	}
+}
+
+bool RegistrySearcher::Find(RegistrySearcherCallback callback, bool pauseOnResult) {
 	ATLASSERT(callback);
 	auto search = std::make_shared<Search>();
+	search->PauseOnResult = pauseOnResult;
 	{
 		std::lock_guard locker(m_Lock);
 		search->RawText = m_SearchText;
@@ -204,6 +214,9 @@ bool RegistrySearcher::Notify(Search& search, PCWSTR path, PCWSTR name, PCWSTR d
 		return true;
 
 	search.Callback(path, name, data);
+	if (!search.PauseOnResult)
+		return search.Cancelled;
+
 	HANDLE h[]{ search.hCancelEvent.get(), search.hContinueEvent.get() };
 	if (WAIT_OBJECT_0 == ::WaitForMultipleObjects(_countof(h), h, FALSE, INFINITE)) {
 		search.Cancelled = true;
