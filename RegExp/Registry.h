@@ -51,6 +51,8 @@ struct Registry final {
 
 	static RegistryKey OpenKey(const CString& path, DWORD access, bool* root = nullptr);
 	static CRegKey CreateKey(const CString& path, DWORD access);
+	// splits a standard or remote path into its root key handle and subkey; nullptr if the root is unknown
+	static HKEY GetRootKey(const CString& path, CString& subKey);
 	static bool IsKeyLink(HKEY hKey, PCWSTR path, CString& linkPath);
 	static CString ExpandStrings(const CString& text);
 

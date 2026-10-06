@@ -215,6 +215,11 @@ bool RegistrySearcher::Notify(Search& search, PCWSTR path, PCWSTR name, PCWSTR d
 DWORD RegistrySearcher::DoSearch(Search& search) {
 	if ((search.Options & (FindOptions::SearchStdRegistry | FindOptions::SearchSelected)) == FindOptions::SearchStdRegistry) {
 		for (auto key : Registry::Keys) {
+			// the performance keys are not stored data, and enumerating them collects performance counters (slow);
+			// HKEY_CURRENT_USER_LOCAL_SETTINGS is a view of HKCU\Software\Classes\Local Settings, already searched
+			if (key.hKey == HKEY_PERFORMANCE_DATA || key.hKey == HKEY_PERFORMANCE_TEXT || key.hKey == HKEY_PERFORMANCE_NLSTEXT
+				|| key.hKey == HKEY_CURRENT_USER_LOCAL_SETTINGS)
+				continue;
 			FindNextWorker(search, key.hKey, key.text);
 			if (search.Cancelled)
 				break;

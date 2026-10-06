@@ -837,7 +837,9 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 
 LRESULT CMainFrame::OnEditUndo(WORD, WORD, HWND, BOOL&) {
 	ATLASSERT(m_CmdMgr.CanUndo());
-	m_CmdMgr.Undo();
+	auto name = m_CmdMgr.GetUndoCommand()->GetCommandName();
+	if (!m_CmdMgr.Undo())
+		DisplayError(L"Failed to undo " + name);
 	UpdateUI();
 
 	return 0;
@@ -845,7 +847,9 @@ LRESULT CMainFrame::OnEditUndo(WORD, WORD, HWND, BOOL&) {
 
 LRESULT CMainFrame::OnEditRedo(WORD, WORD, HWND, BOOL&) {
 	ATLASSERT(m_CmdMgr.CanRedo());
-	m_CmdMgr.Redo();
+	auto name = m_CmdMgr.GetRedoCommand()->GetCommandName();
+	if (!m_CmdMgr.Redo())
+		DisplayError(L"Failed to redo " + name);
 	UpdateUI();
 
 	return 0;
@@ -1288,30 +1292,31 @@ LRESULT CMainFrame::OnExport(WORD, WORD, HWND, BOOL&) {
 			DisplayBackupRestorePrivilegeError();
 			return 0;
 		}
-		HKEY hKey;
+		auto disablePrivilege = wil::scope_exit([] {
+			SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
+			});
+
+		// RegistryKey does not close predefined keys (e.g. HKEY_CLASSES_ROOT)
+		RegistryKey key;
 		if (path.IsEmpty())
-			hKey = Registry::OpenRealRegistryKey();
-		else {
-			auto key = Registry::OpenKey(path, KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
-			hKey = key.Detach();
-		}
-		if (!hKey)
+			key.Attach(Registry::OpenRealRegistryKey());
+		else
+			key = Registry::OpenKey(path, KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
+		if (!key)
 			DisplayError(L"Failed to open key to export");
 		else {
 			LSTATUS error;
 			CWaitCursor wait;
 			::DeleteFile(dlg.GetFileName());
 			if (path == "HKEY_CLASSES_ROOT")
-				error = ::RegSaveKey(hKey, filename, nullptr);
+				error = ::RegSaveKey(key, filename, nullptr);
 			else
-				error = ::RegSaveKeyEx(hKey, filename, nullptr, REG_LATEST_FORMAT);
+				error = ::RegSaveKeyEx(key, filename, nullptr, REG_LATEST_FORMAT);
 			::SetLastError(error);
 			if (error != ERROR_SUCCESS)
 				DisplayError(L"Failed to export key");
 			else
 				AtlMessageBox(m_hWnd, L"Export successful.", IDS_APP_TITLE, MB_ICONINFORMATION);
-			SecurityHelper::EnablePrivilege(SE_BACKUP_NAME, false);
-			::RegCloseKey(hKey);
 		}
 	}
 
@@ -2308,8 +2313,9 @@ bool CMainFrame::RefreshItem(HTREEITEM hItem) {
 }
 
 void CMainFrame::DisplayError(PCWSTR msg, HWND hWnd, DWORD error) const {
-	CString text;
-	text.Format(L"%s (%s)", msg, (PCWSTR)Helpers::GetErrorText(error));
+	CString text(msg);
+	if (error != ERROR_SUCCESS)
+		text.AppendFormat(L" (%s)", (PCWSTR)Helpers::GetErrorText(error));
 	AtlMessageBox(hWnd ? hWnd : m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_ICONERROR);
 }
 

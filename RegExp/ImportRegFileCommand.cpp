@@ -4,16 +4,6 @@
 #include "Helpers.h"
 
 namespace {
-	HKEY GetRootKey(CString const& path, CString& subKey) {
-		auto bs = path.Find(L'\\');
-		auto root = bs < 0 ? path : path.Left(bs);
-		subKey = bs < 0 ? CString() : path.Mid(bs + 1);
-		for (auto& k : Registry::Keys)
-			if (_wcsicmp(k.text, root) == 0 || (*k.stext && _wcsicmp(k.stext, root) == 0))
-				return k.hKey;
-		return nullptr;
-	}
-
 	bool SplitPath(CString const& path, CString& parent, CString& name) {
 		auto bs = path.ReverseFind(L'\\');
 		if (bs < 0)
@@ -29,7 +19,7 @@ namespace {
 	//
 	LSTATUS CreateKey(CString const& path, CRegKey& key, CString& firstCreated, REGSAM access = KEY_READ | KEY_WRITE) {
 		CString subKey;
-		auto hRoot = GetRootKey(path, subKey);
+		auto hRoot = Registry::GetRootKey(path, subKey);
 		ATLASSERT(hRoot);
 		auto error = key.Open(hRoot, subKey, access);
 		if (error != ERROR_FILE_NOT_FOUND)

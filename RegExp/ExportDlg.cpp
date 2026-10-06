@@ -26,11 +26,21 @@ LRESULT CExportDlg::OnInitDialog(UINT, WPARAM, LPARAM, BOOL&) {
 
 LRESULT CExportDlg::OnCloseCmd(WORD, WORD wID, HWND, BOOL&) {
     if (wID == IDOK) {
-        if (IsDlgButtonChecked(IDC_EXPORT_REAL))
-            m_Key.Empty();
-        else
-            GetDlgItemText(IDC_KEY, m_Key);
-        GetDlgItemText(IDC_PATH, m_FileName);
+        CString key, fileName;
+        if (!IsDlgButtonChecked(IDC_EXPORT_REAL))
+            GetDlgItemText(IDC_KEY, key);
+        GetDlgItemText(IDC_PATH, fileName);
+
+        // .reg files can only refer to the standard HKEY_* keys, so the real Registry can only be exported as a hive
+        bool real = key.IsEmpty() || (key[0] == L'\\' && key.Left(2) != L"\\\\");
+        if (real && fileName.Right(4).CompareNoCase(L".reg") == 0) {
+            AtlMessageBox(m_hWnd, L"Keys in the real Registry cannot be exported to a .reg file.\n\nUse a file name without the .reg extension to export a hive file instead.",
+                IDS_APP_TITLE, MB_ICONWARNING);
+            GetDlgItem(IDC_PATH).SetFocus();
+            return 0;
+        }
+        m_Key = key;
+        m_FileName = fileName;
     }
     EndDialog(wID);
     return 0;

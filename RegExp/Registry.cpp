@@ -135,8 +135,11 @@ RegistryKey Registry::OpenKey(const CString& rawpath, DWORD access, bool* root) 
 			keyname = path.Left(bs);
 		}
 		keyname.TrimRight(L":");
-		auto pair = std::find_if(std::begin(Keys), std::end(Keys), [&](auto& k) { return _wcsicmp(k.text, keyname) == 0 || _wcsicmp(k.stext, keyname) == 0; });
-		ATLASSERT(pair != std::end(Keys));
+		auto pair = std::find_if(std::begin(Keys), std::end(Keys), [&](auto& k) { return _wcsicmp(k.text, keyname) == 0 || (*k.stext && _wcsicmp(k.stext, keyname) == 0); });
+		if (pair == std::end(Keys)) {
+			::SetLastError(ERROR_PATH_NOT_FOUND);
+			return key;
+		}
 		if (bs >= 0) {
 			auto error = key.Open(pair->hKey, path.Mid(bs + 1), access);
 			::SetLastError(error);
@@ -152,25 +155,69 @@ RegistryKey Registry::OpenKey(const CString& rawpath, DWORD access, bool* root) 
 
 CRegKey Registry::CreateKey(const CString& path, DWORD access) {
 	CRegKey key;
-	if (path[0] == L'\\') {
+	if (path.IsEmpty()) {
+		::SetLastError(ERROR_INVALID_PARAMETER);
+		return key;
+	}
+	if (path[0] == L'\\' && path.Left(2) != L"\\\\") {
 		// real registry
 		key.Attach(CreateRealRegistryKey(path, access));
+		return key;
 	}
-	else {
-		auto bs = path.Find(L'\\');
-		CString keyname = path;
-		if (bs >= 0) {
-			ATLASSERT(bs >= 0);
-			keyname = path.Left(bs);
-		}
-		auto pair = std::find_if(std::begin(Keys), std::end(Keys), [&](auto& k) { return wcscmp(k.text, keyname) == 0; });
-		ATLASSERT(pair != std::end(Keys));
-		if (bs >= 0) {
-			auto error = key.Create(pair->hKey, path.Mid(bs + 1), nullptr, 0, access);
-			::SetLastError(error);
-		}
+
+	CString subKey;
+	auto hRoot = GetRootKey(path, subKey);
+	if (!hRoot) {
+		::SetLastError(ERROR_PATH_NOT_FOUND);
+		return key;
 	}
+	if (subKey.IsEmpty()) {
+		// root keys cannot be created
+		::SetLastError(ERROR_INVALID_PARAMETER);
+		return key;
+	}
+	auto error = key.Create(hRoot, subKey, nullptr, 0, access);
+	::SetLastError(error);
 	return key;
+}
+
+HKEY Registry::GetRootKey(const CString& path, CString& subKey) {
+	auto rest = path;
+	const std::map<CString, RemoteRegistry>::value_type* remote = nullptr;
+	if (rest.Left(2) == L"\\\\") {
+		// remote Registry: \\computer\HKEY_LOCAL_MACHINE\... or \\computer\HKEY_USERS\...
+		auto bs = rest.Find(L'\\', 2);
+		if (bs < 0)
+			return nullptr;
+		auto computer = rest.Mid(2, bs - 2);
+		for (auto& entry : m_Remotes)
+			if (entry.first.CompareNoCase(computer) == 0)
+				remote = &entry;
+		if (!remote)
+			return nullptr;
+		rest = rest.Mid(bs + 1);
+	}
+
+	auto bs = rest.Find(L'\\');
+	auto rootName = bs < 0 ? rest : rest.Left(bs);
+	rootName.TrimRight(L":");
+	subKey = bs < 0 ? CString() : rest.Mid(bs + 1);
+	subKey.Trim(L"\\");
+
+	auto pair = std::find_if(std::begin(Keys), std::end(Keys), [&](auto& k) {
+		return _wcsicmp(k.text, rootName) == 0 || (*k.stext && _wcsicmp(k.stext, rootName) == 0);
+		});
+	if (pair == std::end(Keys))
+		return nullptr;
+
+	if (remote) {
+		if (pair->hKey == HKEY_LOCAL_MACHINE)
+			return remote->second.hLocal;
+		if (pair->hKey == HKEY_USERS)
+			return remote->second.hUsers;
+		return nullptr;
+	}
+	return pair->hKey;
 }
 
 bool Registry::RenameKey(HKEY hKey, PCWSTR name, PCWSTR newName) {
