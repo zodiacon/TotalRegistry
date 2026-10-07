@@ -33,6 +33,10 @@
 #include "RestoreKeyCommand.h"
 #include "KeyBackup.h"
 #include "ValueDecoder.h"
+#include "ImportPreviewDlg.h"
+#include "CreateLinkDlg.h"
+#include "CreateLinkCommand.h"
+#include "KeyPropertiesDlg.h"
 #include <set>
 #include <optional>
 #include "ImageIconCache.h"
@@ -57,6 +61,9 @@ BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 		return TRUE;
 
 	if (m_Snapshots && m_Snapshots->IsWindow() && m_Snapshots->IsDialogMessageW(pMsg))
+		return TRUE;
+
+	if (m_MonitorDlg && m_MonitorDlg->IsWindow() && m_MonitorDlg->IsDialogMessageW(pMsg))
 		return TRUE;
 
 	auto hFocus = ::GetFocus();
@@ -548,6 +555,8 @@ LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
 	// usually destroyed already, as an owned window; destroying it cancels a running job
 	if (m_Snapshots && m_Snapshots->IsWindow())
 		m_Snapshots->DestroyWindow();
+	if (m_MonitorDlg && m_MonitorDlg->IsWindow())
+		m_MonitorDlg->DestroyWindow();
 
 	ImageIconCache::Get().Destroy();
 
@@ -973,12 +982,27 @@ LRESULT CMainFrame::OnFocusChanged(int, LPNMHDR hdr, BOOL&) {
 	return 0;
 }
 
-LRESULT CMainFrame::OnNewKey(WORD, WORD, HWND, BOOL&) {
+LRESULT CMainFrame::OnNewKey(WORD, WORD id, HWND, BOOL&) {
 	m_Tree.GetSelectedItem().Expand(TVE_EXPAND);
 	auto hItem = InsertKeyItem(m_Tree.GetSelectedItem(), L"(NewKey)");
 	hItem.EnsureVisible();
-	m_CurrentOperation = Operation::CreateKey;
+	m_CurrentOperation = id == ID_NEW_VOLATILEKEY ? Operation::CreateVolatileKey : Operation::CreateKey;
 	m_Tree.EditLabel(hItem);
+	return 0;
+}
+
+LRESULT CMainFrame::OnNewLink(WORD, WORD, HWND, BOOL&) {
+	CCreateLinkDlg dlg;
+	if (dlg.DoModal(m_hWnd) != IDOK)
+		return 0;
+
+	auto hParent = m_Tree.GetSelectedItem();
+	auto cmd = std::make_shared<CreateLinkCommand>(GetFullNodePath(hParent), dlg.GetName(), dlg.GetTarget(), dlg.IsVolatile(),
+		CreatedKeyCallback());
+	m_Tree.Expand(hParent, TVE_EXPAND);
+	if (!m_CmdMgr.AddCommand(cmd))
+		DisplayError(L"Failed to create the link");
+	UpdateUI();
 	return 0;
 }
 
@@ -1007,36 +1031,25 @@ LRESULT CMainFrame::OnTreeEndEdit(int, LPNMHDR hdr, BOOL&) {
 		//
 		// cancelled
 		//
-		if (op == Operation::CreateKey)
+		if (op == Operation::CreateKey || op == Operation::CreateVolatileKey)
 			m_Tree.DeleteItem(item.hItem);
 		return FALSE;
 	}
 	switch (op) {
 		case Operation::CreateKey:
+		case Operation::CreateVolatileKey:
 		{
 			auto hItem = item.hItem;
 			auto hParent = m_Tree.GetParentItem(hItem);
-			auto cmd = std::make_shared<CreateKeyCommand>(GetFullNodePath(hParent), item.pszText);
+			auto cmd = std::make_shared<CreateKeyCommand>(GetFullNodePath(hParent), item.pszText, nullptr,
+				op == Operation::CreateVolatileKey ? REG_OPTION_VOLATILE : 0);
 			if (!m_CmdMgr.AddCommand(cmd)) {
 				DisplayError(L"Failed to create key");
 				m_Tree.DeleteItem(hItem);
 				return FALSE;
 			}
-			auto cb = [this](auto& cmd, bool execute) {
-				if (execute) {
-					auto hParent = FindItemByPath(cmd.GetPath());
-					ATLASSERT(hParent);
-					auto hItem = InsertKeyItem(hParent, cmd.GetName());
-					m_Tree.EnsureVisible(hItem);
-				}
-				else {
-					auto hItem = FindItemByPath(cmd.GetPath() + L"\\" + cmd.GetName());
-					ATLASSERT(hItem);
-					m_Tree.DeleteItem(hItem);
-				}
-				return true;
-			};
-			cmd->SetCallback(cb);
+			// the item is already in the tree; later redos add it
+			cmd->SetCallback(CreatedKeyCallback());
 			//
 			// the label is committed only after returning, but selecting the item
 			// refreshes the list using the item's text, so set it now
@@ -1454,6 +1467,16 @@ LRESULT CMainFrame::OnSnapshots(WORD, WORD, HWND, BOOL&) {
 	return 0;
 }
 
+LRESULT CMainFrame::OnMonitor(WORD, WORD, HWND, BOOL&) {
+	if (!m_MonitorDlg) {
+		m_MonitorDlg = std::make_unique<CMonitorDlg>(this);
+		m_MonitorDlg->Create(m_hWnd);
+	}
+	m_MonitorDlg->ShowWindow(SW_SHOW);
+	m_MonitorDlg->SetActiveWindow();
+	return 0;
+}
+
 LRESULT CMainFrame::OnKeyPermissions(WORD, WORD, HWND, BOOL&) {
 	auto path = GetFullNodePath(m_Tree.GetSelectedItem());
 	SecurityHelper::EnablePrivilege(SE_TAKE_OWNERSHIP_NAME, true);
@@ -1510,11 +1533,35 @@ LRESULT CMainFrame::OnListBeginEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandl
 }
 
 LRESULT CMainFrame::OnProperties(WORD, WORD, HWND, BOOL&) {
+	CString keyPath;
 	if (::GetFocus() == m_List) {
 		auto index = m_List.GetSelectionMark();
-		if (index >= 0 && !m_Items[index].Key)
-			return (LRESULT)ShowValueProperties(m_Items[index], index);
+		if (index < 0)
+			return 0;
+		auto& item = m_Items[index];
+		if (!item.Key)
+			return (LRESULT)ShowValueProperties(item, index);
+		if (item.Type == REG_KEY_UP)
+			return 0;
+		keyPath = m_CurrentPath.IsEmpty() ? item.Name : m_CurrentPath + L"\\" + item.Name;
 	}
+	else {
+		auto hItem = m_Tree.GetSelectedItem();
+		if ((GetNodeData(hItem) & NodeType::Key) != NodeType::Key)
+			return 0;
+		keyPath = GetFullNodePath(hItem);
+	}
+
+	KeyInfo info;
+	{
+		CWaitCursor wait;
+		if (!Registry::GetKeyInfo(keyPath, info)) {
+			DisplayError(L"Failed to open " + keyPath);
+			return 0;
+		}
+	}
+	CKeyPropertiesDlg dlg(keyPath, info);
+	dlg.DoModal(m_hWnd);
 	return 0;
 }
 
@@ -1613,9 +1660,18 @@ void CMainFrame::ImportRegFile(CString const& fileName) {
 		return;
 	}
 
-	CString text;
-	text.Format(L"Import %d key(s) from %s into the Registry?", (int)keys.size(), (PCWSTR)fileName);
-	if (AtlMessageBox(m_hWnd, (PCWSTR)text, IDS_APP_TITLE, MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2) != IDYES)
+	// show what would change, and import only if confirmed
+	std::vector<SnapshotChange> changes;
+	{
+		CWaitCursor wait;
+		changes = RegExportImport::Preview(keys);
+	}
+	if (changes.empty()) {
+		AtlMessageBox(m_hWnd, (PCWSTR)(L"Importing " + fileName + L" would not change the Registry."), IDS_APP_TITLE, MB_ICONINFORMATION);
+		return;
+	}
+	CImportPreviewDlg preview(fileName, std::move(changes));
+	if (preview.DoModal(m_hWnd) != IDOK)
 		return;
 
 	auto cmd = std::make_shared<ImportRegFileCommand>(fileName, std::move(keys), [this](auto&, auto) {
@@ -2928,6 +2984,8 @@ void CMainFrame::UpdateUI() {
 
 	auto properKey = (node & (NodeType::Key | NodeType::Predefined | NodeType::AccessDenied)) == NodeType::Key;
 	UIEnable(ID_NEW_KEY, !m_ReadOnly && (node & NodeType::Key) == NodeType::Key);
+	UIEnable(ID_NEW_VOLATILEKEY, !m_ReadOnly && (node & NodeType::Key) == NodeType::Key);
+	UIEnable(ID_NEW_LINK, !m_ReadOnly && (node & NodeType::Key) == NodeType::Key);
 	if (treeFocus) {
 		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && properKey);
 		UIEnable(ID_EDIT_CUT, !m_ReadOnly && properKey);
@@ -2937,7 +2995,7 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_EDIT_PASTE, allowPaste);
 		ATLTRACE(L"Allow paste: %d\n", (int)allowPaste);
 		UIEnable(ID_KEY_PERMISSIONS, (node & NodeType::Key) == NodeType::Key);
-		UIEnable(ID_KEY_PROPERTIES, false);
+		UIEnable(ID_KEY_PROPERTIES, (node & NodeType::Key) == NodeType::Key);
 	}
 	else if (listFocus) {
 		UIEnable(ID_EDIT_DELETE, !m_ReadOnly && listItem >= 0);
@@ -2946,7 +3004,7 @@ void CMainFrame::UpdateUI() {
 		UIEnable(ID_KEY_PERMISSIONS, listItem >= 0 && m_Items[listItem].Key && m_Items[listItem].Type != REG_KEY_UP);
 		UIEnable(ID_EDIT_RENAME, !m_ReadOnly && listItem >= 0);
 		UIEnable(ID_EDIT_PASTE, !m_Clipboard.Items.empty());
-		UIEnable(ID_KEY_PROPERTIES, listItem >= 0 && !m_Items[listItem].Key);
+		UIEnable(ID_KEY_PROPERTIES, listItem >= 0 && m_Items[listItem].Type != REG_KEY_UP);
 	}
 	else {
 		UIEnable(ID_KEY_PERMISSIONS, FALSE);

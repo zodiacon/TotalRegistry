@@ -19,5 +19,7 @@ struct Helpers abstract final {
 	static bool ReadFileText(PCWSTR path, CString& text);
 	static CString NormalizePath(CString const& path);
 	static CString GuidToString(GUID const& guid);
+	// the SID of the process' user, e.g. S-1-5-21-...
+	static CString GetCurrentUserSid();
 };
 

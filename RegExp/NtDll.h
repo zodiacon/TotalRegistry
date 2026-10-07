@@ -106,6 +106,24 @@ extern "C" NTSTATUS NTAPI NtOpenKey(
 	_In_ POBJECT_ATTRIBUTES ObjectAttributes
 );
 
+extern "C" NTSTATUS NTAPI NtDeleteKey(_In_ HANDLE KeyHandle);
+
+enum class KeyInformationClass {
+	Name = 3,		// KEY_NAME_INFORMATION: ULONG NameLength (bytes), WCHAR Name[]
+	Flags = 5,		// KEY_FLAGS_INFORMATION: ULONG Wow64Flags, KeyFlags, ControlFlags
+};
+// KEY_FLAGS_INFORMATION::KeyFlags
+const ULONG KeyFlagVolatile = 0x1;
+const ULONG KeyFlagLink = 0x2;
+
+extern "C" NTSTATUS NTAPI NtQueryKey(
+	_In_ HANDLE KeyHandle,
+	_In_ KeyInformationClass KeyInformationClass,
+	_Out_writes_bytes_opt_(Length) PVOID KeyInformation,
+	_In_ ULONG Length,
+	_Out_ PULONG ResultLength
+);
+
 extern "C" NTSTATUS NTAPI NtCreateKey(
 	_Out_ PHANDLE KeyHandle,
 	_In_ ACCESS_MASK DesiredAccess,

@@ -3,6 +3,7 @@
 #include "NtDll.h"
 #include "Helpers.h"
 #include "ValueDecoder.h"
+#include <sddl.h>
 
 #pragma comment(lib, "ntdll")
 
@@ -405,6 +406,135 @@ bool Registry::IsKeyLink(HKEY hKey, PCWSTR path, CString& link) {
 		}
 	}
 	return false;
+}
+
+LSTATUS Registry::CreateLinkKey(HKEY hParent, PCWSTR name, CString const& target, bool isVolatile) {
+	HKEY hKey;
+	DWORD disp;
+	auto error = ::RegCreateKeyEx(hParent, name, 0, nullptr, REG_OPTION_CREATE_LINK | (isVolatile ? REG_OPTION_VOLATILE : 0),
+		KEY_ALL_ACCESS | KEY_CREATE_LINK, nullptr, &hKey, &disp);
+	if (error != ERROR_SUCCESS)
+		return error;
+	if (disp == REG_OPENED_EXISTING_KEY) {
+		::RegCloseKey(hKey);
+		return ERROR_ALREADY_EXISTS;
+	}
+	// the target is stored without a terminating NULL
+	error = ::RegSetValueEx(hKey, L"SymbolicLinkValue", 0, REG_LINK, (BYTE const*)target.GetString(), target.GetLength() * sizeof(WCHAR));
+	if (error != ERROR_SUCCESS)
+		::NtDeleteKey(hKey);
+	::RegCloseKey(hKey);
+	return error;
+}
+
+LSTATUS Registry::DeleteLinkKey(HKEY hParent, PCWSTR name) {
+	HKEY hKey;
+	auto error = ::RegOpenKeyEx(hParent, name, REG_OPTION_OPEN_LINK, DELETE, &hKey);
+	if (error != ERROR_SUCCESS)
+		return error;
+	auto status = ::NtDeleteKey(hKey);
+	::RegCloseKey(hKey);
+	return status >= 0 ? ERROR_SUCCESS : ::RtlNtStatusToDosError(status);
+}
+
+CString Registry::StdPathToKernelPath(CString const& path) {
+	if (path.Left(1) == L"\\" && path.Left(2) != L"\\\\")
+		return path;	// already a real path
+
+	CString subKey;
+	auto hRoot = GetRootKey(path, subKey);
+	CString kernel;
+	if (hRoot == HKEY_LOCAL_MACHINE)
+		kernel = L"\\REGISTRY\\MACHINE";
+	else if (hRoot == HKEY_USERS)
+		kernel = L"\\REGISTRY\\USER";
+	else if (hRoot == HKEY_CURRENT_USER)
+		kernel = L"\\REGISTRY\\USER\\" + Helpers::GetCurrentUserSid();
+	else if (hRoot == HKEY_CURRENT_CONFIG)
+		kernel = L"\\REGISTRY\\MACHINE\\SYSTEM\\CurrentControlSet\\Hardware Profiles\\Current";
+	else
+		return L"";
+	return subKey.IsEmpty() ? kernel : kernel + L"\\" + subKey;
+}
+
+bool Registry::GetKeyInfo(CString const& path, KeyInfo& info) {
+	info = KeyInfo();
+	bool remote = path.Left(2) == L"\\\\";
+
+	// a link key is described itself, so it's opened without following the link
+	RegistryKey key;
+	if (auto bs = path.ReverseFind(L'\\'); bs > 0) {
+		auto parent = OpenKey(path.Left(bs), KEY_READ);
+		auto name = path.Mid(bs + 1);
+		if (parent && IsKeyLink(parent, name, info.LinkTarget)) {
+			info.IsLink = true;
+			HKEY hKey;
+			if (ERROR_SUCCESS == ::RegOpenKeyEx(parent, name, REG_OPTION_OPEN_LINK, KEY_READ, &hKey))
+				key.Attach(hKey);
+		}
+	}
+	if (!key)
+		key = OpenKey(path, KEY_READ);
+	if (!key)
+		return false;
+
+	WCHAR className[256];
+	DWORD classLen = _countof(className);
+	if (ERROR_SUCCESS == ::RegQueryInfoKey(key.Get(), className, &classLen, nullptr, &info.SubKeys, nullptr, nullptr,
+		&info.Values, nullptr, nullptr, nullptr, &info.LastWrite))
+		info.Class.SetString(className, classLen);
+
+	// the key object's real name and flags; not available for predefined (pseudo) handles
+	BYTE buffer[4096];
+	ULONG len;
+	if (::NtQueryKey(key.Get(), KeyInformationClass::Name, buffer, sizeof(buffer), &len) >= 0) {
+		ULONG nameLength;
+		memcpy(&nameLength, buffer, sizeof(nameLength));
+		info.KernelPath.SetString((PCWSTR)(buffer + sizeof(ULONG)), std::min<ULONG>(nameLength, len - sizeof(ULONG)) / sizeof(WCHAR));
+	}
+	else if (!remote)
+		info.KernelPath = StdPathToKernelPath(path);
+	ULONG flags[3]{};
+	if (::NtQueryKey(key.Get(), KeyInformationClass::Flags, flags, sizeof(flags), &len) >= 0) {
+		info.Volatile = (flags[1] & KeyFlagVolatile) != 0;
+		info.IsLink |= (flags[1] & KeyFlagLink) != 0;
+	}
+
+	DWORD size = 0;
+	::RegGetKeySecurity(key.Get(), OWNER_SECURITY_INFORMATION, nullptr, &size);
+	std::vector<BYTE> sd(size);
+	PSID owner = nullptr;
+	BOOL defaulted;
+	if (size && ERROR_SUCCESS == ::RegGetKeySecurity(key.Get(), OWNER_SECURITY_INFORMATION, sd.data(), &size)
+		&& ::GetSecurityDescriptorOwner(sd.data(), &owner, &defaulted) && owner) {
+		WCHAR name[256], domain[256];
+		DWORD nameLen = _countof(name), domainLen = _countof(domain);
+		SID_NAME_USE use;
+		if (::LookupAccountSid(nullptr, owner, name, &nameLen, domain, &domainLen, &use))
+			info.Owner = *domain ? CString(domain) + L"\\" + name : CString(name);
+		else {
+			PWSTR text;
+			if (::ConvertSidToStringSid(owner, &text)) {
+				info.Owner = text;
+				::LocalFree(text);
+			}
+		}
+	}
+
+	// the hive: the longest hive root the key is under (the hive list is of the local machine)
+	if (!remote && !info.KernelPath.IsEmpty()) {
+		for (auto& hive : GetHiveList(true)) {
+			CString hiveKey(hive.Key.c_str());
+			bool under = info.KernelPath.GetLength() >= hiveKey.GetLength() && _wcsnicmp(info.KernelPath, hiveKey, hiveKey.GetLength()) == 0
+				&& (info.KernelPath.GetLength() == hiveKey.GetLength() || info.KernelPath[hiveKey.GetLength()] == L'\\');
+			if (under && hiveKey.GetLength() > info.HiveKey.GetLength()) {
+				info.HiveKey = hiveKey;
+				info.HiveFile = hive.Path.empty() ? CString() : Helpers::GetWin32PathFromNTPath(hive.Path.c_str());
+			}
+		}
+		info.IsHiveRoot = !info.HiveKey.IsEmpty() && info.KernelPath.CompareNoCase(info.HiveKey) == 0;
+	}
+	return true;
 }
 
 bool Registry::RenameValue(HKEY hKey, PCWSTR path, PCWSTR oldName, PCWSTR newName) {

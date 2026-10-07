@@ -100,6 +100,8 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\RegExp\AppCommandBase.cpp" />
+    <ClCompile Include="..\RegExp\CreateKeyCommand.cpp" />
+    <ClCompile Include="..\RegExp\CreateLinkCommand.cpp" />
     <ClCompile Include="..\RegExp\DeleteKeyCommand.cpp" />
     <ClCompile Include="..\RegExp\Helpers.cpp" />
     <ClCompile Include="..\RegExp\ImportRegFileCommand.cpp" />
@@ -108,6 +110,7 @@
     <ClCompile Include="..\RegExp\RegExportImport.cpp" />
     <ClCompile Include="..\RegExp\Registry.cpp" />
     <ClCompile Include="..\RegExp\RegistryKey.cpp" />
+    <ClCompile Include="..\RegExp\RegistryMonitor.cpp" />
     <ClCompile Include="..\RegExp\RegistrySearcher.cpp" />
     <ClCompile Include="..\RegExp\RegistrySnapshot.cpp" />
     <ClCompile Include="..\RegExp\RestoreKeyCommand.cpp" />
@@ -116,9 +119,13 @@
     <!-- tests -->
     <ClCompile Include="KeyBackupTests.cpp" />
     <ClCompile Include="KeyWatcherTests.cpp" />
+    <ClCompile Include="KeyInfoTests.cpp" />
+    <ClCompile Include="LinkTests.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MonitorTests.cpp" />
     <ClCompile Include="RegFileTests.cpp" />
     <ClCompile Include="ImportTests.cpp" />
+    <ClCompile Include="PreviewTests.cpp" />
     <ClCompile Include="RegistryTests.cpp" />
     <ClCompile Include="SearchTests.cpp" />
     <ClCompile Include="SnapshotTests.cpp" />

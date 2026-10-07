@@ -2,8 +2,8 @@
 #include "CreateKeyCommand.h"
 #include "Registry.h"
 
-CreateKeyCommand::CreateKeyCommand(PCWSTR path, PCWSTR name, AppCommandCallback<CreateKeyCommand> cb) 
-    : RegAppCommandBase(L"Create Key " + CString(name), path, name, cb) {
+CreateKeyCommand::CreateKeyCommand(PCWSTR path, PCWSTR name, AppCommandCallback<CreateKeyCommand> cb, DWORD options)
+    : RegAppCommandBase((options & REG_OPTION_VOLATILE ? L"Create Volatile Key " : L"Create Key ") + CString(name), path, name, cb), m_Options(options) {
 }
 
 bool CreateKeyCommand::Execute() {
@@ -13,7 +13,7 @@ bool CreateKeyCommand::Execute() {
    
     CRegKey newKey;
     DWORD disp;
-    auto error = newKey.Create(key.Get(), m_Name, nullptr, 0, KEY_READ | KEY_WRITE, nullptr, &disp);
+    auto error = newKey.Create(key.Get(), m_Name, nullptr, m_Options, KEY_READ | KEY_WRITE, nullptr, &disp);
     if (error == ERROR_SUCCESS) {
         if (disp == REG_OPENED_EXISTING_KEY) {
             ::SetLastError(ERROR_OBJECT_ALREADY_EXISTS);
@@ -21,6 +21,7 @@ bool CreateKeyCommand::Execute() {
         }
         return InvokeCallback(true);
     }
+    ::SetLastError(error);
     return false;
 }
 

@@ -3,6 +3,7 @@
 #include "Registry.h"
 #include "Helpers.h"
 #include <wil\resource.h>
+#include <set>
 
 bool RegExportImport::Export(PCWSTR keyPath, PCWSTR path) const {
 	auto key = Registry::OpenKey(keyPath, KEY_READ);
@@ -361,4 +362,124 @@ bool RegExportImport::IsValidKeyPath(CString const& path) {
 	return std::ranges::any_of(Registry::Keys, [&](auto& k) {
 		return _wcsicmp(k.text, root) == 0 || (*k.stext && _wcsicmp(k.stext, root) == 0);
 		});
+}
+
+namespace {
+	SnapshotValue MakeValue(CString const& name, DWORD type, BYTE const* data, DWORD size) {
+		SnapshotValue value;
+		value.Name = name;
+		value.Type = type;
+		value.Size = size;
+		value.Preview.assign(data, data + std::min(size, SnapshotValue::PreviewSize));
+		return value;
+	}
+
+	bool ReadValue(HKEY hKey, PCWSTR name, DWORD& type, std::vector<BYTE>& data) {
+		DWORD size = 0;
+		if (ERROR_SUCCESS != ::RegQueryValueEx(hKey, name, nullptr, &type, nullptr, &size))
+			return false;
+		data.resize(size);
+		if (ERROR_SUCCESS != ::RegQueryValueEx(hKey, name, nullptr, &type, data.data(), &size))
+			return false;
+		data.resize(size);
+		return true;
+	}
+}
+
+std::vector<SnapshotChange> RegExportImport::Preview(std::vector<RegFileKey> const& keys) {
+	std::vector<SnapshotChange> changes;
+	// keys reported as created, so a later section under them doesn't report them again
+	std::set<CString> created;
+	auto isCreated = [&](CString const& path) {
+		return created.contains(CString(path).MakeUpper());
+	};
+
+	for (auto& key : keys) {
+		CString subKey;
+		auto hRoot = Registry::GetRootKey(key.Path, subKey);
+		if (!hRoot)
+			continue;
+
+		if (key.Delete) {
+			// a symbolic link: only the link goes, not its target's contents
+			if (auto bs = key.Path.ReverseFind(L'\\'); bs > 0) {
+				auto parent = Registry::OpenKey(key.Path.Left(bs), KEY_READ);
+				CString target;
+				if (parent && Registry::IsKeyLink(parent, key.Path.Mid(bs + 1), target)) {
+					changes.push_back({ SnapshotChangeType::KeyDeleted, key.Path });
+					continue;
+				}
+			}
+			// everything under the key goes
+			RegistrySnapshot snapshot;
+			if (snapshot.Take(key.Path)) {
+				for (auto& k : snapshot.GetKeys()) {
+					auto path = k.Path.IsEmpty() ? key.Path : key.Path + L"\\" + k.Path;
+					changes.push_back({ SnapshotChangeType::KeyDeleted, path });
+					for (auto& value : k.Values) {
+						SnapshotChange change{ SnapshotChangeType::ValueDeleted, path, value.Name };
+						change.Old = value;
+						changes.push_back(std::move(change));
+					}
+				}
+			}
+			else if (::GetLastError() != ERROR_FILE_NOT_FOUND)
+				changes.push_back({ SnapshotChangeType::NoAccess, key.Path });
+			continue;
+		}
+
+		CRegKey hKey;
+		auto error = hKey.Open(hRoot, subKey, KEY_READ);
+		if (error == ERROR_FILE_NOT_FOUND || isCreated(key.Path)) {
+			// the key, and any missing parents, are created
+			auto path = key.Path.Left(key.Path.GetLength() - subKey.GetLength());
+			path.TrimRight(L'\\');
+			CString relative;
+			int pos = 0;
+			for (auto name = subKey.Tokenize(L"\\", pos); !name.IsEmpty(); name = subKey.Tokenize(L"\\", pos)) {
+				path += L"\\" + name;
+				relative += (relative.IsEmpty() ? L"" : L"\\") + name;
+				CRegKey existing;
+				if (!isCreated(path) && existing.Open(hRoot, relative, KEY_READ) == ERROR_FILE_NOT_FOUND) {
+					created.insert(CString(path).MakeUpper());
+					changes.push_back({ SnapshotChangeType::KeyAdded, path });
+				}
+			}
+			for (auto& value : key.Values) {
+				if (value.Delete)
+					continue;
+				SnapshotChange change{ SnapshotChangeType::ValueAdded, key.Path, value.Name };
+				change.New = MakeValue(value.Name, value.Type, value.Data.data(), (DWORD)value.Data.size());
+				changes.push_back(std::move(change));
+			}
+			continue;
+		}
+		if (error != ERROR_SUCCESS) {
+			changes.push_back({ SnapshotChangeType::NoAccess, key.Path });
+			continue;
+		}
+
+		std::vector<BYTE> data;
+		for (auto& value : key.Values) {
+			DWORD type;
+			bool exists = ReadValue(hKey, value.Name, type, data);
+			if (value.Delete) {
+				if (exists) {
+					SnapshotChange change{ SnapshotChangeType::ValueDeleted, key.Path, value.Name };
+					change.Old = MakeValue(value.Name, type, data.data(), (DWORD)data.size());
+					changes.push_back(std::move(change));
+				}
+				continue;
+			}
+			if (exists && type == value.Type && data == value.Data)
+				continue;		// unchanged
+
+			SnapshotChange change{ exists ? SnapshotChangeType::ValueChanged : SnapshotChangeType::ValueAdded, key.Path, value.Name };
+			if (exists)
+				change.Old = MakeValue(value.Name, type, data.data(), (DWORD)data.size());
+			change.New = MakeValue(value.Name, value.Type, value.Data.data(), (DWORD)value.Data.size());
+			changes.push_back(std::move(change));
+		}
+	}
+	return changes;
 }

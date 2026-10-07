@@ -30,6 +30,7 @@ enum class SnapshotChangeType {
 	ValueAdded,
 	ValueDeleted,
 	ValueChanged,
+	NoAccess,		// a key that couldn't be read (previews only)
 };
 
 struct SnapshotChange {
@@ -61,6 +62,9 @@ public:
 	// readable data, e.g. for the comparison results
 	static CString FormatData(SnapshotValue const& value);
 	static CString GetChangeTypeName(SnapshotChangeType type);
+	static bool IsKeyChange(SnapshotChangeType type);
+	// the text of a change list column: change, key, value, old data, new data
+	static CString GetChangeText(SnapshotChange const& change, int column);
 
 private:
 	CString m_Root;

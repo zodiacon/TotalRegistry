@@ -411,6 +411,22 @@ CString RegistrySnapshot::GetChangeTypeName(SnapshotChangeType type) {
 		case SnapshotChangeType::ValueAdded: return L"Value added";
 		case SnapshotChangeType::ValueDeleted: return L"Value deleted";
 		case SnapshotChangeType::ValueChanged: return L"Value changed";
+		case SnapshotChangeType::NoAccess: return L"No access";
+	}
+	return L"";
+}
+
+bool RegistrySnapshot::IsKeyChange(SnapshotChangeType type) {
+	return type == SnapshotChangeType::KeyAdded || type == SnapshotChangeType::KeyDeleted || type == SnapshotChangeType::NoAccess;
+}
+
+CString RegistrySnapshot::GetChangeText(SnapshotChange const& change, int column) {
+	switch (column) {
+		case 0: return GetChangeTypeName(change.Type);
+		case 1: return change.Key;
+		case 2: return IsKeyChange(change.Type) ? CString() : change.Value.IsEmpty() ? CString(L"(Default)") : change.Value;
+		case 3: return change.Old ? FormatData(*change.Old) : CString();
+		case 4: return change.New ? FormatData(*change.New) : CString();
 	}
 	return L"";
 }

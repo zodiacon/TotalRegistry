@@ -270,21 +270,11 @@ LRESULT CSnapshotDlg::OnJobDone(UINT, WPARAM id, LPARAM, BOOL&) {
 }
 
 CString CSnapshotDlg::GetColumnText(HWND, int row, int col) const {
-	auto& change = m_Changes[row];
-	bool isValue = change.Type != SnapshotChangeType::KeyAdded && change.Type != SnapshotChangeType::KeyDeleted;
-	switch (col) {
-		case 0: return RegistrySnapshot::GetChangeTypeName(change.Type);
-		case 1: return change.Key;
-		case 2: return isValue ? (change.Value.IsEmpty() ? CString(Helpers::DefaultValueName) : change.Value) : CString();
-		case 3: return change.Old ? RegistrySnapshot::FormatData(*change.Old) : CString();
-		case 4: return change.New ? RegistrySnapshot::FormatData(*change.New) : CString();
-	}
-	return L"";
+	return RegistrySnapshot::GetChangeText(m_Changes[row], col);
 }
 
 int CSnapshotDlg::GetRowImage(HWND, int row, int) const {
-	auto type = m_Changes[row].Type;
-	return type == SnapshotChangeType::KeyAdded || type == SnapshotChangeType::KeyDeleted ? 0 : 1;
+	return RegistrySnapshot::IsKeyChange(m_Changes[row].Type) ? 0 : 1;
 }
 
 void CSnapshotDlg::DoSort(const SortInfo* si) {
@@ -312,7 +302,7 @@ bool CSnapshotDlg::OnDoubleClickList(HWND, int row, int, const POINT&) {
 		return false;
 
 	auto& change = m_Changes[row];
-	bool isValue = change.Type != SnapshotChangeType::KeyAdded && change.Type != SnapshotChangeType::KeyDeleted;
+	bool isValue = !RegistrySnapshot::IsKeyChange(change.Type);
 	CWaitCursor wait;
 	if (m_pFrame->GoToItem(change.Key, isValue ? (PCWSTR)change.Value : nullptr, nullptr))
 		return true;

@@ -66,6 +66,9 @@
     <ClInclude Include="CreateKeyCommand.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="CreateLinkCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
     <ClInclude Include="TreeHelper.h">
       <Filter>Helpers</Filter>
     </ClInclude>
@@ -109,6 +112,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SnapshotDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="MonitorDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="RegistryMonitor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ImportPreviewDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="CreateLinkDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyPropertiesDlg.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
     <ClInclude Include="FindAllDlg.h">
@@ -215,6 +233,9 @@
     <ClCompile Include="CreateKeyCommand.cpp">
       <Filter>Commands</Filter>
     </ClCompile>
+    <ClCompile Include="CreateLinkCommand.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
     <ClCompile Include="TreeHelper.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
@@ -261,6 +282,21 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SnapshotDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="MonitorDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="RegistryMonitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ImportPreviewDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="CreateLinkDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyPropertiesDlg.cpp">
       <Filter>Dialogs</Filter>
     </ClCompile>
     <ClCompile Include="ChangeValueCommand.cpp">

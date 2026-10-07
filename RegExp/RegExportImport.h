@@ -1,5 +1,7 @@
 #pragma once
 
+#include "RegistrySnapshot.h"
+
 struct RegFileValue {
 	CString Name;
 	DWORD Type{ REG_NONE };
@@ -16,6 +18,8 @@ struct RegFileKey {
 struct RegExportImport {
 	bool Export(PCWSTR key, PCWSTR path) const;
 	static bool Parse(PCWSTR path, std::vector<RegFileKey>& keys, CString& error);
+	// what importing the keys would change, without changing anything; values that would stay the same are not listed
+	static std::vector<SnapshotChange> Preview(std::vector<RegFileKey> const& keys);
 
 private:
 	bool ExportKeys(HKEY hKey, HANDLE hFile, PCWSTR section) const;

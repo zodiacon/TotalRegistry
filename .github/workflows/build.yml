@@ -1,0 +1,52 @@
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Visual Studio 2026 (toolset v145), as the projects use
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # vcpkg's binary cache, so packages are built once
+      - name: Cache vcpkg packages
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\vcpkg\archives
+          key: vcpkg-x64-windows-static-${{ hashFiles('.github/workflows/build.yml') }}
+
+      # the projects use vcpkg in classic mode (static triplet) through MSBuild integration
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install wtl wil detours catch2 --triplet x64-windows-static
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" integrate install
+
+      - uses: microsoft/setup-msbuild@v2
+
+      # ReleaseSigned needs a local code signing certificate, so it isn't built here
+      - name: Build
+        run: msbuild TotalRegistry.sln /m /nologo /v:minimal /p:Configuration=${{ matrix.configuration }} /p:Platform=x64
+
+      # runners are elevated, so the [elevated] tests run too
+      - name: Test
+        run: x64\${{ matrix.configuration }}\Tests.exe --reporter console --reporter JUnit::out=test-results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.configuration }}
+          path: test-results.xml

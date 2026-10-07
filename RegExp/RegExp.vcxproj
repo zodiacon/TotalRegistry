@@ -361,6 +361,7 @@
     <ClInclude Include="CopyKeyCommand.h" />
     <ClInclude Include="CopyValueCommand.h" />
     <ClInclude Include="CreateKeyCommand.h" />
+    <ClInclude Include="CreateLinkCommand.h" />
     <ClInclude Include="DeleteKeyCommand.h" />
     <ClInclude Include="ImportRegFileCommand.h" />
     <ClInclude Include="KeyBackup.h" />
@@ -368,6 +369,11 @@
     <ClInclude Include="ValueDecoder.h" />
     <ClInclude Include="RegistrySnapshot.h" />
     <ClInclude Include="SnapshotDlg.h" />
+    <ClInclude Include="MonitorDlg.h" />
+    <ClInclude Include="RegistryMonitor.h" />
+    <ClInclude Include="ImportPreviewDlg.h" />
+    <ClInclude Include="CreateLinkDlg.h" />
+    <ClInclude Include="KeyPropertiesDlg.h" />
     <ClInclude Include="RestoreKeyCommand.h" />
     <ClInclude Include="DeleteValueCommand.h" />
     <ClInclude Include="EnumStrings.h" />
@@ -415,6 +421,7 @@
     <ClCompile Include="CopyKeyCommand.cpp" />
     <ClCompile Include="CopyValueCommand.cpp" />
     <ClCompile Include="CreateKeyCommand.cpp" />
+    <ClCompile Include="CreateLinkCommand.cpp" />
     <ClCompile Include="CreateValueCommand.cpp" />
     <ClCompile Include="DeleteKeyCommand.cpp" />
     <ClCompile Include="ImportRegFileCommand.cpp" />
@@ -423,6 +430,11 @@
     <ClCompile Include="ValueDecoder.cpp" />
     <ClCompile Include="RegistrySnapshot.cpp" />
     <ClCompile Include="SnapshotDlg.cpp" />
+    <ClCompile Include="MonitorDlg.cpp" />
+    <ClCompile Include="RegistryMonitor.cpp" />
+    <ClCompile Include="ImportPreviewDlg.cpp" />
+    <ClCompile Include="CreateLinkDlg.cpp" />
+    <ClCompile Include="KeyPropertiesDlg.cpp" />
     <ClCompile Include="RestoreKeyCommand.cpp" />
     <ClCompile Include="DeleteValueCommand.cpp" />
     <ClCompile Include="EnumStrings.cpp" />

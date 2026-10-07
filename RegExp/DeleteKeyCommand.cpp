@@ -12,6 +12,16 @@ bool DeleteKeyCommand::Execute() {
 	if (!key)
 		return false;
 
+	m_IsLink = Registry::IsKeyLink(key.Get(), m_Name, m_LinkTarget);
+	if (m_IsLink) {
+		auto error = Registry::DeleteLinkKey(key.Get(), m_Name);
+		if (ERROR_SUCCESS != error) {
+			::SetLastError(error);
+			return false;
+		}
+		return InvokeCallback(true);
+	}
+
 	bool remote = m_Path.Left(2) == L"\\\\";
 	auto error = m_Backup.Save(key.Get(), m_Name, !remote);
 	if (ERROR_SUCCESS != error) {
@@ -34,6 +44,15 @@ bool DeleteKeyCommand::Undo() {
 	auto key = Registry::OpenKey(m_Path, MAXIMUM_ALLOWED);
 	if (!key)
 		return false;
+
+	if (m_IsLink) {
+		auto error = Registry::CreateLinkKey(key.Get(), m_Name, m_LinkTarget);
+		if (error != ERROR_SUCCESS) {
+			::SetLastError(error);
+			return false;
+		}
+		return InvokeCallback(false);
+	}
 
 	auto error = RestoreBackup(key.Get());
 	if (error != ERROR_SUCCESS) {

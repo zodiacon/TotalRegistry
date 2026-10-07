@@ -18,6 +18,7 @@ private:
 		RestoreValue,
 		DeleteCreatedKey,
 		RestoreDeletedKey,
+		RestoreLink,		// Name holds the link's target
 	};
 
 	struct UndoEntry {

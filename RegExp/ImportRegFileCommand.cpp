@@ -121,6 +121,15 @@ bool ImportRegFileCommand::Undo() {
 					entry.Backup->Discard();
 				break;
 			}
+
+			case UndoType::RestoreLink:
+			{
+				CString parentPath, name;
+				SplitPath(entry.Path, parentPath, name);
+				auto parent = Registry::OpenKey(parentPath, KEY_CREATE_SUB_KEY | KEY_CREATE_LINK);
+				error = parent ? Registry::CreateLinkKey(parent, name, entry.Name) : ::GetLastError();
+				break;
+			}
 		}
 		if (error != ERROR_SUCCESS) {
 			if (firstError == ERROR_SUCCESS)
@@ -183,6 +192,17 @@ void ImportRegFileCommand::DeleteKey(CString const& path) {
 		auto error = ::GetLastError();
 		if (error != ERROR_FILE_NOT_FOUND)
 			AddError(path, nullptr, error);
+		return;
+	}
+
+	// a symbolic link: only the link goes (RegDeleteTree would empty its target), and undo re-creates it
+	CString target;
+	if (Registry::IsKeyLink(parent, name, target)) {
+		auto error = Registry::DeleteLinkKey(parent, name);
+		if (error != ERROR_SUCCESS)
+			AddError(path, nullptr, error);
+		else
+			m_UndoLog.push_back({ UndoType::RestoreLink, path, target });
 		return;
 	}
 

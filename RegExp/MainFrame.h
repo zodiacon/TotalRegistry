@@ -17,6 +17,7 @@
 #include "NavigationManager.h"
 #include "KeyWatcher.h"
 #include "SnapshotDlg.h"
+#include "MonitorDlg.h"
 #include <CustomSplitterWindow.h>
 
 class CFindAllDlg;
@@ -124,12 +125,15 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_DECIMALNUMBERS, OnDecimalNumbers)
 		COMMAND_ID_HANDLER(ID_VIEW_SHOWKEYSINLIST, OnShowKeysInList)
 		COMMAND_ID_HANDLER(ID_NEW_KEY, OnNewKey)
+		COMMAND_ID_HANDLER(ID_NEW_VOLATILEKEY, OnNewKey)
+		COMMAND_ID_HANDLER(ID_NEW_LINK, OnNewLink)
 		COMMAND_ID_HANDLER(ID_VIEW_BACK, OnViewGoBack)
 		COMMAND_ID_HANDLER(ID_VIEW_FORWARD, OnViewGoForward)
 		COMMAND_ID_HANDLER(ID_VIEW_UP, OnViewGoUp)
 		COMMAND_RANGE_HANDLER(ID_NEW_DWORDVALUE, ID_NEW_BINARYVALUE, OnNewValue)
 		COMMAND_ID_HANDLER(ID_TOOLS_SCANKEYHANDLES, OnShowKeysHandles)
 		COMMAND_ID_HANDLER(ID_TOOLS_SNAPSHOTS, OnSnapshots)
+		COMMAND_ID_HANDLER(ID_TOOLS_MONITOR, OnMonitor)
 		COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
 		COMMAND_ID_HANDLER(ID_EDIT_CUT, OnEditCut)
 		COMMAND_ID_HANDLER(ID_EDIT_PASTE, OnEditPaste)
@@ -208,6 +212,7 @@ private:
 		None,
 		RenameKey,
 		CreateKey,
+		CreateVolatileKey,
 		CreateValue,
 		RenameValue,
 	};
@@ -250,6 +255,7 @@ private:
 	LRESULT OnAlwaysOnTop(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnFocusChanged(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnNewKey(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnNewLink(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnEditReadOnly(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnTreeBeginEdit(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnTreeEndEdit(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
@@ -296,6 +302,7 @@ private:
 	LRESULT OnRestoreDefaultFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnShowKeysHandles(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnSnapshots(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnMonitor(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnJumpToHiveFile(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnQuickFind(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnViewGoBack(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
@@ -332,6 +339,23 @@ private:
 	bool RefreshItem(HTREEITEM hItem);
 	void DisplayBackupRestorePrivilegeError();
 	void ShowExtraHives(bool show);
+	// for commands that create a key: adds its tree item, and removes it when undone
+	auto CreatedKeyCallback() {
+		return [this](auto& cmd, bool execute) {
+			if (execute) {
+				auto hParent = FindItemByPath(cmd.GetPath());
+				ATLASSERT(hParent);
+				auto hItem = InsertKeyItem(hParent, cmd.GetName());
+				m_Tree.EnsureVisible(hItem);
+			}
+			else {
+				auto hItem = FindItemByPath(cmd.GetPath() + L"\\" + cmd.GetName());
+				ATLASSERT(hItem);
+				m_Tree.DeleteItem(hItem);
+			}
+			return true;
+		};
+	}
 	// auto refresh
 	void UpdateWatch();
 	void RefreshWatchedKey();
@@ -386,6 +410,7 @@ private:
 	NavigationManager<HTREEITEM> m_Navigation;
 	CFindAllDlg* m_pFindAll{ nullptr };
 	std::unique_ptr<CSnapshotDlg> m_Snapshots;
+	std::unique_ptr<CMonitorDlg> m_MonitorDlg;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 	bool m_NewLocation{ false };

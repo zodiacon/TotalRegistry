@@ -26,6 +26,21 @@ struct RegistryItem {
 	}
 };
 
+// what Registry::GetKeyInfo finds out about a key
+struct KeyInfo {
+	CString KernelPath;		// where the key really is (\REGISTRY\...), e.g. which hive an HKEY_CLASSES_ROOT key comes from
+	FILETIME LastWrite{};
+	DWORD SubKeys{ 0 }, Values{ 0 };
+	CString Class;
+	CString Owner;			// DOMAIN\name, or a SID
+	bool Volatile{ false };
+	bool IsLink{ false };
+	CString LinkTarget;
+	CString HiveKey;		// the root of the hive the key is in (\REGISTRY\...)
+	CString HiveFile;		// empty for hives kept only in memory
+	bool IsHiveRoot{ false };
+};
+
 struct RemoteRegistry {
 	HKEY hLocal, hUsers;
 	CString ComputerName;
@@ -65,6 +80,14 @@ struct Registry final {
 	// splits a standard or remote path into its root key handle and subkey; nullptr if the root is unknown
 	static HKEY GetRootKey(const CString& path, CString& subKey);
 	static bool IsKeyLink(HKEY hKey, PCWSTR path, CString& linkPath);
+	// a symbolic link key pointing at a kernel path (\REGISTRY\...)
+	static LSTATUS CreateLinkKey(HKEY hParent, PCWSTR name, CString const& target, bool isVolatile = false);
+	// deletes the link key itself; RegDeleteTree would delete the target's contents instead
+	static LSTATUS DeleteLinkKey(HKEY hParent, PCWSTR name);
+	// a standard or real path as a kernel path, for link targets; empty if there is none (e.g. HKEY_CLASSES_ROOT, a merged view)
+	static CString StdPathToKernelPath(CString const& path);
+	// details of a key (a link key itself, not its target); false if it can't be opened
+	static bool GetKeyInfo(CString const& path, KeyInfo& info);
 	static CString ExpandStrings(const CString& text);
 
 	static bool ConnectRegistry(PCWSTR computerName);

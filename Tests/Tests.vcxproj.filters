@@ -15,6 +15,12 @@
     <ClCompile Include="..\RegExp\AppCommandBase.cpp">
       <Filter>App Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\RegExp\CreateKeyCommand.cpp">
+      <Filter>App Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RegExp\CreateLinkCommand.cpp">
+      <Filter>App Sources</Filter>
+    </ClCompile>
     <ClCompile Include="..\RegExp\DeleteKeyCommand.cpp">
       <Filter>App Sources</Filter>
     </ClCompile>
@@ -39,6 +45,9 @@
     <ClCompile Include="..\RegExp\RegistryKey.cpp">
       <Filter>App Sources</Filter>
     </ClCompile>
+    <ClCompile Include="..\RegExp\RegistryMonitor.cpp">
+      <Filter>App Sources</Filter>
+    </ClCompile>
     <ClCompile Include="..\RegExp\RegistrySearcher.cpp">
       <Filter>App Sources</Filter>
     </ClCompile>
@@ -60,13 +69,25 @@
     <ClCompile Include="KeyWatcherTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="KeyInfoTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="LinkTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="MonitorTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="RegFileTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="ImportTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="PreviewTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
     <ClCompile Include="RegistryTests.cpp">

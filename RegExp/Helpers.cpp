@@ -4,6 +4,7 @@
 #include "NtDll.h"
 #include "SecurityHelper.h"
 #include <TlHelp32.h>
+#include <sddl.h>
 #include <wil\resource.h>
 
 bool Helpers::SaveWindowPosition(HWND hWnd, PCWSTR name) {
@@ -264,4 +265,20 @@ CString Helpers::NormalizePath(CString const& path) {
 CString Helpers::GuidToString(GUID const& guid) {
     WCHAR text[64];
     return 0 == ::StringFromGUID2(guid, text, _countof(text)) ? L"" : text;
+}
+
+CString Helpers::GetCurrentUserSid() {
+	wil::unique_handle hToken;
+	if (!::OpenProcessToken(::GetCurrentProcess(), TOKEN_QUERY, hToken.addressof()))
+		return L"";
+	BYTE buffer[256];
+	DWORD len;
+	if (!::GetTokenInformation(hToken.get(), TokenUser, buffer, sizeof(buffer), &len))
+		return L"";
+	PWSTR sid;
+	if (!::ConvertSidToStringSid(reinterpret_cast<TOKEN_USER*>(buffer)->User.Sid, &sid))
+		return L"";
+	CString result(sid);
+	::LocalFree(sid);
+	return result;
 }

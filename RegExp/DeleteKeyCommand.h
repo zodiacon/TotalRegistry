@@ -13,4 +13,7 @@ private:
 	LSTATUS RestoreBackup(HKEY hParent);
 
 	KeyBackup m_Backup;
+	// a symbolic link is deleted on its own (RegDeleteTree would empty its target), and re-created by undo
+	bool m_IsLink{ false };
+	CString m_LinkTarget;
 };
