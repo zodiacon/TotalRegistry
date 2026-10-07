@@ -71,7 +71,7 @@
 #define IDI_BOOKMARK_DELETE             179
 #define IDR_BIN1                        180
 #define IDD_LOCATIONS                   181
-#define IDR_DRIVER                      999
+#define IDD_SNAPSHOTS                   182
 #define IDC_BUTTON1                     999
 #define IDC_TEXT                        1000
 #define IDC_FIND                        1001
@@ -122,6 +122,9 @@
 #define IDC_BUTTON2                     1054
 #define IDC_COPY                        1054
 #define IDC_LIST2                       1056
+#define IDC_TAKE                        1060
+#define IDC_COMPARE                     1061
+#define IDC_TWOFILES                    1062
 #define IDC_SET                         1058
 #define IDC_BUTTON3                     1059
 #define ID_FILE_RUNASADMIN              32771
@@ -199,15 +202,18 @@
 #define ID_GOTOHIVE_CURRENTUSER         32888
 #define ID_GOTOHIVE_LOCALMACHINE        32889
 #define ID_GOTOHIVE_CLASSESROOT         32890
+#define ID_OPTIONS_AUTOREFRESH          32891
+#define ID_VIEW_DECIMALNUMBERS          32892
+#define ID_TOOLS_SNAPSHOTS              32893
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        182
-#define _APS_NEXT_COMMAND_VALUE         32891
-#define _APS_NEXT_CONTROL_VALUE         1060
+#define _APS_NEXT_RESOURCE_VALUE        183
+#define _APS_NEXT_COMMAND_VALUE         32894
+#define _APS_NEXT_CONTROL_VALUE         1063
 #define _APS_NEXT_SYMED_VALUE           115
 #endif
 #endif

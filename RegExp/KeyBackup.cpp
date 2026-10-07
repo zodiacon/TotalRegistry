@@ -7,24 +7,6 @@
 #include <sddl.h>
 
 namespace {
-	// backup keys are named <pid>-<process creation time>, so live instances can be told apart from orphans
-	bool IsOwnerRunning(PCWSTR name) {
-		DWORD pid;
-		ULONGLONG time;
-		WCHAR end;
-		if (swscanf_s(name, L"%u-%llX%c", &pid, &time, &end, 1) != 2)
-			return false;	// older versions used other names, and deleted all backups on startup anyway
-
-		wil::unique_handle hProcess(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid));
-		if (!hProcess)
-			return ::GetLastError() == ERROR_ACCESS_DENIED;	// can't tell, so assume it's alive
-
-		FILETIME create, exit, kernel, user;
-		if (!::GetProcessTimes(hProcess.get(), &create, &exit, &kernel, &user))
-			return true;
-		return ULARGE_INTEGER{ create.dwLowDateTime, create.dwHighDateTime }.QuadPart == time;
-	}
-
 	//
 	// backups keep the security of the original keys, which may deny deleting them;
 	// the owner (normally the user that made the backup) can always replace the DACL
@@ -154,6 +136,28 @@ void KeyBackup::DeleteOrphans() {
 		});
 	for (auto& name : orphans)
 		DeleteBackupTree(key, name);
+}
+
+void KeyBackup::DeleteProcessBackups() {
+	DeleteBackupTree(HKEY_CURRENT_USER, GetProcessBackupPath());
+}
+
+// backup keys are named <pid>-<process creation time>, so live instances can be told apart from orphans
+bool KeyBackup::IsOwnerRunning(PCWSTR backupName) {
+	DWORD pid;
+	ULONGLONG time;
+	WCHAR end;
+	if (swscanf_s(backupName, L"%u-%llX%c", &pid, &time, &end, 1) != 2)
+		return false;	// older versions used other names, and deleted all backups on startup anyway
+
+	wil::unique_handle hProcess(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid));
+	if (!hProcess)
+		return ::GetLastError() == ERROR_ACCESS_DENIED;	// can't tell, so assume it's alive
+
+	FILETIME create, exit, kernel, user;
+	if (!::GetProcessTimes(hProcess.get(), &create, &exit, &kernel, &user))
+		return true;
+	return ULARGE_INTEGER{ create.dwLowDateTime, create.dwHighDateTime }.QuadPart == time;
 }
 
 CString const& KeyBackup::GetProcessBackupPath() {

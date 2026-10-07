@@ -364,9 +364,12 @@
     <ClInclude Include="DeleteKeyCommand.h" />
     <ClInclude Include="ImportRegFileCommand.h" />
     <ClInclude Include="KeyBackup.h" />
+    <ClInclude Include="KeyWatcher.h" />
+    <ClInclude Include="ValueDecoder.h" />
+    <ClInclude Include="RegistrySnapshot.h" />
+    <ClInclude Include="SnapshotDlg.h" />
     <ClInclude Include="RestoreKeyCommand.h" />
     <ClInclude Include="DeleteValueCommand.h" />
-    <ClInclude Include="DriverHelper.h" />
     <ClInclude Include="EnumStrings.h" />
     <ClInclude Include="ExportDlg.h" />
     <ClInclude Include="FindAllDlg.h" />
@@ -416,9 +419,12 @@
     <ClCompile Include="DeleteKeyCommand.cpp" />
     <ClCompile Include="ImportRegFileCommand.cpp" />
     <ClCompile Include="KeyBackup.cpp" />
+    <ClCompile Include="KeyWatcher.cpp" />
+    <ClCompile Include="ValueDecoder.cpp" />
+    <ClCompile Include="RegistrySnapshot.cpp" />
+    <ClCompile Include="SnapshotDlg.cpp" />
     <ClCompile Include="RestoreKeyCommand.cpp" />
     <ClCompile Include="DeleteValueCommand.cpp" />
-    <ClCompile Include="DriverHelper.cpp" />
     <ClCompile Include="EnumStrings.cpp" />
     <ClCompile Include="ExportDlg.cpp" />
     <ClCompile Include="FindAllDlg.cpp" />

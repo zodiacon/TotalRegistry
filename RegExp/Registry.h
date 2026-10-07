@@ -10,10 +10,20 @@ struct Hive {
 struct RegistryItem {
 	CString Name;
 	mutable CString Value;
+	// the Details column text, computed once
+	mutable CString Details;
+	mutable bool HasDetails{ false };
 	mutable DWORD Type;
 	mutable DWORD Size{ 0 };
 	FILETIME TimeStamp{};
 	bool Key : 1 { false };
+
+	// after the data changed
+	void ResetData() const {
+		Value.Empty();
+		Details.Empty();
+		HasDetails = false;
+	}
 };
 
 struct RemoteRegistry {
@@ -40,7 +50,8 @@ struct Registry final {
 	static CString QueryStringValue(RegistryKey& key, PCWSTR name);
 	static CString StdRegPathToRealPath(const CString& path);
 	static CString GetRegTypeAsString(DWORD type);
-	static CString GetDataAsString(RegistryKey& key, const RegistryItem& item);
+	// the value column text; numbers are shown in hex and decimal, the decimal first if requested
+	static CString GetDataAsString(RegistryKey& key, const RegistryItem& item, bool decimalFirst = false);
 	static HKEY OpenRealRegistryKey(PCWSTR path = nullptr, DWORD access = KEY_READ);
 	static HKEY CreateRealRegistryKey(PCWSTR path, DWORD access = KEY_READ);
 	static bool RenameKey(HKEY hKey, PCWSTR name, PCWSTR newName);

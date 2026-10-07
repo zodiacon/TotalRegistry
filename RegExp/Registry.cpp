@@ -2,7 +2,7 @@
 #include "Registry.h"
 #include "NtDll.h"
 #include "Helpers.h"
-#include "DriverHelper.h"
+#include "ValueDecoder.h"
 
 #pragma comment(lib, "ntdll")
 
@@ -25,10 +25,7 @@ DWORD Registry::EnumSubKeys(HKEY key, std::function<bool(PCWSTR, const FILETIME&
 }
 
 HKEY Registry::OpenRealRegistryKey(PCWSTR path, DWORD access) {
-	auto hKey = DriverHelper::OpenKey(path ? path : L"\\REGISTRY", access);
-	if (hKey)
-		return (HKEY)hKey;
-
+	HANDLE hKey = nullptr;
 	UNICODE_STRING keyName;
 	RtlInitUnicodeString(&keyName, path ? path : L"\\REGISTRY");
 	OBJECT_ATTRIBUTES keyAttr;
@@ -299,6 +296,7 @@ CString Registry::GetRegTypeAsString(DWORD type) {
 		case REG_KEY: return L"Key";
 		case REG_SZ: return L"REG_SZ";
 		case REG_DWORD: return L"REG_DWORD";
+		case REG_DWORD_BIG_ENDIAN: return L"REG_DWORD_BIG_ENDIAN";
 		case REG_MULTI_SZ: return L"REG_MULTI_SZ";
 		case REG_QWORD: return L"REG_QWORD";
 		case REG_EXPAND_SZ: return L"REG_EXPAND_SZ";
@@ -312,7 +310,7 @@ CString Registry::GetRegTypeAsString(DWORD type) {
 	return std::format("{} (0x{:X})", type, type).c_str();
 }
 
-CString Registry::GetDataAsString(RegistryKey& key, const RegistryItem& item) {
+CString Registry::GetDataAsString(RegistryKey& key, const RegistryItem& item, bool decimalFirst) {
 	auto realsize = item.Size;
 	ULONG size = std::min(realsize, 512UL) / sizeof(WCHAR);
 	LSTATUS status;
@@ -346,7 +344,17 @@ CString Registry::GetDataAsString(RegistryKey& key, const RegistryItem& item) {
 		{
 			DWORD value;
 			if (ERROR_SUCCESS == key.QueryDWORDValue(item.Name, value)) {
-				text.Format(L"0x%08X (%u)", value, value);
+				text = ValueDecoder::FormatNumber(value, sizeof(value), decimalFirst);
+			}
+			break;
+		}
+
+		case REG_DWORD_BIG_ENDIAN:
+		{
+			DWORD value;
+			ULONG bytes = sizeof(value);
+			if (ERROR_SUCCESS == key.QueryValue(item.Name, nullptr, &value, &bytes) && bytes == sizeof(value)) {
+				text = ValueDecoder::FormatNumber(_byteswap_ulong(value), sizeof(value), decimalFirst);
 			}
 			break;
 		}
@@ -355,22 +363,20 @@ CString Registry::GetDataAsString(RegistryKey& key, const RegistryItem& item) {
 		{
 			ULONGLONG value;
 			if (ERROR_SUCCESS == key.QueryQWORDValue(item.Name, value)) {
-				auto fmt = value < (1LL << 32) ? L"0x%08llX (%llu)" : L"0x%016llX (%llu)";
-				text.Format(fmt, value, value);
+				text = ValueDecoder::FormatNumber(value, sizeof(value), decimalFirst);
 			}
 			break;
 		}
 
-		case REG_BINARY:
-		case REG_FULL_RESOURCE_DESCRIPTOR:
-		case REG_RESOURCE_LIST:
-		case REG_RESOURCE_REQUIREMENTS_LIST:
+		default:
+			// binary, resource lists, REG_NONE and unknown types: the first bytes
 			CString digit;
-			auto buffer = std::make_unique<BYTE[]>(item.Size);
-			if (buffer == nullptr)
+			// item.Size may be stale (-1) after an edit
+			ULONG bytes = 0;
+			if (ERROR_SUCCESS != key.QueryValue(item.Name, nullptr, nullptr, &bytes))
 				break;
-			ULONG bytes = item.Size;
-			auto status = key.QueryBinaryValue(item.Name, buffer.get(), &bytes);
+			auto buffer = std::make_unique<BYTE[]>(bytes);
+			auto status = key.QueryValue(item.Name, nullptr, buffer.get(), &bytes);
 			if (status == ERROR_SUCCESS) {
 				for (DWORD i = 0; i < std::min<ULONG>(bytes, 64); i++) {
 					digit.Format(L"%02X ", buffer[i]);

@@ -3,7 +3,6 @@
 #include "RegExp.h"
 #include "MainFrame.h"
 #include "WTLHelper.h"
-#include "DriverHelper.h"
 #include "SecurityHelper.h"
 #include "AppSettings.h"
 

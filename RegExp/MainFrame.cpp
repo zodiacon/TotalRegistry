@@ -32,17 +32,31 @@
 #include "ImportRegFileCommand.h"
 #include "RestoreKeyCommand.h"
 #include "KeyBackup.h"
+#include "ValueDecoder.h"
+#include <set>
+#include <optional>
 #include "ImageIconCache.h"
 #include "ManageLocationsDlg.h"
 
 // Registry::Keys entries from this index on are shown only with Options / Show Extra Hives
 const size_t ExtraHivesStart = 5;
 
+// timers (2 is the delayed list update)
+const UINT_PTR AutoRefreshTimer = 3;
+const UINT_PTR HighlightTimer = 4;
+// changes are refreshed after this quiet period, so bursts are shown once
+const UINT AutoRefreshDelay = 250;
+// how long new and changed items stay highlighted
+const ULONGLONG HighlightDuration = 3000;
+
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (m_FindDlg.IsWindowVisible() && ::GetActiveWindow() == m_FindDlg && m_FindDlg.IsDialogMessage(pMsg))
 		return TRUE;
 
 	if (m_pFindAll && m_pFindAll->IsDialogMessageW(pMsg))
+		return TRUE;
+
+	if (m_Snapshots && m_Snapshots->IsWindow() && m_Snapshots->IsDialogMessageW(pMsg))
 		return TRUE;
 
 	auto hFocus = ::GetFocus();
@@ -74,6 +88,12 @@ DWORD CMainFrame::OnItemPrePaint(int, LPNMCUSTOMDRAW cd) {
 
 DWORD CMainFrame::OnSubItemPrePaint(int, LPNMCUSTOMDRAW cd) {
 	auto lv = (NMLVCUSTOMDRAW*)cd;
+	DWORD result = CDRF_SKIPPOSTPAINT;
+	if (!m_Highlights.empty() && IsHighlighted(m_Items[(int)cd->dwItemSpec])) {
+		// recently added or changed by auto refresh
+		lv->clrTextBk = AppSettings::Get().DarkMode() ? RGB(96, 76, 24) : RGB(255, 234, 160);
+		result |= CDRF_NEWFONT;
+	}
 	if (GetColumnManager(m_List)->GetColumnTag<ColumnType>(lv->iSubItem) == ColumnType::Details) {
 		auto& item = m_Items[(int)cd->dwItemSpec];
 		if (!item.Key) {
@@ -96,7 +116,7 @@ DWORD CMainFrame::OnSubItemPrePaint(int, LPNMCUSTOMDRAW cd) {
 			}
 		}
 	}
-	return CDRF_SKIPPOSTPAINT;
+	return result;
 }
 
 void CMainFrame::RunOnUiThread(std::function<void()> f) {
@@ -208,7 +228,7 @@ CString CMainFrame::GetColumnText(HWND h, int row, int col) const {
 		case ColumnType::Value:
 			if (!item.Key) {
 				if (item.Value.IsEmpty())
-					item.Value = Registry::GetDataAsString(m_CurrentKey, item);
+					item.Value = Registry::GetDataAsString(m_CurrentKey, item, AppSettings::Get().DecimalNumbers());
 				return item.Value;
 			}
 			break;
@@ -489,6 +509,8 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 	UISetCheck(ID_OPTIONS_SHOWEXTRAHIVES, AppSettings::Get().ShowExtraHives());
 	UISetCheck(ID_VIEW_SHOWKEYSINLIST, AppSettings::Get().ShowKeysInList());
 	UISetCheck(ID_OPTIONS_ALWAYSONTOP, AppSettings::Get().AlwaysOnTop());
+	UISetCheck(ID_OPTIONS_AUTOREFRESH, AppSettings::Get().AutoRefresh());
+	UISetCheck(ID_VIEW_DECIMALNUMBERS, AppSettings::Get().DecimalNumbers());
 	UISetCheck(ID_OPTIONS_REPLACEREGEDIT, AppSettings::Get().ReplaceRegEdit());
 	UISetCheck(ID_OPTIONS_DARKMODE, AppSettings::Get().DarkMode());
 	UISetCheck(ID_OPTIONS_ALLOWSINGLEINSTANCE, AppSettings::Get().SingleInstance());
@@ -515,6 +537,7 @@ LRESULT CMainFrame::OnCreate(UINT, WPARAM, LPARAM, BOOL&) {
 }
 
 LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled) {
+	m_Watcher.Stop();
 	if (m_HandlesDlg)
 		m_HandlesDlg.DestroyWindow();
 	if (m_pFindAll) {
@@ -522,6 +545,9 @@ LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
 		m_pFindAll->DestroyWindow();
 		m_pFindAll = nullptr;
 	}
+	// usually destroyed already, as an owned window; destroying it cancels a running job
+	if (m_Snapshots && m_Snapshots->IsWindow())
+		m_Snapshots->DestroyWindow();
 
 	ImageIconCache::Get().Destroy();
 
@@ -561,6 +587,20 @@ LRESULT CMainFrame::OnTimer(UINT, WPARAM id, LPARAM, BOOL&) {
 	if (id == 2) {
 		KillTimer(2);
 		UpdateList(true);
+	}
+	else if (id == AutoRefreshTimer) {
+		KillTimer(AutoRefreshTimer);
+		if (CanAutoRefreshNow())
+			RefreshWatchedKey();
+		else
+			SetTimer(AutoRefreshTimer, 1000);	// try again later
+	}
+	else if (id == HighlightTimer) {
+		auto now = ::GetTickCount64();
+		std::erase_if(m_Highlights, [=](auto& h) { return h.second <= now; });
+		if (m_Highlights.empty())
+			KillTimer(HighlightTimer);
+		m_List.Invalidate();
 	}
 	return 0;
 }
@@ -743,6 +783,171 @@ void CMainFrame::ShowExtraHives(bool show) {
 			m_Tree.DeleteItem(hItem);
 		}
 	}
+}
+
+LRESULT CMainFrame::OnAutoRefresh(WORD, WORD id, HWND, BOOL&) {
+	auto on = !AppSettings::Get().AutoRefresh();
+	AppSettings::Get().AutoRefresh(on);
+	UISetCheck(id, on);
+	UpdateWatch();
+	// catch up with changes made while it was off (not highlighted, as the watch's baseline is now)
+	if (m_Watcher.IsWatching())
+		RefreshWatchedKey();
+	return 0;
+}
+
+LRESULT CMainFrame::OnDecimalNumbers(WORD, WORD id, HWND, BOOL&) {
+	auto decimal = !AppSettings::Get().DecimalNumbers();
+	AppSettings::Get().DecimalNumbers(decimal);
+	UISetCheck(id, decimal);
+	for (size_t i = 0; i < m_Items.size(); i++)
+		m_Items[i].ResetData();
+	m_List.Invalidate();
+	return 0;
+}
+
+//
+// watches the key shown in the list, when auto refresh is on
+//
+void CMainFrame::UpdateWatch() {
+	bool watch = AppSettings::Get().AutoRefresh() && m_CurrentKey && !m_CurrentPath.IsEmpty()
+		&& (m_CurrentNodeType & NodeType::Key) == NodeType::Key;
+	if (!watch) {
+		m_Watcher.Stop();
+		m_Snapshot.clear();
+		m_Highlights.clear();
+		KillTimer(AutoRefreshTimer);
+		KillTimer(HighlightTimer);
+		m_List.Invalidate();
+		return;
+	}
+	if (m_Watcher.IsWatching() && m_Watcher.GetPath() == m_CurrentPath)
+		return;		// the same key was refreshed
+
+	m_Highlights.clear();
+	KillTimer(AutoRefreshTimer);
+	KillTimer(HighlightTimer);
+	// the cookie tells notifications of an earlier key, still in the message queue, from this one's
+	auto cookie = ++m_WatchCookie;
+	auto hWnd = m_hWnd;
+	auto msg = WM_KEY_CHANGED;
+	if (m_Watcher.Watch(m_CurrentPath, [=] { ::PostMessage(hWnd, msg, cookie, 0); }))
+		m_Snapshot = TakeSnapshot();
+	else
+		m_Snapshot.clear();	// remote and root keys are not watched
+}
+
+LRESULT CMainFrame::OnWatchedKeyChanged(UINT, WPARAM cookie, LPARAM, BOOL&) {
+	if (cookie != m_WatchCookie || !m_Watcher.IsWatching())
+		return 0;
+
+	// watch for the next change right away; changes until the timer fires are shown together
+	if (!m_Watcher.Rearm())
+		m_Watcher.Stop();	// e.g. the key was deleted; the refresh moves to a key that exists
+	SetTimer(AutoRefreshTimer, AutoRefreshDelay);
+	return 0;
+}
+
+bool CMainFrame::CanAutoRefreshNow() const {
+	// not while a dialog is open, or the user is typing a path or editing a name
+	return IsWindowEnabled() && ::GetFocus() != m_AddressBar && !m_Tree.GetEditControl() && !m_List.GetEditControl();
+}
+
+void CMainFrame::RefreshWatchedKey() {
+	auto hItem = m_Tree.GetSelectedItem();
+	if (!hItem || GetFullNodePath(hItem) != m_CurrentPath)
+		return;
+
+	auto exists = [&](HTREEITEM h) {
+		auto key = Registry::OpenKey(GetFullNodePath(h), KEY_QUERY_VALUE);
+		auto error = ::GetLastError();
+		return key || (error != ERROR_FILE_NOT_FOUND && error != ERROR_KEY_DELETED);
+	};
+	if (!exists(hItem)) {
+		// deleted: show the nearest ancestor that still exists
+		auto hParent = m_Tree.GetParentItem(hItem);
+		while (hParent && (GetNodeData(hParent) & NodeType::Key) == NodeType::Key && !exists(hParent))
+			hParent = m_Tree.GetParentItem(hParent);
+		if (hParent) {
+			m_Tree.SelectItem(hParent);
+			SyncTreeItem(hParent);
+		}
+		return;
+	}
+
+	SyncTreeItem(hItem);
+
+	//
+	// rebuild the list, keeping the selection, focus and scroll position
+	//
+	std::set<std::pair<bool, CString>> selected;
+	for (int i = m_List.GetNextItem(-1, LVNI_SELECTED); i >= 0; i = m_List.GetNextItem(i, LVNI_SELECTED))
+		selected.insert({ m_Items[i].Key, m_Items[i].Name });
+	std::optional<std::pair<bool, CString>> focused;
+	if (auto i = m_List.GetNextItem(-1, LVNI_FOCUSED); i >= 0)
+		focused = std::pair(m_Items[i].Key, m_Items[i].Name);
+	auto top = m_List.GetTopIndex();
+	auto before = std::move(m_Snapshot);
+
+	UpdateList();
+
+	for (int i = 0; i < (int)m_Items.size(); i++) {
+		std::pair id(m_Items[i].Key, m_Items[i].Name);
+		UINT state = (selected.contains(id) ? LVIS_SELECTED : 0) | (focused == id ? LVIS_FOCUSED : 0);
+		if (state)
+			m_List.SetItemState(i, state, state);
+	}
+	if (auto newTop = m_List.GetTopIndex(); newTop != top && m_List.GetItemCount() > 0) {
+		CRect rc;
+		m_List.GetItemRect(0, &rc, LVIR_BOUNDS);
+		m_List.Scroll(CSize(0, (top - newTop) * rc.Height()));
+	}
+
+	//
+	// highlight values and subkeys that are new or changed
+	//
+	m_Snapshot = TakeSnapshot();
+	auto expiry = ::GetTickCount64() + HighlightDuration;
+	for (auto& [name, hash] : m_Snapshot) {
+		if (auto it = before.find(name); it == before.end() || it->second != hash)
+			m_Highlights[name] = expiry;
+	}
+	if (!m_Highlights.empty())
+		SetTimer(HighlightTimer, 250);
+	m_List.Invalidate();
+}
+
+//
+// a fingerprint of the shown key's subkeys and values, to find what changed: "k:name" -> 0, "v:name" -> hash of type and data
+//
+std::map<CString, size_t> CMainFrame::TakeSnapshot() const {
+	std::map<CString, size_t> snapshot;
+	auto key = Registry::OpenKey(m_CurrentPath, KEY_READ);
+	if (!key)
+		return snapshot;
+
+	Registry::EnumSubKeys(key.Get(), [&](auto name, const auto&) {
+		snapshot[CString(L"k:") + name] = 0;
+		return true;
+		});
+	std::vector<BYTE> data;
+	Registry::EnumKeyValues(key.Get(), [&](auto type, auto name, auto size) {
+		data.resize(size);
+		DWORD bytes = size;
+		size_t hash = type;
+		if (ERROR_SUCCESS == ::RegQueryValueEx(key.Get(), name, nullptr, nullptr, data.data(), &bytes))
+			hash ^= std::hash<std::string_view>()(std::string_view((char const*)data.data(), bytes)) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+		snapshot[CString(L"v:") + name] = hash;
+		return true;
+		});
+	return snapshot;
+}
+
+bool CMainFrame::IsHighlighted(RegistryItem const& item) const {
+	if (item.Type == REG_KEY_UP)
+		return false;
+	auto it = m_Highlights.find((item.Key ? L"k:" : L"v:") + item.Name);
+	return it != m_Highlights.end() && it->second > ::GetTickCount64();
 }
 
 LRESULT CMainFrame::OnShowKeysInList(WORD, WORD id, HWND, BOOL&) {
@@ -1232,6 +1437,20 @@ LRESULT CMainFrame::OnFindAll(WORD, WORD, HWND, BOOL&) {
 	else {
 		m_pFindAll->ShowWindow(SW_SHOW);
 	}
+	return 0;
+}
+
+LRESULT CMainFrame::OnSnapshots(WORD, WORD, HWND, BOOL&) {
+	if (!m_Snapshots) {
+		m_Snapshots = std::make_unique<CSnapshotDlg>(this);
+		m_Snapshots->SetKeyPath(GetCurrentKeyPath());
+		m_Snapshots->Create(m_hWnd);
+	}
+	else {
+		m_Snapshots->SetKeyPath(GetCurrentKeyPath());
+	}
+	m_Snapshots->ShowWindow(SW_SHOW);
+	m_Snapshots->SetActiveWindow();
 	return 0;
 }
 
@@ -2118,65 +2337,73 @@ void CMainFrame::ExpandItem(HTREEITEM hItem) {
 }
 
 void CMainFrame::RefreshFull(HTREEITEM hItem) {
-	hItem = m_Tree.GetChildItem(hItem);
-	TreeHelper th(m_Tree);
-	while (hItem) {
-		auto state = m_Tree.GetItemState(hItem, TVIS_EXPANDED | TVIS_EXPANDEDONCE);
-		if (state) {
-			if (state == TVIS_EXPANDEDONCE) {
-				CString text;
-				if (m_Tree.GetChildItem(hItem) && m_Tree.GetItemText(m_Tree.GetChildItem(hItem), text) && text != L"\\\\") {
-					// not expanded now, delete all items and insert a dummy item
-					th.DeleteChildren(hItem);
-					m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
-				}
-			}
-			else {
-				// really expanded
-				//RefreshFull(hItem);
-				auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
-				if (key) {
-					auto keys = th.GetChildItems(hItem);
-					Registry::EnumSubKeys(key.Get(), [&](auto name, const auto&) {
-						if (!th.FindChild(hItem, name)) {
-							// new sub key
-							auto hChild = InsertKeyItem(hItem, name);
-						}
-						else {
-							keys.erase(name);
-						}
-						return true;
-						});
-					for (auto& [name, h] : keys)
-						m_Tree.DeleteItem(h);
+	for (hItem = m_Tree.GetChildItem(hItem); hItem; hItem = m_Tree.GetNextSiblingItem(hItem))
+		SyncTreeItem(hItem);
+}
 
-					if (m_Tree.GetChildItem(hItem) == nullptr) {
-						// remove children indicator
-						TVITEM tvi;
-						tvi.hItem = hItem;
-						tvi.mask = TVIF_CHILDREN;
-						tvi.cChildren = 0;
-						m_Tree.SetItem(&tvi);
+//
+// brings an item's children in line with the key's subkeys, without collapsing it
+//
+void CMainFrame::SyncTreeItem(HTREEITEM hItem) {
+	TreeHelper th(m_Tree);
+	auto setChildren = [&](int children) {
+		TVITEM tvi;
+		tvi.hItem = hItem;
+		tvi.mask = TVIF_CHILDREN;
+		tvi.cChildren = children;
+		m_Tree.SetItem(&tvi);
+	};
+
+	auto state = m_Tree.GetItemState(hItem, TVIS_EXPANDED | TVIS_EXPANDEDONCE);
+	if (state) {
+		if (state == TVIS_EXPANDEDONCE) {
+			CString text;
+			if (m_Tree.GetChildItem(hItem) && m_Tree.GetItemText(m_Tree.GetChildItem(hItem), text) && text != L"\\\\") {
+				// not expanded now, delete all items and insert a dummy item
+				th.DeleteChildren(hItem);
+				m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
+			}
+		}
+		else {
+			// really expanded
+			auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
+			if (key) {
+				auto keys = th.GetChildItems(hItem);
+				Registry::EnumSubKeys(key.Get(), [&](auto name, const auto&) {
+					if (!th.FindChild(hItem, name)) {
+						// new sub key
+						InsertKeyItem(hItem, name);
 					}
 					else {
-						m_Tree.SortChildren(hItem);
+						keys.erase(name);
 					}
-				}
+					return true;
+					});
+				for (auto& [name, h] : keys)
+					m_Tree.DeleteItem(h);
+
+				if (m_Tree.GetChildItem(hItem) == nullptr)
+					setChildren(0);		// remove children indicator
+				else
+					m_Tree.SortChildren(hItem);
 			}
 		}
-		else if (m_Tree.GetChildItem(hItem) == nullptr && (GetNodeData(hItem) & NodeType::AccessDenied) == NodeType::None) {
-			// no children - check if new exist
-			auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
-			if (Registry::GetSubKeyCount(key.Get()) > 0) {
-				m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
-				TVITEM tvi;
-				tvi.hItem = hItem;
-				tvi.mask = TVIF_CHILDREN;
-				tvi.cChildren = 1;
-				m_Tree.SetItem(&tvi);
-			}
+	}
+	else if ((GetNodeData(hItem) & NodeType::AccessDenied) == NodeType::None) {
+		// never expanded: only a dummy child marks that subkeys exist
+		auto key = Registry::OpenKey(GetFullNodePath(hItem), KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS);
+		if (!key)
+			return;
+		auto hasSubKeys = Registry::GetSubKeyCount(key.Get()) > 0;
+		auto hChild = m_Tree.GetChildItem(hItem);
+		if (hasSubKeys && hChild == nullptr) {
+			m_Tree.InsertItem(L"\\\\", hItem, TVI_LAST);
+			setChildren(1);
 		}
-		hItem = m_Tree.GetNextSiblingItem(hItem);
+		else if (!hasSubKeys && hChild) {
+			th.DeleteChildren(hItem);
+			setChildren(0);
+		}
 	}
 }
 
@@ -2258,17 +2485,26 @@ CString CMainFrame::GetKeyDetails(const RegistryItem& item) const {
 
 CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 	ATLASSERT(!item.Key);
+	if (!item.HasDetails) {
+		item.Details = ComputeValueDetails(item);
+		item.HasDetails = true;
+	}
+	return item.Details;
+}
+
+CString CMainFrame::ComputeValueDetails(const RegistryItem& item) const {
 	CString text;
-	if (item.Value.IsEmpty())
-		item.Value = Registry::GetDataAsString(m_CurrentKey, item);
 	switch (item.Type) {
 		case REG_EXPAND_SZ:
-			if (item.Value.Find(L"%") >= 0) {
+			if (item.Value.IsEmpty())
+				item.Value = Registry::GetDataAsString(m_CurrentKey, item, AppSettings::Get().DecimalNumbers());
+			if (item.Value.Find(L"%") >= 0)
 				text = Registry::ExpandStrings(item.Value);
-			}
-			break;
+			return text;
 
 		case REG_SZ:
+			if (item.Value.IsEmpty())
+				item.Value = Registry::GetDataAsString(m_CurrentKey, item, AppSettings::Get().DecimalNumbers());
 			if (item.Value[0] == L'@') {
 				static const CString paths[] = {
 					L"",
@@ -2276,54 +2512,33 @@ CString CMainFrame::GetValueDetails(const RegistryItem& item) const {
 					Helpers::GetSystemDirectory() + CString(L"\\Drivers"),
 					Helpers::GetWindowsDirectory(),
 				};
-				for (auto& path : paths)
-					if (ERROR_FILE_NOT_FOUND != ::RegLoadMUIString(m_CurrentKey.Get(), item.Name, text.GetBufferSetLength(512), 512,
-						nullptr, REG_MUI_STRING_TRUNCATE, path.IsEmpty() ? nullptr : (PCWSTR)path))
-						break;
+				WCHAR buffer[512];
+				for (auto& path : paths) {
+					auto error = ::RegLoadMUIString(m_CurrentKey.Get(), item.Name, buffer, sizeof(buffer),
+						nullptr, REG_MUI_STRING_TRUNCATE, path.IsEmpty() ? nullptr : (PCWSTR)path);
+					if (error == ERROR_FILE_NOT_FOUND)
+						continue;
+					if (error == ERROR_SUCCESS)
+						text = buffer;
+					break;
+				}
 			}
-			break;
+			return text;
 
-		case REG_BINARY:
-			if (item.Size == sizeof(FILETIME) && (item.Name.Find(L"Date") >= 0 || item.Name.Find(L"date") >= 0)) {
-				//
-				// assume a FILETIME and provide a string representation
-				//
-				FILETIME ft;
-				ULONG size = item.Size;
-				if (ERROR_SUCCESS == m_CurrentKey.QueryBinaryValue(item.Name, &ft, &size)) {
-					WCHAR text[64];
-					if (::SHFormatDateTime(&ft, nullptr, text, _countof(text)))
-						return text;
-					return CTime(ft).Format(L"%c");
-				}
-			}
-			if (item.Size >= SECURITY_DESCRIPTOR_MIN_LENGTH) {
-				ULONG size = item.Size;
-				auto buffer = std::make_unique<BYTE[]>(size);
-				if (ERROR_SUCCESS == m_CurrentKey.QueryBinaryValue(item.Name, buffer.get(), &size) && ::IsValidSecurityDescriptor(buffer.get())) {
-					PWSTR sddl;
-					if (::ConvertSecurityDescriptorToStringSecurityDescriptor(buffer.get(), SDDL_REVISION,
-						DACL_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION, &sddl, nullptr)) {
-						CString result(sddl);
-						::LocalFree(sddl);
-						return result;
-					}
-				}
-			}
-
-			if (item.Size == sizeof(GUID)) {
-				//
-				// dump as GUID
-				//
-				GUID guid;
-				ULONG size = item.Size;
-				if (ERROR_SUCCESS == m_CurrentKey.QueryBinaryValue(item.Name, &guid, &size)) {
-					return Helpers::GuidToString(guid);
-				}
-			}
-			break;
+		case REG_LINK:
+			return text;
 	}
-	return text;
+
+	// everything else is decoded from the data; large values are not worth guessing about
+	if (!m_CurrentKey)
+		return text;
+	ULONG size = 0;
+	if (ERROR_SUCCESS != m_CurrentKey.QueryValue(item.Name, nullptr, nullptr, &size) || size > (1 << 16))
+		return text;
+	std::vector<BYTE> data(size);
+	if (ERROR_SUCCESS != m_CurrentKey.QueryValue(item.Name, nullptr, data.data(), &size))
+		return text;
+	return ValueDecoder::Decode(item.Name, item.Type, data.data(), size);
 }
 
 bool CMainFrame::RefreshItem(HTREEITEM hItem) {
@@ -2382,7 +2597,7 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item, int index) {
 			int index = m_List.FindItem(cmd.GetName(), false);
 			ATLASSERT(index >= 0);
 			if (index >= 0) {
-				m_Items[index].Value.Empty();
+				m_Items[index].ResetData();
 				m_Items[index].Size = -1;
 				m_List.RedrawItems(index, index);
 				m_List.SetItemState(index, LVIS_SELECTED, LVIS_SELECTED);
@@ -2410,7 +2625,7 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item, int index) {
 				success = m_CmdMgr.AddCommand(cmd);
 				if (success) {
 					cmd->SetCallback(cb);
-					item.Value.Empty();
+					item.ResetData();
 					item.Size = -1;
 					m_List.RedrawItems(index, index);
 				}
@@ -2483,7 +2698,7 @@ INT_PTR CMainFrame::ShowValueProperties(RegistryItem& item, int index) {
 		DisplayError(L"Failed to changed value");
 	}
 	else {
-		item.Value.Empty();
+		item.ResetData();
 		auto index = m_List.GetSelectionMark();
 		m_List.RedrawItems(index, index);
 		UpdateUI();
@@ -2768,6 +2983,9 @@ void CMainFrame::UpdateFilter() {
 }
 
 void CMainFrame::UpdateList(bool newLocation) {
+	// watch the key now shown (if auto refresh is on); the list has early returns
+	auto updateWatch = wil::scope_exit([this] { UpdateWatch(); });
+
 	m_Items.clear();
 	m_List.SetItemCount(0);
 

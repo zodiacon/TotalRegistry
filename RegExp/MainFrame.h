@@ -15,6 +15,8 @@
 #include "SortedFilteredVector.h"
 #include "QuickFilterBar.h"
 #include "NavigationManager.h"
+#include "KeyWatcher.h"
+#include "SnapshotDlg.h"
 #include <CustomSplitterWindow.h>
 
 class CFindAllDlg;
@@ -52,6 +54,7 @@ public:
 	const UINT WM_BUILD_TREE = WM_APP + 11;
 	const UINT WM_FIND_UPDATE = WM_APP + 12;
 	const UINT WM_RUN = WM_APP + 13;
+	const UINT WM_KEY_CHANGED = WM_APP + 14;	// wParam: watch cookie
 	const UINT TreeId = 123;
 
 	BOOL PreTranslateMessage(MSG* pMsg) override;
@@ -109,6 +112,7 @@ public:
 		MESSAGE_HANDLER(WM_BUILD_TREE, OnBuildTree)
 		MESSAGE_HANDLER(WM_FIND_UPDATE, OnFindUpdate)
 		MESSAGE_HANDLER(WM_RUN, OnRunOnUIThread)
+		MESSAGE_HANDLER(WM_KEY_CHANGED, OnWatchedKeyChanged)
 		MESSAGE_HANDLER(WM_MENUSELECT, OnMenuSelect)
 		COMMAND_ID_HANDLER(ID_FILE_RUNASADMIN, OnRunAsAdmin)
 		COMMAND_ID_HANDLER(IDM_EXIT, OnExit)
@@ -116,6 +120,8 @@ public:
 		COMMAND_ID_HANDLER(ID_OPTIONS_SHOWEXTRAHIVES, OnShowExtraHives)
 		COMMAND_ID_HANDLER(ID_EDIT_READONLY, OnEditReadOnly)
 		COMMAND_ID_HANDLER(ID_OPTIONS_ALWAYSONTOP, OnAlwaysOnTop)
+		COMMAND_ID_HANDLER(ID_OPTIONS_AUTOREFRESH, OnAutoRefresh)
+		COMMAND_ID_HANDLER(ID_VIEW_DECIMALNUMBERS, OnDecimalNumbers)
 		COMMAND_ID_HANDLER(ID_VIEW_SHOWKEYSINLIST, OnShowKeysInList)
 		COMMAND_ID_HANDLER(ID_NEW_KEY, OnNewKey)
 		COMMAND_ID_HANDLER(ID_VIEW_BACK, OnViewGoBack)
@@ -123,6 +129,7 @@ public:
 		COMMAND_ID_HANDLER(ID_VIEW_UP, OnViewGoUp)
 		COMMAND_RANGE_HANDLER(ID_NEW_DWORDVALUE, ID_NEW_BINARYVALUE, OnNewValue)
 		COMMAND_ID_HANDLER(ID_TOOLS_SCANKEYHANDLES, OnShowKeysHandles)
+		COMMAND_ID_HANDLER(ID_TOOLS_SNAPSHOTS, OnSnapshots)
 		COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
 		COMMAND_ID_HANDLER(ID_EDIT_CUT, OnEditCut)
 		COMMAND_ID_HANDLER(ID_EDIT_PASTE, OnEditPaste)
@@ -236,6 +243,9 @@ private:
 	LRESULT OnViewRefresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnTreeItemExpanding(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
 	LRESULT OnShowExtraHives(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnAutoRefresh(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnDecimalNumbers(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnWatchedKeyChanged(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnShowKeysInList(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnAlwaysOnTop(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnFocusChanged(int /*idCtrl*/, LPNMHDR /*pnmh*/, BOOL& /*bHandled*/);
@@ -285,6 +295,7 @@ private:
 	LRESULT OnOptionsFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnRestoreDefaultFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnShowKeysHandles(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnSnapshots(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnJumpToHiveFile(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnQuickFind(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnViewGoBack(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
@@ -317,9 +328,17 @@ private:
 	void InvokeTreeContextMenu(const CPoint& pt);
 	CString GetKeyDetails(const RegistryItem& item) const;
 	CString GetValueDetails(const RegistryItem& item) const;
+	CString ComputeValueDetails(const RegistryItem& item) const;
 	bool RefreshItem(HTREEITEM hItem);
 	void DisplayBackupRestorePrivilegeError();
 	void ShowExtraHives(bool show);
+	// auto refresh
+	void UpdateWatch();
+	void RefreshWatchedKey();
+	bool CanAutoRefreshNow() const;
+	std::map<CString, size_t> TakeSnapshot() const;
+	bool IsHighlighted(RegistryItem const& item) const;
+	void SyncTreeItem(HTREEITEM hItem);
 	void ImportRegFile(CString const& fileName);
 	void ImportHiveFile(CString const& fileName);
 	int GetKeyImage(const RegistryItem& item) const;
@@ -366,7 +385,13 @@ private:
 	CString m_LastKey;
 	NavigationManager<HTREEITEM> m_Navigation;
 	CFindAllDlg* m_pFindAll{ nullptr };
+	std::unique_ptr<CSnapshotDlg> m_Snapshots;
 	bool m_ReadOnly{ true };
 	bool m_UpdateNoDelay{ false };
 	bool m_NewLocation{ false };
+	// auto refresh: the watched key, its contents when last refreshed, and recently changed items (with expiry ticks)
+	KeyWatcher m_Watcher;
+	WPARAM m_WatchCookie{ 0 };
+	std::map<CString, size_t> m_Snapshot;
+	std::map<CString, ULONGLONG> m_Highlights;
 };

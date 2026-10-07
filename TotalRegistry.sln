@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WTLHelper", "WTLHelper\WTLH
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HexControl", "WTLHelper\HexControl\HexControl.vcxproj", "{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Tests", "Tests\Tests.vcxproj", "{192A7705-5BEE-4710-89D9-02D60F6B8996}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -92,6 +94,20 @@ Global
 		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|x64.Build.0 = ReleaseSigned|x64
 		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|x86.ActiveCfg = ReleaseSigned|Win32
 		{EF5C2F6B-5FCD-446C-BE8D-1485407CD65A}.ReleaseSigned|x86.Build.0 = ReleaseSigned|Win32
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Debug|ARM.ActiveCfg = Debug|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Debug|ARM64.ActiveCfg = Debug|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Debug|x64.ActiveCfg = Debug|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Debug|x64.Build.0 = Debug|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Debug|x86.ActiveCfg = Debug|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Release|ARM.ActiveCfg = Release|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Release|ARM64.ActiveCfg = Release|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Release|x64.ActiveCfg = Release|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Release|x64.Build.0 = Release|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.Release|x86.ActiveCfg = Release|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.ReleaseSigned|ARM.ActiveCfg = Release|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.ReleaseSigned|ARM64.ActiveCfg = Release|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.ReleaseSigned|x64.ActiveCfg = Release|x64
+		{192A7705-5BEE-4710-89D9-02D60F6B8996}.ReleaseSigned|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

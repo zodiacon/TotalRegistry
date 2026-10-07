@@ -99,6 +99,18 @@
     <ClInclude Include="KeyBackup.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="KeyWatcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ValueDecoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RegistrySnapshot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SnapshotDlg.h">
+      <Filter>Dialogs</Filter>
+    </ClInclude>
     <ClInclude Include="FindAllDlg.h">
       <Filter>Dialogs</Filter>
     </ClInclude>
@@ -166,9 +178,6 @@
       <Filter>Dialogs</Filter>
     </ClInclude>
     <ClInclude Include="ImageIconCache.h">
-      <Filter>Helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="DriverHelper.h">
       <Filter>Helpers</Filter>
     </ClInclude>
     <ClInclude Include="QuickFilterBar.h">
@@ -242,6 +251,18 @@
     <ClCompile Include="KeyBackup.cpp">
       <Filter>Commands</Filter>
     </ClCompile>
+    <ClCompile Include="KeyWatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ValueDecoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RegistrySnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SnapshotDlg.cpp">
+      <Filter>Dialogs</Filter>
+    </ClCompile>
     <ClCompile Include="ChangeValueCommand.cpp">
       <Filter>Commands</Filter>
     </ClCompile>
@@ -297,9 +318,6 @@
       <Filter>Dialogs</Filter>
     </ClCompile>
     <ClCompile Include="ImageIconCache.cpp">
-      <Filter>Helpers</Filter>
-    </ClCompile>
-    <ClCompile Include="DriverHelper.cpp">
       <Filter>Helpers</Filter>
     </ClCompile>
     <ClCompile Include="QuickFilterBar.cpp">
